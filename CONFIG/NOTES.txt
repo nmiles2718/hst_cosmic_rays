@@ -1,0 +1,8 @@
+For each instrument the config file contains a date under the astroquery block.
+
+This date is to be used for generating a list of equally spaced date intervals,
+which in turn will be used to programmatically search for 1 month chunks of darks.
+
+There is no efficient way to do this in a generalized manner without querying
+for every dark taken and then using the date of the very first dark as the start
+date.
