@@ -285,11 +285,5 @@ class ComputeStats(object):
             sizes[int_id] = np.sqrt(I_rr.sum()/2)
         cr_affected_pixels = [a for data in cr_affected_pixels for a in data]
         return np.asarray(cr_affected_pixels), np.asarray(cr_incident_rate),\
-               sizes, anisotropy
+               sizes, anisotropy, np.asarray([self.int_ids, cr_deposition])
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()

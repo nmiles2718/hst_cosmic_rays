@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
+from datetime import date
+import itertools
+import warnings
 
 from astropy.time import Time
 from astroquery.mast import Observations
-import boto3
-from datetime import date
-import itertools
 import pandas as pd
-import warnings
-
-
-
 
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-05-01',
@@ -48,7 +44,7 @@ class FindData(object):
                                    end=self._stop.iso,
                                    freq='1MS')
         date_range = [date.date().isoformat() for date in date_range]
-        self.dates = [Time(date, format='iso') for date in date_range][:4]
+        self.dates = [Time(date, format='iso') for date in date_range][:2]
 
     def query(self, aws=False):
         """

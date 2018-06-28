@@ -11,7 +11,9 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
+import shutil
 import yaml
+
 
 # local imports
 from CosmicRayLabel import CosmicRayLabel
@@ -125,9 +127,11 @@ def initialize_hdf5(instr, instr_cfg, subgrp_names):
             subgrp = grp.create_group(subgrp)
 
 
-def write_encoding_error(fname, img_name ):
+def write_out_errors(fname, imgs ):
+    print(imgs)
     with open(fname,'a+') as fobj:
-        fobj.write('{}\n'.format(img_name))
+        for img_name in imgs:
+            fobj.write('{}\n'.format(img_name))
 
 
 def find_files_to_download(instr):
@@ -142,6 +146,12 @@ def process_dataset(instr, flist):
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
     processor.cr_reject()
+    print(len(processor.output['failed']))
+    if 'failed' in processor.output.keys():
+        write_out_errors('{}_failed_to_process.txt'.format(instr),
+                         processor.output['failed'])
+    failed = set(processor.output['failed'])
+    return failed
 
 
 def analyze_data(flist, instr, subgrp_names):
@@ -149,14 +159,10 @@ def analyze_data(flist, instr, subgrp_names):
     num_cr_per_anneal = 0
 
     prefix = instr.split('_')[0]
-    # if 'ACS' in instr:
-    #     prefix = 'acs'
-    # elif 'WFC3' in instr:
-    #     prefix = 'wfc3'
-
     sizes_avg = []
     shapes_avg = []
     cr_incident_rate = []
+    cr_deposition = []
     for f in flist:
         label_obj = CosmicRayLabel(f)
         
@@ -164,7 +170,8 @@ def analyze_data(flist, instr, subgrp_names):
         label_obj.get_label()
         stats_obj = ComputeStats(f, label_obj.label)
         stats_obj.get_data()
-        cr_affected, cr_rate, sizes, anisotropy = stats_obj.compute_stats()
+        cr_affected, cr_rate, sizes, anisotropy, deposition = \
+            stats_obj.compute_stats()
 
         # Compute some data to supply in an email
         num_cr_per_anneal += len(sizes.values())
@@ -173,6 +180,7 @@ def analyze_data(flist, instr, subgrp_names):
         sizes_avg.append(np.nanmean(sizes[1]))
         shapes_avg.append(np.nanmean(anisotropy[1]))
         cr_incident_rate.append(cr_rate)
+        cr_deposition.append(deposition[1])
 
         # Package the files and data for writing out.
 
@@ -184,16 +192,19 @@ def analyze_data(flist, instr, subgrp_names):
             './../data/{}/{}_sizes.hdf5'.format(prefix.upper(),
                                                 prefix),
             './../data/{}/{}_cr_rate.hdf5'.format(prefix.upper(),
-                                                  prefix)
+                                                  prefix),
+            './../data/{}/{}_cr_deposition.hdf5'.format(prefix.upper(),
+                                                        prefix)
         ]
         data_out = [
             cr_affected,
             anisotropy,
             sizes,
-            cr_rate
+            cr_rate,
+            deposition
         ]
         for (fname, data, subgrp) in zip(fout, data_out, subgrp_names):
-            print(fname, data, instr, subgrp)
+            print(fname, data, instr, subgrp)v
             write_out(f,
                       fout=fname,
                       data=data,
@@ -212,7 +223,14 @@ def analyze_data(flist, instr, subgrp_names):
     msg += 'The average sigma-size is {} pixels\n'.format(np.mean(sizes_avg))
     msg += 'Processing time: {} minutes'.format(processing_time)
     print(msg)
-    # SendEmail(subject, msg)
+    SendEmail(subject, msg)
+
+def clean_files(instr):
+    crjs = glob.glob('./tmp*')
+    val = instr.split('_')[0]
+    for a in crjs:
+        os.remove(a)
+    shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val))
 
 
 def main():
@@ -226,12 +244,19 @@ def main():
 
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
+    print(cfg['subgrp_names'])
     for key in finder._products.keys():
-        finder.download(key)
+        # finder.download(key)
         flist = glob.glob(search_pattern)
-        process_dataset(instr, flist)
-        analyze_data(flist, instr, cfg['subgrp_names'])
-        break
+        # failed = process_dataset(instr, flist)
+        failed = {'a'}
+        f_to_analyze = list(set(flist).difference(failed))
+        if not f_to_analyze:
+            print('No files to analyze, something happened with processing.')
+        else:
+            analyze_data(f_to_analyze, instr, cfg['subgrp_names'])
+        clean_files(instr)
+        
 
 if __name__ == '__main__':
     main()

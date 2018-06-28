@@ -6,6 +6,7 @@ ACS_WFC:
     - ./../data/ACS/acs_shapes.hdf5
     - ./../data/ACS/acs_sizes.hdf5
     - ./../data/ACS/acs_cr_rate.hdf5
+    - ./../data/ACS/acs_cr_deposition.hdf5
   astroquery:
     - '2002-03-01'
 WFC3_UVIS:
@@ -16,6 +17,7 @@ WFC3_UVIS:
     - ./../data/WFC3/wfc3_shapes.hdf5
     - ./../data/WFC3/wfc3_sizes.hdf5
     - ./../data/WFC3/wfc3_cr_rate.hdf5
+    - ./../data/WFC3/wfc3_deposition.hdf5
   astroquery:
     - '2009-05-01'
 STIS_CCD:
@@ -26,6 +28,7 @@ STIS_CCD:
     - ./../data/STIS/stis_shapes.hdf5
     - ./../data/STIS/stis_sizes.hdf5
     - ./../data/STIS/stis_cr_rate.hdf5
+    - ./../data/STIS/stis_deposition.hdf5
   astroquery:
   - '1997-02-01'
 subgrp_names:
@@ -33,3 +36,4 @@ subgrp_names:
   - shapes
   - sizes
   - incident_cr_rate
+  - deposition

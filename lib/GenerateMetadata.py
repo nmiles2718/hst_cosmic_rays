@@ -20,11 +20,23 @@ class GenerateMetadata(object):
         with fits.open(self.flt) as hdu:
             prhdr = hdu[0].header
             scihdr = hdu[1].header
-            self.date = Time('{} {}'.format(scihdr['date-obs'],
-                                            scihdr['time-obs']), format='iso')
+            if 'date-obs' in prhdr and 'time-obs' in prhdr:
+                date_obs = prhdr['date-obs']
+                time_obs = prhdr['time-obs']
+            else:
+                date_obs = scihdr['date-obs']
+                time_obs = scihdr['time-obs']
+            if 'expstart' in prhdr and 'expend' in prhdr:
+                expstart = prhdr['expstart']
+                expend = prhdr['expend']
+            else:
+                expstart = scihdr['expstart']
+                expend = scihdr['expend']
+            self.date = Time('{} {}'.format(date_obs,
+                                            time_obs), format='iso')
             self.metadata['date'] = self.date.iso
-            self.metadata['expstart'] = Time(scihdr['expstart'], format='mjd').iso
-            self.metadata['expend'] = Time(scihdr['expend'], format='mjd').iso
+            self.metadata['expstart'] = Time(expstart, format='mjd').iso
+            self.metadata['expend'] = Time(expend, format='mjd').iso
 
     def get_observatory_info(self):
         """
