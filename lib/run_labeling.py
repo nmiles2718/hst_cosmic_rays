@@ -2,20 +2,25 @@
 
 import argparse
 from astropy.io import fits
-from collections import Iterable
+from collections import Iterable, defaultdict
+from email.message import EmailMessage
+from email.headerregistry import Address
+from email.utils import make_msgid
 import glob
 import h5py
 import numpy as np
 import os
+import pandas as pd
 import time
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
 import smtplib
 import shutil
+import sys
 import yaml
-
+sys.path.append('/Users/nmiles/animated_fits/lib')
 
 # local imports
+from mkAnimation import AnimationObj
 from CosmicRayLabel import CosmicRayLabel
 from ComputeStats import ComputeStats
 from FindData import FindData
@@ -37,36 +42,49 @@ parser.add_argument('-initialize',
                          'are properly initialized with the correct structure.')
 
 
-def SendEmail(toSubj, bodyStr):
-    """
-    Send out an email to user(s).
+
+def SendEmail(toSubj, data_for_email, gif_file):
+    """Send out an html markup email with an embedded gif and table
 
     Parameters
     ----------
-    fromAddr: string
-        Email address of sender.
+    toSubj: email subject line
+    data_for_email: data to render into an html table
+    gif_file:
 
-    toAddrList: list of string
-        Email address(es) of receipient(s).
-
-    toSubj: string
-        Subject line.
-
-    bodyStr: string
-        Email content.
+    Returns
+    -------
 
     """
-    toAddr = 'nmiles@stsci.edu'
-
-    msg = MIMEMultipart()
+    html_tb = pd.DataFrame(data_for_email).\
+        sort_values(by='electron_deposition',
+                    ascending=False).to_html(justify='center', index=False)
+    msg = EmailMessage()
     msg['Subject'] = toSubj
-    msg['From'] = toAddr
-    msg['To'] = toAddr
-    msg.attach(MIMEText(bodyStr))
+    msg['From'] = Address('', 'nmiles', 'stsci.edu')
+    msg['To'] = Address('', 'nmiles', 'stsci.edu')
+    gif_cid = make_msgid()
+    body_str = """
+    <html>
+        <head></head>
+        <body>
+            <p><b> All cosmic ray statistics reported are averages for 
+            the entire image</b></p>
+            {}
+            <img src="cid:{}">
+        </body>
+    </html>
+    """.format(html_tb, gif_cid[1:-1])
+    msg.add_alternative(body_str, subtype='html')
+    with open(gif_file,'rb') as img:
+        msg.get_payload()[0].add_related(img.read(), 'image', 'gif',
+                                         cid=gif_cid)
 
-    s = smtplib.SMTP('smtp.stsci.edu')
-    s.sendmail(toAddr, toAddr, msg.as_string())
-    s.quit()
+    msg.add_alternative(body_str, subtype='html')
+
+
+    with smtplib.SMTP('smtp.stsci.edu') as s:
+        s.send_message(msg)
 
 
 def get_metadata(fname):
@@ -137,7 +155,6 @@ def write_out_errors(fname, imgs ):
 def find_files_to_download(instr):
     finder = FindData(instr)
     finder.get_date_ranges()
-    finder.query()
     return finder
 
 
@@ -148,22 +165,40 @@ def process_dataset(instr, flist):
     processor.cr_reject()
     print(len(processor.output['failed']))
     if 'failed' in processor.output.keys():
-        write_out_errors('{}_failed_to_process.txt'.format(instr),
+        f_out = './../crrejtab/{}/{}_failed_' \
+                'to_process.txt'.format(instr.split('_')[0], instr)
+        write_out_errors(f_out,
                          processor.output['failed'])
     failed = set(processor.output['failed'])
     return failed
 
 
-def analyze_data(flist, instr, subgrp_names):
-    start_time = time.time()
+def generate_gif(flist, start_date, instr):
+    prefix = instr.split('_')[0]
+    path, suffix, x_center, y_center = None, None, None, None
+    dx, dy = None, None
+    fps=1.25
+    ext = 1
+    keyword='date-obs'
+    scale=False
+    save = './../crrejtab/{}/{}_{}.gif'.format(prefix.upper(),
+                                               instr,
+                                               start_date.datetime.date())
+    ani = AnimationObj(path, suffix,
+                       x_center, y_center,
+                       dx, dy, ext, keyword,
+                       scale, save, fps)
+    ani.animate(flist=flist)
+    return save
+
+def analyze_data(flist, instr, start, subgrp_names):
+
     num_cr_per_anneal = 0
 
     prefix = instr.split('_')[0]
-    sizes_avg = []
-    shapes_avg = []
-    cr_incident_rate = []
-    cr_deposition = []
+    data_for_email = defaultdict(list)
     for f in flist:
+        start_time = time.time()
         label_obj = CosmicRayLabel(f)
         
         label_obj.get_data()
@@ -177,19 +212,20 @@ def analyze_data(flist, instr, subgrp_names):
         num_cr_per_anneal += len(sizes.values())
         sizes = format_data(sizes)
         anisotropy = format_data(anisotropy)
-        sizes_avg.append(np.nanmean(sizes[1]))
-        shapes_avg.append(np.nanmean(anisotropy[1]))
-        cr_incident_rate.append(cr_rate)
-        cr_deposition.append(deposition[1])
+        data_for_email['filename'].append(os.path.basename(f))
+        data_for_email['size [pix]'].append(np.nanmean(sizes[1]))
+        data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
+        data_for_email['electron_deposition'].append(np.nanmean(deposition[1]))
+
 
         # Package the files and data for writing out.
 
         fout = [
             './../data/{}/{}_cr_affected_pixels.hdf5'.format(prefix.upper(),
                                                              prefix),
-            './../data/{}/{}_shapes.hdf5'.format(prefix.upper(),
+            './../data/{}/{}_cr_shapes.hdf5'.format(prefix.upper(),
                                                  prefix),
-            './../data/{}/{}_sizes.hdf5'.format(prefix.upper(),
+            './../data/{}/{}_cr_sizes.hdf5'.format(prefix.upper(),
                                                 prefix),
             './../data/{}/{}_cr_rate.hdf5'.format(prefix.upper(),
                                                   prefix),
@@ -204,7 +240,6 @@ def analyze_data(flist, instr, subgrp_names):
             deposition
         ]
         for (fname, data, subgrp) in zip(fout, data_out, subgrp_names):
-            print(fname, data, instr, subgrp)v
             write_out(f,
                       fout=fname,
                       data=data,
@@ -212,18 +247,12 @@ def analyze_data(flist, instr, subgrp_names):
                       subgrp=subgrp,
                       update=True
                       )
+        end_time = time.time()
+        data_for_email['processing_time [min]'].append((end_time -
+                                                        start_time)/60)
+    gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
+    return gif_file, data_for_email
 
-    end_time = time.time()
-    processing_time = (end_time - start_time)/60
-    subject = 'Finished processing {} files'.format(len(flist))
-    msg = 'There was a total of {} cosmic rays ' \
-           'in this anneal cycle\n'.format(num_cr_per_anneal)
-    msg += 'The average cr incident rate is {}\n'.format(np.mean(cr_incident_rate))
-    msg += 'The average anisotropy is {}\n'.format(np.mean(shapes_avg))
-    msg += 'The average sigma-size is {} pixels\n'.format(np.mean(sizes_avg))
-    msg += 'Processing time: {} minutes'.format(processing_time)
-    print(msg)
-    SendEmail(subject, msg)
 
 def clean_files(instr):
     crjs = glob.glob('./tmp*')
@@ -236,6 +265,7 @@ def clean_files(instr):
 def main():
     args = parser.parse_args()
     instr = args.instr.upper()
+    # instr='STIS_CCD' # uncomment for debugging purposes
     with open('./../CONFIG/pipeline_config.yaml', 'r') as fobj:
         cfg = yaml.load(fobj)
 
@@ -245,18 +275,25 @@ def main():
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
     print(cfg['subgrp_names'])
-    for key in finder._products.keys():
-        # finder.download(key)
+    for (start, stop) in finder.dates:
+        print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
+        finder.query(range=(start, stop))
+        finder.download(start.datetime.date().isoformat())
         flist = glob.glob(search_pattern)
-        # failed = process_dataset(instr, flist)
-        failed = {'a'}
+        failed = process_dataset(instr, flist)
         f_to_analyze = list(set(flist).difference(failed))
         if not f_to_analyze:
             print('No files to analyze, something happened with processing.')
         else:
-            analyze_data(f_to_analyze, instr, cfg['subgrp_names'])
+            gif_file, data_for_email =\
+                analyze_data(f_to_analyze, instr, start, cfg['subgrp_names'])
+            subj = 'Finished analyzing darks from' \
+                   ' {} to {}'.format(start.datetime.date(),
+                                      stop.datetime.date())
+            SendEmail(subj, data_for_email, gif_file)
         clean_files(instr)
-        
+
+
 
 if __name__ == '__main__':
     main()

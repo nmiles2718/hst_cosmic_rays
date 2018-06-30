@@ -40,13 +40,17 @@ class FindData(object):
 
 
         # very roundabout way of generating a list of MJD dates separated by a month
-        date_range = pd.date_range(start=self._start.iso,
+        pd_range = pd.date_range(start=self._start.iso,
                                    end=self._stop.iso,
                                    freq='1MS')
-        date_range = [date.date().isoformat() for date in date_range]
-        self.dates = [Time(date, format='iso') for date in date_range][:2]
+        dates = [Time(date.date().isoformat(), format='iso')
+                 for date in pd_range]
+        date_ranges_even = zip(dates[::2], dates[1::2])
+        date_ranges_odd = zip(dates[1::2], dates[2:-2:2])
+        date_ranges = itertools.chain(date_ranges_even, date_ranges_odd))
+        self.dates = date_ranges
 
-    def query(self, aws=False):
+    def query(self, range, aws=False):
         """
         Using the date list generated above, query for 1 month intervals of
         darks and save them in a dictionary where the key corresponds to the
@@ -56,35 +60,34 @@ class FindData(object):
 
         """
 
-        date_ranges_odd = zip(self.dates[::2], self.dates[1::2])
-        date_ranges_even = zip(self.dates[1::2],self.dates[2:-2:2])
-        date_ranges = itertools.chain(date_ranges_even, date_ranges_odd)
+        # date_ranges_odd = zip(self.dates[::2], self.dates[1::2])
+        # date_ranges_even = zip(self.dates[1::2],self.dates[2:-2:2])
+        # date_ranges = itertools.chain(date_ranges_even, date_ranges_odd)
         if aws:
             Observations.enable_s3_hst_dataset()
-        for start, stop in date_ranges:
-            # there shouldn't be any data taken after the most recent file
-            with warnings.catch_warnings():
-                warnings.simplefilter('error')
-                try:
-                    obsTable = Observations.query_criteria(
-                        obs_collection=self._collection,
-                        dataproduct_type=self._product_type,
-                        obstype=self._obstype,
-                        target_name=self._target_name,
-                        instrument_name=self._instr,
-                        t_min = [start.mjd, stop.mjd]
-                    )
-                except Exception as e:
-                    print(e,'Date range [{}, {}]'.format(start.iso, stop.iso))
-                else:
-                    print(start.iso, stop.iso)
-                    products = Observations.get_product_list(obsTable)
-                    filtered_products = Observations.filter_products(products,
-                                                                     mrp_only=False,
-                                                                     productSubGroupDescription=self._SubGroupDescription
-                                                                     )
-                    key = start.datetime.date().isoformat() # 'YYYY-MM-DD'
-                    self._products[key] = filtered_products
+        start, stop = range
+        # there shouldn't be any data taken after the most recent file
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            try:
+                obsTable = Observations.query_criteria(
+                    obs_collection=self._collection,
+                    dataproduct_type=self._product_type,
+                    obstype=self._obstype,
+                    target_name=self._target_name,
+                    instrument_name=self._instr,
+                    t_min = [start.mjd, stop.mjd]
+                )
+            except Exception as e:
+                print(e,'Date range [{}, {}]'.format(start.iso, stop.iso))
+            else:
+                products = Observations.get_product_list(obsTable)
+                filtered_products = Observations.filter_products(products,
+                                                                 mrp_only=False,
+                                                                 productSubGroupDescription=self._SubGroupDescription
+                                                                 )
+                key = start.datetime.date().isoformat() # 'YYYY-MM-DD'
+                self._products[key] = filtered_products
 
     def download(self, key):
         """
@@ -100,4 +103,5 @@ class FindData(object):
                                        mrp_only=False,
                                        dataproduct_type = self._product_type,
                                        productSubGroupDescription=self._SubGroupDescription)
+
 
