@@ -10,7 +10,8 @@ import pandas as pd
 
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-05-01',
-        'STIS':'1997-02-01'}
+        'STIS':'1997-02-01',
+        'WFPC2':'1992-06-13'}
 
 class FindData(object):
 
@@ -47,8 +48,8 @@ class FindData(object):
                  for date in pd_range]
         date_ranges_even = zip(dates[::2], dates[1::2])
         date_ranges_odd = zip(dates[1::2], dates[2:-2:2])
-        date_ranges = itertools.chain(date_ranges_even, date_ranges_odd))
-        self.dates = date_ranges
+        self.dates = itertools.chain(date_ranges_even, date_ranges_odd)
+
 
     def query(self, range, aws=False):
         """

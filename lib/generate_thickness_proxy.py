@@ -21,8 +21,10 @@ sigma_symmetry = 0.0472
 sym_thresh = 3
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-acs', action='store_true', default=False)
-parser.add_argument('-wfc3',action='store_true',default=False)
+parser.add_argument('-instr',
+                    default=None,
+                    help='HST instrument to process (acs_wfc, '
+                         'wfc3_uvis, stis_ccd, wfpc2/wfc)')
 
 def get_data(fname, instr):
     start_time = time.time()
@@ -39,29 +41,33 @@ def get_data(fname, instr):
     with h5py.File(fname,mode='r') as f:
         grp = f['/{}'.format(instr)]
         subgrp = grp['cr_affected_pixels']
-        size_file =  h5py.File('./../data/{}_sizes.hdf5'.format(instr_name),'r')
-        shape_file = h5py.File('./../data/{}_shapes.hdf5'.format(instr_name),'r')
-        for dset in subgrp:
-            if dset in bad_files:
-                print('skipping {}'.format(dset))
-                file_counter['bad'] += 1
+        # size_file =  h5py.File('./../data/{}_sizes.hdf5'.format(instr_name),'r')
+        # shape_file = h5py.File('./../data/{}_shapes.hdf5'.format(instr_name),'r')
+        for dset in subgrp.keys():
+            # if dset in bad_files:
+            #     print('skipping {}'.format(dset))
+            #     file_counter['bad'] += 1
+            # else:
+            #     size_grp = size_file['/{}'.format(instr.upper())]
+            #     avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
+            #     shape_grp = shape_file['/{}'.format(instr.upper())]
+            #     avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
+            #     print(dset, avg_size, avg_symmetry)
+            #     if np.absolute(avg_symmetry - typical_symmetry) <= sym_thresh*sigma_symmetry \
+            #     and np.absolute(avg_size - typical_size) <= size_thresh*sigma_size:
+            try:
+                coords = subgrp[dset][:]
+            except Exception as e:
+                file_counter['bad']+=1
             else:
-                size_grp = size_file['/{}'.format(instr.upper())]
-                avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
-                shape_grp = shape_file['/{}'.format(instr.upper())]
-                avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
-                print(dset, avg_size, avg_symmetry)
-                if np.absolute(avg_symmetry - typical_symmetry) <= sym_thresh*sigma_symmetry \
-                and np.absolute(avg_size - typical_size) <= size_thresh*sigma_size:
-                    coords = subgrp[dset][:]
-                    file_counter['good']+=1
-                    for coord in coords:
-                        c['{},{}'.format(coord[0],coord[1])]+=1
-                        i +=1
+                file_counter['good']+=1
+                for coord in coords:
+                    c['{},{}'.format(coord[0],coord[1])]+=1
+                    i +=1
 
-
-    size_file.close()
-    shape_file.close()
+    #
+    # size_file.close()
+    # shape_file.close()
     end_time = time.time()
     duration = end_time - start_time
     if duration > 3600:
@@ -70,7 +76,7 @@ def get_data(fname, instr):
     elif duration < 3600:
         duration /= 660
         units = 'seconds'
-    print('It took {} {} to read {} datasets'.format(duration,
+    print('It took {} {} to read {} cr-affected pixels'.format(duration,
                                                         units,
                                                         i))
     return c, i, duration, units, file_counter
@@ -81,8 +87,8 @@ def main(instr):
         cfg = yaml.load(fobj)
     fname = cfg[instr]['hdf5_files'][0]
     c, num_datapoints, duration, units, file_counter = \
-        get_data('./../data/'+fname, instr=instr)
-    counter_array = np.zeros([4096, 4096])
+        get_data(fname, instr=instr)
+    counter_array = np.zeros([1024, 1024])
     hdr = fits.Header()
 
     for key, val in c.items():
@@ -108,7 +114,7 @@ def main(instr):
             value=duration,
             comment='time  to read in data [{}]'.format(units))
         hdu = fits.HDUList()
-        hdu.append(fits.ImageHDU(header=hdr,data=counter_array))
+        hdu.append(fits.ImageHDU(header=hdr, data=counter_array))
         hdu.writeto('cosmic_ray_incidence_map_{}.fits'.format(instr),
                     overwrite=True)
     except Exception as e:
@@ -117,9 +123,5 @@ def main(instr):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    if args.acs:
-        instr = 'ACS_WFC'
-    elif args.wfc3:
-        instr = 'WFC3_UVIS'
-
+    instr = args.instr.upper()
     main(instr)

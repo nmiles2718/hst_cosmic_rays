@@ -262,10 +262,7 @@ def clean_files(instr):
     shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val))
 
 
-def main():
-    args = parser.parse_args()
-    instr = args.instr.upper()
-    # instr='STIS_CCD' # uncomment for debugging purposes
+def main(instr):
     with open('./../CONFIG/pipeline_config.yaml', 'r') as fobj:
         cfg = yaml.load(fobj)
 
@@ -291,9 +288,11 @@ def main():
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file)
-        clean_files(instr)
+       clean_files(instr)
 
 
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    instr = args.instr.upper()
+    main(instr)
