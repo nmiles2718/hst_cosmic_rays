@@ -9,6 +9,17 @@ ACS_WFC:
     - ./../data/ACS/acs_cr_deposition.hdf5
   astroquery:
     - '2002-03-01'
+ACS_HRC:
+  search_pattern:
+    - ./../crrejtab/ACS/mastDownload/HST/*/*flt.fits
+  hdf5_files:
+    - ./../data/ACS/acs_hrc_cr_affected_pixels.hdf5
+    - ./../data/ACS/acs_hrc_cr_shapes.hdf5
+    - ./../data/ACS/acs_hrc_cr_sizes.hdf5
+    - ./../data/ACS/acs_hrc_cr_rate.hdf5
+    - ./../data/ACS/acs_hrc_cr_deposition.hdf5
+  astroquery:
+    - '2002-03-01'
 WFC3_UVIS:
   search_pattern:
     - ./../crrejtab/WFC3/mastDownload/HST/*/*flt.fits
@@ -34,7 +45,7 @@ STIS_CCD:
 WFPC2_WFC:
   search_pattern:
     - ./../crrejtab/WFPC2/mastDownload/HST/*/*flt.fits
-    hdf5_files:
+  hdf5_files:
     - ./../data/WFPC2/wfpc2_cr_affected_pixels.hdf5
     - ./../data/WFPC2/wfpc2_cr_shapes.hdf5
     - ./../data/WFPC2/wfpc2_cr_sizes.hdf5

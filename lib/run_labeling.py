@@ -33,7 +33,8 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('-instr',
                     default=None,
-                    help='HST instrument to process (acs_wfc, wfc3_uvis, stis_ccd)')
+                    help='HST instrument to process (acs_wfc, '
+                         'wfc3_uvis, stis_ccd, acs_hrc)')
 parser.add_argument('-initialize',
                     action='store_true',
                     default=False,
@@ -97,6 +98,7 @@ def get_metadata(fname):
 
 
 def write_out(fname, fout, data, grp, subgrp, update=False):
+    print('Output filename: {}'.format(fout))
     print('HDF5 structure: /{}/{}'.format(grp, subgrp))
     with h5py.File(fout,'a', libver='latest') as f:
         print('/{}/{}'.format(grp, subgrp))
@@ -194,7 +196,7 @@ def generate_gif(flist, start_date, instr):
 def analyze_data(flist, instr, start, subgrp_names):
 
     num_cr_per_anneal = 0
-
+    print(instr)
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
     for f in flist:
@@ -217,20 +219,25 @@ def analyze_data(flist, instr, start, subgrp_names):
         data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
         data_for_email['electron_deposition'].append(np.nanmean(deposition[1]))
 
-
         # Package the files and data for writing out.
+        if 'hrc' in instr.lower():
+            path = prefix.upper()
+            fs = instr.lower()
+        else:
+            path = prefix.upper()
+            fs = prefix.lower()
 
         fout = [
-            './../data/{}/{}_cr_affected_pixels.hdf5'.format(prefix.upper(),
-                                                             prefix),
-            './../data/{}/{}_cr_shapes.hdf5'.format(prefix.upper(),
-                                                 prefix),
-            './../data/{}/{}_cr_sizes.hdf5'.format(prefix.upper(),
-                                                prefix),
-            './../data/{}/{}_cr_rate.hdf5'.format(prefix.upper(),
-                                                  prefix),
-            './../data/{}/{}_cr_deposition.hdf5'.format(prefix.upper(),
-                                                        prefix)
+            './../data/{}/{}_cr_affected_pixels.hdf5'.format(path,
+                                                             fs),
+            './../data/{}/{}_cr_shapes.hdf5'.format(path,
+                                                 fs),
+            './../data/{}/{}_cr_sizes.hdf5'.format(path,
+                                                fs),
+            './../data/{}/{}_cr_rate.hdf5'.format(path,
+                                                  fs),
+            './../data/{}/{}_cr_deposition.hdf5'.format(path,
+                                                        fs)
         ]
         data_out = [
             cr_affected,
@@ -271,11 +278,10 @@ def main(instr):
 
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
-    print(cfg['subgrp_names'])
     for (start, stop) in finder.dates:
         print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
-        finder.query(range=(start, stop))
-        finder.download(start.datetime.date().isoformat())
+        # finder.query(range=(start, stop))
+        # finder.download(start.datetime.date().isoformat())
         flist = glob.glob(search_pattern)
         failed = process_dataset(instr, flist)
         f_to_analyze = list(set(flist).difference(failed))
@@ -288,7 +294,8 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file)
-       clean_files(instr)
+        break
+        clean_files(instr)
 
 
 
