@@ -72,27 +72,32 @@ class ProcessData(object):
             self.output['passed'].append(input)
 
     def STIS(self, input, i):
-        output = 'tmp_crj_{}.fits'.format(i)
-
-        # if the file exist increment i by one before processing.
-        while os.path.isfile(output):
-            i += 1
-            output = 'tmp_crj_{}.fits'.format(i)
-
-        crrejtab = './../crrejtab/STIS/j3m1403io_crr.fits'
-        try:
-            ocrreject.ocrreject(' '.join(input),
-                                output='tmp_crj_{}.fits'.format(i),
-                                crrejtab=crrejtab,
-                                verbose=True,
-                                crmask='yes',
-                                initgues='med',
-                                skysub='mode'
-                                )
-        except Exception as e:
+        if len(input) < 4:
             self.output['failed'].append(input)
         else:
-            self.output['passed'].append(input)
+            output = 'tmp_crj_{}.fits'.format(i)
+
+            # if the file exist increment i by one before processing.
+            while os.path.isfile(output):
+                i += 1
+                output = 'tmp_crj_{}.fits'.format(i)
+
+            crrejtab = './../crrejtab/STIS/j3m1403io_crr.fits'
+            try:
+                ocrreject.ocrreject(' '.join(input),
+                                    output='tmp_crj_{}.fits'.format(i),
+                                    crrejtab=crrejtab,
+                                    verbose=True,
+                                    crmask='yes',
+                                    initgues='med',
+                                    skysub='mode'
+                                    )
+                if not os.path.isfile(output):
+                    raise(FileNotFoundError)
+            except Exception as e:
+                self.output['failed'].append(input)
+            else:
+                self.output['passed'].append(input)
 
     def sort(self):
         """

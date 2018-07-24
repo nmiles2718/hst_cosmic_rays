@@ -17,7 +17,7 @@ import smtplib
 import shutil
 import sys
 import yaml
-sys.path.append('/Users/nmiles/animated_fits/lib')
+sys.path.append('/user/nmiles/animated_fits/lib')
 
 # local imports
 from mkAnimation import AnimationObj
@@ -217,7 +217,7 @@ def analyze_data(flist, instr, start, subgrp_names):
         data_for_email['filename'].append(os.path.basename(f))
         data_for_email['size [pix]'].append(np.nanmean(sizes[1]))
         data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
-        data_for_email['electron_deposition'].append(np.nanmean(deposition[1]))
+        data_for_email['electron_deposition'].append(np.nanmedian(deposition[1]))
 
         # Package the files and data for writing out.
         if 'hrc' in instr.lower():
@@ -280,8 +280,8 @@ def main(instr):
     search_pattern = cfg[instr]['search_pattern'][0]
     for (start, stop) in finder.dates:
         print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
-        # finder.query(range=(start, stop))
-        # finder.download(start.datetime.date().isoformat())
+        finder.query(range=(start, stop))
+        finder.download(start.datetime.date().isoformat())
         flist = glob.glob(search_pattern)
         failed = process_dataset(instr, flist)
         f_to_analyze = list(set(flist).difference(failed))
@@ -294,7 +294,6 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file)
-        break
         clean_files(instr)
 
 

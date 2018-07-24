@@ -50,7 +50,6 @@ class FindData(object):
         date_ranges_odd = zip(dates[1::2], dates[2:-2:2])
         self.dates = itertools.chain(date_ranges_even, date_ranges_odd)
 
-
     def query(self, range, aws=False):
         """
         Using the date list generated above, query for 1 month intervals of
@@ -98,11 +97,15 @@ class FindData(object):
 
         """
         data_dir = './../crrejtab/{}/'.format(self._instr.split('/')[0])
-        download_list = self._products[key]['obsID'].tolist()
-        Observations.download_products(download_list,
-                                       download_dir=data_dir,
-                                       mrp_only=False,
-                                       dataproduct_type = self._product_type,
-                                       productSubGroupDescription=self._SubGroupDescription)
+        try:
+            download_list = self._products[key]['obsID'].tolist()
+        except KeyError as e:
+            print(e)
+        else:    
+            Observations.download_products(download_list,
+                                           download_dir=data_dir,
+                                           mrp_only=False,
+                                           dataproduct_type = self._product_type,
+                                           productSubGroupDescription=self._SubGroupDescription)
 
 
