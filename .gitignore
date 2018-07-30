@@ -1,3 +1,6 @@
 /data/
 /lib/*png
+/lib/*fits
+/lib/*tra
 /crrejtab/*/mastDownload/
+/crrejtab/*/*gif
