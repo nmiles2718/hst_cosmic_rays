@@ -16,7 +16,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-fname',
                     help='/path/to/flshfile/',
                     type=str)
-
+parser.add_argument('-fout',
+                    help='filename to write to (default smoothed.fits)',
+                    default='smoothed.fits')
 parser.add_argument('-sigma_low',
                     help='Number of sigma to clip on the '
                          'low end (default is 5)',
@@ -116,7 +118,7 @@ def iteratively_smooth(num_iter, data, coords, lowthres=4,
     return high_coords, low_coords, data_smooth
 
 
-def main(fname, sigma_low, sigma_high, box_size, num_iter):
+def main(fname, sigma_low, sigma_high, box_size, num_iter, fout):
     with fits.open(fname) as hdu:
         data = hdu[0].data
 
@@ -148,15 +150,15 @@ def main(fname, sigma_low, sigma_high, box_size, num_iter):
     hdu_o[0].header['sigma_l'] = sigma_low
     hdu_o[0].header['sigma_h'] = sigma_high
     hdu_o[0].header['box_size'] = box_size
-
-    hdu_o.writeto('smoothed_cr_map_UVIS.fits',overwrite=True)
+    hdu_o.writeto(fout,overwrite=True)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     fname = args.fname
+    fout = args.fout
     sigma_low = args.sigma_low
     sigma_high = args.sigma_high
     box_size = args.box_size
     num_iter = args.num_iter
-    main(fname, sigma_low, sigma_high, box_size, num_iter)
+    main(fname, sigma_low, sigma_high, box_size, num_iter, fout)

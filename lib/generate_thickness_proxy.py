@@ -30,44 +30,45 @@ def get_data(fname, instr):
     start_time = time.time()
     c = Counter()
     file_counter = Counter()
-    with open('./../data/bad_files.txt','r') as fobj:
-        bad_files = fobj.readlines()
-        bad_files = [f.strip('\n').replace('raw.fits','blv_tmp.fits')
-                     for f in bad_files]
+    # with open('./../data/bad_files.txt','r') as fobj:
+    #     bad_files = fobj.readlines()
+    #     bad_files = [f.strip('\n').replace('raw.fits','blv_tmp.fits')
+    #                  for f in bad_files]
 
     instr_name = instr.split('_')[0].lower()
-
+    fname = fname.replace('_pixes.hdf5','_pixels_master.hdf5')
+    print(fname)
     i = 0
     with h5py.File(fname,mode='r') as f:
         grp = f['/{}'.format(instr)]
         subgrp = grp['cr_affected_pixels']
-        # size_file =  h5py.File('./../data/{}_sizes.hdf5'.format(instr_name),'r')
-        # shape_file = h5py.File('./../data/{}_shapes.hdf5'.format(instr_name),'r')
+        size_file =  h5py.File('./../data/ACS/{}_sizes_master.hdf5'.format(instr_name),'r')
+        shape_file = h5py.File('./../data/ACS/{}_shapes_master.hdf5'.format(instr_name),'r')
         for dset in subgrp.keys():
             # if dset in bad_files:
             #     print('skipping {}'.format(dset))
             #     file_counter['bad'] += 1
             # else:
-            #     size_grp = size_file['/{}'.format(instr.upper())]
-            #     avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
-            #     shape_grp = shape_file['/{}'.format(instr.upper())]
-            #     avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
-            #     print(dset, avg_size, avg_symmetry)
-            #     if np.absolute(avg_symmetry - typical_symmetry) <= sym_thresh*sigma_symmetry \
-            #     and np.absolute(avg_size - typical_size) <= size_thresh*sigma_size:
-            try:
-                coords = subgrp[dset][:]
-            except Exception as e:
-                file_counter['bad']+=1
-            else:
-                file_counter['good']+=1
-                for coord in coords:
-                    c['{},{}'.format(coord[0],coord[1])]+=1
-                    i +=1
+            size_grp = size_file['/{}'.format(instr.upper())]
+            avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
+            shape_grp = shape_file['/{}'.format(instr.upper())]
+            avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
+            print(dset, avg_size, avg_symmetry)
+            if np.absolute(avg_symmetry - typical_symmetry) <= sym_thresh*sigma_symmetry \
+            and np.absolute(avg_size - typical_size) <= size_thresh*sigma_size:
+                try:
+                    coords = subgrp[dset][:]
+                except Exception as e:
+                    file_counter['bad']+=1
+                else:
+                    file_counter['good']+=1
+                    for coord in coords:
+                        c['{},{}'.format(coord[0],coord[1])]+=1
+                        i +=1
 
     #
-    # size_file.close()
-    # shape_file.close()
+    size_file.close()
+    shape_file.close()
     end_time = time.time()
     duration = end_time - start_time
     if duration > 3600:

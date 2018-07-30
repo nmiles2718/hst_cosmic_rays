@@ -5,8 +5,6 @@ from astropy.visualization import LinearStretch, ZScaleInterval
 from astropy.visualization.mpl_normalize import ImageNormalize
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import numpy as np
-import pandas as pd
 from scipy import ndimage
 
 
@@ -24,16 +22,17 @@ def main(fname):
     ax2.set_title('Smoothed Cosmic Ray Incidence Map')
     im1 = ax1.imshow(data, norm=norm, cmap='gray', origin='lower')
     im2 = ax2.imshow(smoothed_data, norm=norm, cmap='gray', origin='lower')
-
     divider = make_axes_locatable(ax2)
     for ax in [ax1, ax2]:
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
     cax = fig.add_axes([0.2, 0.15, 0.6, 0.04])
-
     cbar = fig.colorbar(im2, cax=cax, orientation='horizontal')
     cbar.set_label('CR Incidences', fontweight='bold')
-    fig.savefig('cr_incidence_plot.png',format='png',dpi=200,bbox_inches='tight')
+    fig.savefig('cr_incidence_plot_gauss5sig_smoothed_ACS_WFC.png',
+                format='png',
+                dpi=350,
+                bbox_inches='tight')
     plt.show()
 
 

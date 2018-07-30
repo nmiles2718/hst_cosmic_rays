@@ -80,9 +80,7 @@ def SendEmail(toSubj, data_for_email, gif_file):
     with open(gif_file,'rb') as img:
         msg.get_payload()[0].add_related(img.read(), 'image', 'gif',
                                          cid=gif_cid)
-
     msg.add_alternative(body_str, subtype='html')
-
 
     with smtplib.SMTP('smtp.stsci.edu') as s:
         s.send_message(msg)
@@ -264,9 +262,13 @@ def analyze_data(flist, instr, start, subgrp_names):
 def clean_files(instr):
     crjs = glob.glob('./tmp*')
     val = instr.split('_')[0]
-    for a in crjs:
-        os.remove(a)
-    shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val))
+    if not crjs:
+        pass
+    else:
+        for a in crjs:
+            os.remove(a)
+        shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val),
+                      ignore_errors=True)
 
 
 def main(instr):
@@ -295,7 +297,6 @@ def main(instr):
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file)
         clean_files(instr)
-
 
 
 if __name__ == '__main__':
