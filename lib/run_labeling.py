@@ -175,8 +175,8 @@ def process_dataset(instr, flist):
 
 def generate_gif(flist, start_date, instr):
     prefix = instr.split('_')[0]
-    path, suffix, x_center, y_center = None, None, None, None
-    dx, dy = None, None
+    path, suffix, x_center, y_center = None, None, 2048, 2048
+    dx, dy = 500, 500
     fps=1.25
     ext = 1
     keyword='date-obs'

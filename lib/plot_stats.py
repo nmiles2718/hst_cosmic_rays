@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from astropy.io import fits
+import dask.array as da
 import costools
 import h5py
 import numpy as np
@@ -17,12 +17,12 @@ class PlotData(object):
     def __init__(self, fname, instr, subgrp):
         self.fname = fname
         self.instr = instr
-        self.data = defaultdict(list)
+        self.data = []
         self.subgrp = subgrp
         self.ax = None
         self.fig = None
 
-    def plot_data(self, bins=30, range=(0,3), log=False):
+    def plot_data(self, bins=30, range=[0, 3], fill_value=-1):
         """ plot a histogram of data, defaults are set for sizes
 
         Parameters
@@ -35,12 +35,16 @@ class PlotData(object):
         -------
 
         """
+        tmp = []
         with h5py.File(self.fname, mode='r') as fobj:
-            subgrp_ = fobj[self.instr+'/'+self.subgrp]
+            subgrp_ = fobj[self.instr.upper()+'/'+self.subgrp]
             for name in subgrp_.keys():
-                dset = subgrp_[name]
-                self.data[self.subgrp] = np.append(self.data[self.subgrp],
-                                              dset[:][1])
+                dset = subgrp_[name][:][1]
+                tmp.append(da.from_array(dset,chunks=(20000)))
+        x = da.concatenate(tmp, axis=0)
+        print(x.shape)
+        self.data = da.ma.fix_invalid(x, fill_value=fill_value)
+        h, edges = da.histogram(self.data, bins=bins, range=range)
 
         # Create an axis if it doesnt exists
         self.fig, self.ax = plt.subplots(figsize=(5,5),
@@ -48,11 +52,8 @@ class PlotData(object):
                                   ncols=1)
         # Normalize by the highest count
         # self.data[subgrp] /= np.nanmax(self.data[subgrp])
-        hist, edges = np.histogram(self.data[self.subgrp],
-                                  bins=bins,
-                                  range=range)
-        hist = hist / hist.sum()
-        self.ax.step(edges[:-1], hist, color='r')
+
+        self.ax.step(edges[:-1], h.compute(), color='r')
         plt.show()
 
     def plot_hst_loc(self):
