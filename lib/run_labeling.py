@@ -44,7 +44,7 @@ parser.add_argument('-initialize',
 
 
 
-def SendEmail(toSubj, data_for_email, gif_file):
+def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     """Send out an html markup email with an embedded gif and table
 
     Parameters
@@ -77,8 +77,9 @@ def SendEmail(toSubj, data_for_email, gif_file):
     </html>
     """.format(html_tb, gif_cid[1:-1])
     msg.add_alternative(body_str, subtype='html')
-    with open(gif_file,'rb') as img:
-        msg.get_payload()[0].add_related(img.read(), 'image', 'gif',
+    if gif:
+        with open(gif_file,'rb') as img:
+            msg.get_payload()[0].add_related(img.read(), 'image', 'gif',
                                          cid=gif_cid)
     msg.add_alternative(body_str, subtype='html')
 
@@ -175,8 +176,8 @@ def process_dataset(instr, flist):
 
 def generate_gif(flist, start_date, instr):
     prefix = instr.split('_')[0]
-    path, suffix, x_center, y_center = None, None, 2048, 2048
-    dx, dy = 500, 500
+    path, suffix, x_center, y_center = None, None, None, None
+    dx, dy = None, None
     fps=1.25
     ext = 1
     keyword='date-obs'
@@ -216,7 +217,13 @@ def analyze_data(flist, instr, start, subgrp_names):
         data_for_email['size [pix]'].append(np.nanmean(sizes[1]))
         data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
         data_for_email['electron_deposition'].append(np.nanmedian(deposition[1]))
-
+        hdr = fits.getheader(f)
+        if 'exptime' in hdr:
+            data_for_email['exptime'].append(hdr['exptime'])
+        elif 'TEXPTIME' in hdr:
+            data_for_email['exptime'].append(hdr['texptime'])
+        else:
+            data_for_email['exptime'].append('EXPTIME missing')
         # Package the files and data for writing out.
         if 'hrc' in instr.lower():
             path = prefix.upper()
@@ -255,6 +262,7 @@ def analyze_data(flist, instr, start, subgrp_names):
         end_time = time.time()
         data_for_email['processing_time [min]'].append((end_time -
                                                         start_time)/60)
+    print(flist)
     gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
     return gif_file, data_for_email
 
@@ -295,7 +303,7 @@ def main(instr):
             subj = 'Finished analyzing darks from' \
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
-            SendEmail(subj, data_for_email, gif_file)
+            SendEmail(subj, data_for_email, gif_file, gif=False)
         clean_files(instr)
 
 
