@@ -32,7 +32,7 @@ enocding_file = '/grp/hst/acs7/nmiles/cr_repo/lib/encoding_errors.txt'
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-instr',
-                    default=None,
+                    default='acs_wfc',
                     help='HST instrument to process (acs_wfc, '
                          'wfc3_uvis, stis_ccd, acs_hrc)')
 parser.add_argument('-initialize',
@@ -191,8 +191,8 @@ def generate_gif(flist, start_date, instr):
     ani.animate(flist=flist)
     return save
 
-def analyze_data(flist, instr, start, subgrp_names):
 
+def analyze_data(flist, instr, start, subgrp_names):
     num_cr_per_anneal = 0
     print(instr)
     prefix = instr.split('_')[0]
@@ -224,7 +224,6 @@ def analyze_data(flist, instr, start, subgrp_names):
         else:
             path = prefix.upper()
             fs = prefix.lower()
-
         fout = [
             './../data/{}/{}_cr_affected_pixels.hdf5'.format(path,
                                                              fs),
@@ -271,16 +270,32 @@ def clean_files(instr):
                       ignore_errors=True)
 
 
+def write_processed_ranges(start, stop):
+    with open('./../CONFIG/processed_dates.txt','a+') as fobj:
+        fobj.write('{} {}\n'.format(start.iso, stop.iso))
+
+
+def read_processed_ranges():
+    try:
+        with open('./../CONFIG/processed_dates.txt','r') as fobj:
+            lines = fobj.readlines()
+            dates = [line.strip('\n') for line in lines]
+    except Exception as e:
+        return []
+    return dates
+
 def main(instr):
     with open('./../CONFIG/pipeline_config.yaml', 'r') as fobj:
         cfg = yaml.load(fobj)
 
     if args.initialize:
         initialize_hdf5(instr, cfg[instr], cfg['subgrp_names'])
-
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
+    analyzed_dates = read_processed_ranges()
     for (start, stop) in finder.dates:
+        if '{} {}'.format(start.iso, stop.iso) in analyzed_dates:
+            continue
         print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
         finder.query(range=(start, stop))
         finder.download(start.datetime.date().isoformat())
@@ -296,6 +311,7 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file)
+        write_processed_ranges(start, stop)
         clean_files(instr)
 
 

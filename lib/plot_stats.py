@@ -53,7 +53,7 @@ class PlotData(object):
         # Normalize by the highest count
         # self.data[subgrp] /= np.nanmax(self.data[subgrp])
 
-        self.ax.step(edges[:-1], h.compute(), color='r')
+        self.ax.semilogy(edges[:-1], h.compute(),drawstyle='steps-mid', color='r')
         plt.show()
 
     def plot_hst_loc(self):
