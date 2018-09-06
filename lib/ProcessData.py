@@ -138,9 +138,12 @@ class ProcessData(object):
                 idx = where((array(found_exptimes) == t) &
                                  (array(found_sizes) == ap))[0]
                 if not idx.any():
-                    print('No images with exptime={} and aperture={}'.
-                          format(t, ap))
+                   pass
                 else:
+                    print('Found {} images with size={} and t={}'.format(len(idx),
+                                                            ap,
+                                                            t))
+                    print('-'*60)
                     self.input['{}_{}'.format(ap, t)] = self.flist[idx]
 
         # Now we check to make sure each list of files is less than the limit

@@ -43,6 +43,55 @@ parser.add_argument('-initialize',
                          'are properly initialized with the correct structure.')
 
 
+def email_styling():
+    # Set CSS properties for th elements in dataframe
+    th_props = [
+        ('font-size', '14px'),
+        ('text-align', 'center'),
+        ('font-weight', 'bold'),
+        ('color', 'black'),
+        ('background-color', 'LightGray'),
+        ('border', '1px solid black')
+    ]
+
+    # Set CSS properties for td elements in dataframe
+    td_props = [
+        ('font-size', '14px'),
+        ('text-align', 'center'),
+        ('border', '1px solid black')
+    ]
+
+    # Set table styles
+    styles = [
+        dict(selector="th", props=th_props),
+        dict(selector="td", props=td_props)
+    ]
+    return styles
+
+def highlight_max(s):
+    '''
+    highlight the maximum in a Series yellow.
+    '''
+    is_max = s == s.max()
+    return ['background-color: #B22222' if v else '' for v in is_max]
+
+def highlight_min(s):
+    is_min = s == s.min()
+    return ['background-color: #1E90FF' if v else '' for v in is_min]
+
+def low_outliers(s):
+    med = s.median()
+    std = s.std()
+    print(std)
+    flags = s < med + 3*std
+    return ['background-color: #87CEEB' if a else '' for a in flags]
+
+def high_outliers(s):
+    med = s.median()
+    std = s.std()
+    print(std)
+    flags = s > med + 3*std
+    return ['background-color: #DC143C' if a else '' for a in flags]
 
 def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     """Send out an html markup email with an embedded gif and table
@@ -57,26 +106,60 @@ def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     -------
 
     """
-    html_tb = pd.DataFrame(data_for_email).\
-        sort_values(by='electron_deposition',
-                    ascending=False).to_html(justify='center', index=False)
+    css = email_styling()
+    df = pd.DataFrame(data_for_email, index=data_for_email['date-obs'])
+    df.drop(columns='date-obs', inplace=True)
+    df.sort_index(inplace=True)
+    s = (df.style
+         # .apply(highlight_max, subset=['shape [pix]',
+         #                                           'size [pix]',
+         #                                           'electron_deposition'])
+         # .apply(highlight_min, subset=['shape [pix]',
+         #                               'size [pix]',
+         #                               'electron_deposition'])
+         .apply(high_outliers, subset=['shape [pix]',
+                                       'size [pix]',
+                                       'electron_deposition'])
+         .apply(low_outliers, subset=['shape [pix]',
+                                            'size [pix]',
+                                            'electron_deposition'])
+         .set_properties(**{'text-align':'center'})
+         .format({'shape [pix]':'{:.3f}','size [pix]':'{:.3f}'})
+         .set_table_styles(css)
+         )
+    html_tb = s.render(index=False)
     msg = EmailMessage()
     msg['Subject'] = toSubj
     msg['From'] = Address('', 'nmiles', 'stsci.edu')
     msg['To'] = Address('', 'nmiles', 'stsci.edu')
     gif_cid = make_msgid()
-    body_str = """
-    <html>
-        <head></head>
-        <body>
-            <p><b> All cosmic ray statistics reported are averages for 
-            the entire image</b></p>
-            {}
-            <img src="cid:{}">
-        </body>
-    </html>
-    """.format(html_tb, gif_cid[1:-1])
-    msg.add_alternative(body_str, subtype='html')
+    if gif:
+        body_str = """
+        <html>
+            <head></head>
+            <body>
+                <p><b> All cosmic ray statistics reported are averages for 
+                the entire image</b></p>
+                {}
+                <img src="cid:{}">
+            </body>
+        </html>
+        """.format(html_tb, gif_cid[1:-1])
+        msg.add_alternative(body_str, subtype='html')
+    else:
+        body_str = """
+                <html>
+                    <head></head>
+                    <body>
+                        <p><b> All cosmic ray statistics reported are averages for 
+                        the entire image</b></p>
+                        <p> Outliers that are 3 sigma above the median are red</p>
+                        <p> Outliers that are 3 sigma below the median are blue</p>
+                        {}
+                    </body>
+                </html>
+                """.format(html_tb)
+        msg.add_alternative(body_str, subtype='html')
     if gif:
         with open(gif_file,'rb') as img:
             msg.get_payload()[0].add_related(img.read(), 'image', 'gif',
@@ -249,7 +332,14 @@ def analyze_data(flist, instr, start, subgrp_names):
             data_for_email['electron_deposition'].append(np.nanmedian(deposition[1]))
         except ValueError as e:
             data_for_email['electron_deposition'].append(np.nan)
+
         hdr = fits.getheader(f)
+        if 'date-obs' in hdr:
+            data_for_email['date-obs'].append(hdr['date-obs'])
+        elif 'tdateobs' in hdr:
+            print(hdr['tdateobs'])
+            data_for_email['date-obs'].append(hdr['tdateobs']+' '
+                                                              +hdr['ttimeobs'])
         if 'exptime' in hdr:
             data_for_email['exptime'].append(hdr['exptime'])
         elif 'TEXPTIME' in hdr:
@@ -357,9 +447,11 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, gif=False)
-            write_processed_ranges(start, stop, instr)
-        clean_files(instr)
-        
+        #   write_processed_ranges(start, stop)
+        break
+        #clean_files(instr)
+
+
 
 if __name__ == '__main__':
     args = parser.parse_args()

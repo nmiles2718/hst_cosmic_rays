@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 
+from astropy.time import Time
 import dask.array as da
 import costools
 import h5py
@@ -9,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.basemap import Basemap
+import pandas as pd
 
 plt.style.use('ggplot')
 
@@ -54,6 +56,26 @@ class PlotData(object):
         # self.data[subgrp] /= np.nanmax(self.data[subgrp])
 
         self.ax.semilogy(edges[:-1], h.compute(),drawstyle='steps-mid', color='r')
+        plt.show()
+
+    def plot_rate_vs_time(self):
+        data=defaultdict(list)
+        with h5py.File(self.fname, mode='r') as fobj:
+            subgrp_ = fobj[self.instr+'/'+self.subgrp]
+            for name in subgrp_.keys():
+                dset = subgrp_[name]
+                if dset.value == 0:
+                    continue
+                    print('Error analyzing {}'.format(key))
+                data['rate'].append(dset.value)
+                d = dset.attrs['date']
+                t = dset.attrs['time']
+                date_obs = Time('{} {}'.format(d,t),
+                                format='iso')
+                data['date'].append(date_obs)
+        data['mjd'] = [date.mjd for date in data['date']]
+        df = pd.DataFrame(data, index=data['date'])
+        plt.scatter(df['mjd'], df['rate'])
         plt.show()
 
     def plot_hst_loc(self):
