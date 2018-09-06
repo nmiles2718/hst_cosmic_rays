@@ -105,24 +105,47 @@ def write_out(fname, fout, data, grp, subgrp, update=False):
         subgrps = list(grp.keys())
         metadata = get_metadata(fname)
         if subgrp in ['sizes', 'shapes']:
-            metadata['mean'] = np.nanmean(data[1])
-            metadata['std'] = np.nanstd(data[1])
-            metadata['max'] = np.nanmax(data[1])
-            metadata['min'] = np.nanmin(data[1])
+            try:
+                metadata['mean'] = np.nanmean(data[1])
+            except Exception as e:
+                metadata['mean'] = np.nan
+            try:
+                metadata['std'] = np.nanstd(data[1])
+            except Exception as e:
+                metadata['std'] = np.nan
+            try:    
+                metadata['max'] = np.nanmax(data[1])
+            except Exception as e:
+                 metadata['max'] = np.nan
+            try:
+                metadata['min'] = np.nanmin(data[1])
+            except Exception as e:
+                metadata['min'] = np.nan
 
         elif subgrp in ['cr_affected_pixels']:
             # these statistics can't be computed on a per image basis
             metadata['number_affected'] = len(data)
-
         if os.path.basename(fname) in subgrps and update:
             dset = grp['{}'.format(os.path.basename(fname))]
             if isinstance(data, Iterable):
-                dset[()] = data
-            else:    
-                dset[:] = data
+                try:
+                    dset[()] = data
+                except Exception as e:
+                    pass
+            else:
+                try:    
+                    dset[...] = data
+                except Exception as e:
+                    pass
+        if os.path.basename(fname) in subgrps:
+            try:
+                dset = grp.create_dataset(name='{}'.format(os.path.basename(fname)),
+                                      shape=data.shape, data=data, dtype=np.float64)
+            except Exception as e:
+                pass
         else:
-            dset = grp.create_dataset(name='{}'.format(os.path.basename(fname)),
-                                  shape=data.shape, data=data, dtype=np.float64)
+             dset = grp.create_dataset(name='{}'.format(os.path.basename(fname)),
+                                      shape=data.shape, data=data, dtype=np.float64)
         for (key, val) in metadata.items():
             print(key, val)
             dset.attrs[key] = val
@@ -214,9 +237,18 @@ def analyze_data(flist, instr, start, subgrp_names):
         sizes = format_data(sizes)
         anisotropy = format_data(anisotropy)
         data_for_email['filename'].append(os.path.basename(f))
-        data_for_email['size [pix]'].append(np.nanmean(sizes[1]))
-        data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
-        data_for_email['electron_deposition'].append(np.nanmedian(deposition[1]))
+        try:
+            data_for_email['size [pix]'].append(np.nanmean(sizes[1]))
+        except ValueError as e:
+            data_for_email['size [pix]'].append(np.nan)
+        try:
+            data_for_email['shape [pix]'].append(np.nanmean(anisotropy[1]))
+        except ValueError as e:
+            data_for_email['shape [pix]'].append(np.nan)
+        try:
+            data_for_email['electron_deposition'].append(np.nanmedian(deposition[1]))
+        except ValueError as e:
+            data_for_email['electron_deposition'].append(np.nan)
         hdr = fits.getheader(f)
         if 'exptime' in hdr:
             data_for_email['exptime'].append(hdr['exptime'])
@@ -251,7 +283,12 @@ def analyze_data(flist, instr, start, subgrp_names):
             deposition
         ]
         for (fname, data, subgrp) in zip(fout, data_out, subgrp_names):
-            write_out(f,
+            try:
+                print(np.nanmean(data[1]))
+            except Exception as e:
+                pass
+            else:
+                write_out(f,
                       fout=fname,
                       data=data,
                       grp=instr,
@@ -278,14 +315,14 @@ def clean_files(instr):
                       ignore_errors=True)
 
 
-def write_processed_ranges(start, stop):
-    with open('./../CONFIG/processed_dates.txt','a+') as fobj:
+def write_processed_ranges(start, stop, instr):
+    with open('./../CONFIG/processed_dates_{}.txt'.format(instr),'a+') as fobj:
         fobj.write('{} {}\n'.format(start.iso, stop.iso))
 
 
-def read_processed_ranges():
+def read_processed_ranges(instr):
     try:
-        with open('./../CONFIG/processed_dates.txt','r') as fobj:
+        with open('./../CONFIG/processed_dates_{}.txt'.format(instr),'r') as fobj:
             lines = fobj.readlines()
             dates = [line.strip('\n') for line in lines]
     except Exception as e:
@@ -300,9 +337,10 @@ def main(instr):
         initialize_hdf5(instr, cfg[instr], cfg['subgrp_names'])
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
-    analyzed_dates = read_processed_ranges()
+    analyzed_dates = read_processed_ranges(instr)
     for (start, stop) in finder.dates:
         if '{} {}'.format(start.iso, stop.iso) in analyzed_dates:
+            print('Already analyzed {} to {}'.format(start.iso, stop.iso))
             continue
         print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
         finder.query(range=(start, stop))
@@ -319,9 +357,9 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, gif=False)
-        write_processed_ranges(start, stop)
+            write_processed_ranges(start, stop, instr)
         clean_files(instr)
-
+        
 
 if __name__ == '__main__':
     args = parser.parse_args()

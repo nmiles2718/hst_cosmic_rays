@@ -57,6 +57,9 @@ class ProcessData(object):
             output = 'tmp_crj_{}.fits'.format(i)
 
         crrejtab = './../crrejtab/WFC3/n9i1435li_crr_UVIS.fits'
+        for f in input:
+            with fits.open(f,mode='update') as hdu:
+                hdu[0].header['CCDTAB']='./../crrejtab/WFC3/t291659mi_ccd.fits'
         try:
             wf3rej(input=input,
                    output='tmp_crj_{}.fits'.format(i),

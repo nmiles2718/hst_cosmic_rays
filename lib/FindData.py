@@ -9,7 +9,7 @@ from astroquery.mast import Observations
 import pandas as pd
 
 _CFG = {'ACS':'2002-03-01',
-        'WFC3':'2009-05-01',
+        'WFC3':'2009-06-01',
         'STIS':'1997-02-01',
         'WFPC2':'1992-06-13'}
 
