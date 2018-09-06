@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from collections import defaultdict
+import glob
 import itertools
 import os
 
@@ -108,22 +109,36 @@ class ProcessData(object):
         the image combination in handled.
 
         """
+
         found_exptimes = []
+        found_apertures = []
         # we have to make a list of all exptimes, then sort by unique ones
         for f in self.flist:
             with fits.open(f) as hdu:
                 prhdr = hdu[0].header
                 scihdr = hdu[1].header
+            if 'aperture' in prhdr:
+                found_apertures.append(prhdr['aperture'])
             if 'exptime' in prhdr:
                 found_exptimes.append(prhdr['exptime'])
             elif 'exptime' in scihdr:
                 found_exptimes.append(scihdr['exptime'])
 
         # Find the unique values
+        unique_ap = set(found_apertures)
+        print(unique_ap)
         unique_exp = set(found_exptimes)
-        for t in unique_exp:
-            print(self.flist[where(array(found_exptimes) == t)[0]])
-            self.input[t] = self.flist[where(array(found_exptimes) == t)[0]]
+        for ap in unique_ap:
+            for t in unique_exp:
+                print(self.flist[where((array(found_exptimes) == t) &
+                                 (array(found_apertures) == ap))[0]])
+                idx = where((array(found_exptimes) == t) &
+                                 (array(found_apertures) == ap))[0]
+                if not idx.any():
+                    print('No images with exptime={} and aperture={}'.
+                          format(t, ap))
+                else:
+                    self.input['{}_{}'.format(ap, t)] = self.flist[idx]
 
         # Now we check to make sure each list of files is less than the limit
         for key, val in self.input.items():
@@ -167,3 +182,8 @@ class ProcessData(object):
         print('Done!')
 
 
+if __name__ == "__main__":
+    # For debugging purposes
+    flist = glob.glob('./../crrejtab/WFC3/mastDownload/HST/*/*flt.fits')
+    p = ProcessData('wfc3_uvis',flist)
+    p.sort()
