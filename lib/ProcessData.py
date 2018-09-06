@@ -45,6 +45,8 @@ class ProcessData(object):
         else:
             self.output['passed'].append(input)
 
+
+
     def WFC3(self, input, i):
         print(input)
 
@@ -111,29 +113,27 @@ class ProcessData(object):
         """
 
         found_exptimes = []
-        found_apertures = []
+        found_sizes = []
         # we have to make a list of all exptimes, then sort by unique ones
         for f in self.flist:
             with fits.open(f) as hdu:
                 prhdr = hdu[0].header
                 scihdr = hdu[1].header
-            if 'aperture' in prhdr:
-                found_apertures.append(prhdr['aperture'])
             if 'exptime' in prhdr:
                 found_exptimes.append(prhdr['exptime'])
             elif 'exptime' in scihdr:
                 found_exptimes.append(scihdr['exptime'])
-
+            found_sizes.append('{},{}'.format(scihdr['NAXIS1'],
+                                              scihdr['NAXIS2']))
         # Find the unique values
-        unique_ap = set(found_apertures)
-        print(unique_ap)
+        unique_sizes = set(found_sizes)
         unique_exp = set(found_exptimes)
-        for ap in unique_ap:
+        for ap in unique_sizes:
             for t in unique_exp:
                 print(self.flist[where((array(found_exptimes) == t) &
-                                 (array(found_apertures) == ap))[0]])
+                                 (array(found_sizes) == ap))[0]])
                 idx = where((array(found_exptimes) == t) &
-                                 (array(found_apertures) == ap))[0]
+                                 (array(found_sizes) == ap))[0]
                 if not idx.any():
                     print('No images with exptime={} and aperture={}'.
                           format(t, ap))
