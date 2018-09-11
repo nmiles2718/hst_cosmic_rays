@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from astropy.io import fits
+from astropy.time import Time
 import h5py
 import numpy as np
 
@@ -23,8 +24,12 @@ def write_data(f_data, f_out, instr):
     for key in subgrp.keys():
         dset_sizes = subgrp[key]
         num_cr = len(dset_sizes[:][1])
+        expstart = Time(dset_sizes.attrs['expstart'], format='iso')
+        expend = Time(dset_sizes.attrs['expend'], format='iso')
+        delta = expend - expstart
+        cr_rate = num_cr / delta.sec
         dset = grp_out.create_dataset(name=key,
-                                  data=num_cr,
+                                  data=cr_rate,
                                   dtype=np.float64)
         for (key, value) in dset_sizes.attrs.items():
             if key in ['mean','std','max','min']:
