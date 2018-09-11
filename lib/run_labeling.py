@@ -335,7 +335,8 @@ def analyze_data(flist, instr, start, subgrp_names):
 
         hdr = fits.getheader(f)
         if 'date-obs' in hdr:
-            data_for_email['date-obs'].append(hdr['date-obs'])
+            data_for_email['date-obs'].append(hdr['date-obs']+' '+
+                                              hdr['time-obs'])
         elif 'tdateobs' in hdr:
             print(hdr['tdateobs'])
             data_for_email['date-obs'].append(hdr['tdateobs']+' '
