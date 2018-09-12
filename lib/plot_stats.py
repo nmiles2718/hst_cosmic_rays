@@ -24,7 +24,7 @@ class PlotData(object):
         self.ax = None
         self.fig = None
 
-    def plot_data(self, bins=30, range=[0, 3], fill_value=-1):
+    def plot_data(self, ax=None, bins=30, range=[0, 3], fill_value=-1,c='r'):
         """ plot a histogram of data, defaults are set for sizes
 
         Parameters
@@ -40,23 +40,33 @@ class PlotData(object):
         tmp = []
         with h5py.File(self.fname, mode='r') as fobj:
             subgrp_ = fobj[self.instr.upper()+'/'+self.subgrp]
+            print(subgrp_)
             for name in subgrp_.keys():
-                dset = subgrp_[name][:][1]
+                dset = np.log10(subgrp_[name][:][1])
                 tmp.append(da.from_array(dset,chunks=(20000)))
         x = da.concatenate(tmp, axis=0)
         print(x.shape)
         self.data = da.ma.fix_invalid(x, fill_value=fill_value)
-        h, edges = da.histogram(self.data, bins=bins, range=range)
+        h, edges = da.histogram(self.data, bins=bins,
+                                range=range, density=True)
 
         # Create an axis if it doesnt exists
-        self.fig, self.ax = plt.subplots(figsize=(5,5),
-                                  nrows=1,
-                                  ncols=1)
-        # Normalize by the highest count
-        # self.data[subgrp] /= np.nanmax(self.data[subgrp])
+        if ax is None:
+            self.fig, self.ax = plt.subplots(figsize=(5,5),
+                                      nrows=1,
+                                      ncols=1)
+            # Normalize by the highest count
+            # self.data[subgrp] /= np.nanmax(self.data[subgrp])
 
-        self.ax.semilogy(edges[:-1], h.compute(),drawstyle='steps-mid', color='r')
-        plt.show()
+            # self.ax.step(edges[:-1], h.compute(), color='r')
+            self.ax.semilogy(edges[:-1], h.compute(),
+                             label='{}/{}'.format(*self.instr.split('_')),
+                             drawstyle='steps-mid', color=c)
+        else:
+            ax.semilogy(edges[:-1], h.compute(),
+                        label='{}/{}'.format(*self.instr.split('_')),
+                        drawstyle='steps-mid', color=c)
+        # plt.show()
 
     def plot_rate_vs_time(self):
         data=defaultdict(list)
@@ -67,16 +77,28 @@ class PlotData(object):
                 if dset.value == 0:
                     continue
                     print('Error analyzing {}'.format(key))
-                data['rate'].append(dset.value)
+                data['rate'].append(dset.value/37.748)
                 d = dset.attrs['date']
                 t = dset.attrs['time']
-                date_obs = Time('{} {}'.format(d,t),
+                date_obs = Time('{} {}'.format(d, t),
                                 format='iso')
                 data['date'].append(date_obs)
+
         data['mjd'] = [date.mjd for date in data['date']]
-        df = pd.DataFrame(data, index=data['date'])
-        plt.scatter(df['mjd'], df['rate'])
+        index = pd.DatetimeIndex([val.iso for val in data['date']])
+        df = pd.DataFrame(data, index=index)
+        df.sort_index(inplace=True)
+        df1 = df[['rate','mjd']]
+        averaged = df1.rolling(window='60D', min_periods=60).mean()
+        print(averaged)
+        averaged_no_nan = averaged.dropna()
+        plt.scatter([Time(val, format='mjd').to_datetime() for val in averaged_no_nan['mjd']]
+                        ,averaged_no_nan['rate'])
+        plt.ylabel('Cosmic Ray Rate [CR/s/cm^2]')
+        plt.title('ACS/WFC Smoothed Cosmic Ray Rate')
+        plt.savefig('cr_incidence_rolling_average.png',)
         plt.show()
+
 
     def plot_hst_loc(self):
         with h5py.File(self.fname, mode='r') as fobj:
