@@ -187,27 +187,28 @@ def write_out(fname, fout, data, grp, subgrp, update=False):
         grp = f['/{}/{}'.format(grp,subgrp)]
         subgrps = list(grp.keys())
         metadata = get_metadata(fname)
-        if subgrp in ['sizes', 'shapes']:
-            try:
-                metadata['mean'] = np.nanmean(data[1])
-            except Exception as e:
-                metadata['mean'] = np.nan
-            try:
-                metadata['std'] = np.nanstd(data[1])
-            except Exception as e:
-                metadata['std'] = np.nan
-            try:    
-                metadata['max'] = np.nanmax(data[1])
-            except Exception as e:
-                 metadata['max'] = np.nan
-            try:
-                metadata['min'] = np.nanmin(data[1])
-            except Exception as e:
-                metadata['min'] = np.nan
-
-        elif subgrp in ['cr_affected_pixels']:
-            # these statistics can't be computed on a per image basis
-            metadata['number_affected'] = len(data)
+        # No need to save these statistics
+        # if subgrp in ['sizes', 'shapes']:
+        #     try:
+        #         metadata['mean'] = np.nanmean(data[1])
+        #     except Exception as e:
+        #         metadata['mean'] = np.nan
+        #     try:
+        #         metadata['std'] = np.nanstd(data[1])
+        #     except Exception as e:
+        #         metadata['std'] = np.nan
+        #     try:
+        #         metadata['max'] = np.nanmax(data[1])
+        #     except Exception as e:
+        #          metadata['max'] = np.nan
+        #     try:
+        #         metadata['min'] = np.nanmin(data[1])
+        #     except Exception as e:
+        #         metadata['min'] = np.nan
+        #
+        # elif subgrp in ['cr_affected_pixels']:
+        #     # these statistics can't be computed on a per image basis
+        #     metadata['number_affected'] = len(data)
         if os.path.basename(fname) in subgrps and update:
             dset = grp['{}'.format(os.path.basename(fname))]
             if isinstance(data, Iterable):
@@ -270,7 +271,6 @@ def process_dataset(instr, flist):
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
     processor.cr_reject()
-    print(len(processor.output['failed']))
     if 'failed' in processor.output.keys():
         f_out = './../crrejtab/{}/{}_failed_' \
                 'to_process.txt'.format(instr.split('_')[0], instr)
@@ -301,17 +301,15 @@ def generate_gif(flist, start_date, instr):
 
 def analyze_data(flist, instr, start, subgrp_names):
     num_cr_per_anneal = 0
-    print(instr)
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
     for f in flist:
         start_time = time.time()
         label_obj = CosmicRayLabel(f)
-        
+
         label_obj.get_data()
         label_obj.get_label()
         stats_obj = ComputeStats(f, label_obj.label)
-        stats_obj.get_data()
         cr_affected, cr_rate, sizes, anisotropy, deposition = \
             stats_obj.compute_stats()
 
@@ -374,22 +372,16 @@ def analyze_data(flist, instr, start, subgrp_names):
             deposition
         ]
         for (fname, data, subgrp) in zip(fout, data_out, subgrp_names):
-            try:
-                print(np.nanmean(data[1]))
-            except Exception as e:
-                pass
-            else:
-                write_out(f,
-                      fout=fname,
-                      data=data,
-                      grp=instr,
-                      subgrp=subgrp,
-                      update=True
-                      )
+            write_out(f,
+                  fout=fname,
+                  data=data,
+                  grp=instr,
+                  subgrp=subgrp,
+                  update=True
+                  )
         end_time = time.time()
         data_for_email['processing_time [min]'].append((end_time -
                                                         start_time)/60)
-    print(flist)
     gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
     return gif_file, data_for_email
 
@@ -416,15 +408,16 @@ def read_processed_ranges(instr):
         with open('./../CONFIG/processed_dates_{}.txt'.format(instr),'r') as fobj:
             lines = fobj.readlines()
             dates = [line.strip('\n') for line in lines]
-    except Exception as e:
+    except FileNotFoundError as e:
         return []
     return dates
 
-def main(instr):
+
+def main(instr, initialize):
     with open('./../CONFIG/pipeline_config.yaml', 'r') as fobj:
         cfg = yaml.load(fobj)
 
-    if args.initialize:
+    if initialize:
         initialize_hdf5(instr, cfg[instr], cfg['subgrp_names'])
     finder = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
@@ -448,13 +441,12 @@ def main(instr):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, gif=False)
-        #   write_processed_ranges(start, stop)
-        break
-        #clean_files(instr)
-
+            write_processed_ranges(start, stop)
+        clean_files(instr)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()
-    main(instr)
+    main(args.instr.upper(), args.initialize)
+    # main('ACS_WFC', True)

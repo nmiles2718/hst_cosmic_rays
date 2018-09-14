@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 from astropy.io import fits
+import dask
 import numpy as np
 import pandas as pd
 from scipy import ndimage
+import time
 
 class ComputeStats(object):
     """
@@ -18,6 +20,10 @@ class ComputeStats(object):
         self.cr_locs = ndimage.find_objects(label)
         self.sci = None
         self.integration_time = None
+        self.anisotropy = {}
+        self.sizes = {}
+        self.cr_affected_pixels = []
+        self.cr_deposition = None
 
 
     def get_data(self):
@@ -220,8 +226,7 @@ class ComputeStats(object):
         -------
 
         """
-        # First we grab the data
-        self.get_data()
+
         sizes = {}
         R_cm = self.compute_first_moment()
         cr_deposition = self.compute_total_cr_deposition()
@@ -248,8 +253,7 @@ class ComputeStats(object):
         -------
 
         """
-        # First we grab the sci data
-        self.get_data()
+
         anistropy = {}
         R_cm = self.compute_first_moment()
         cr_deposition = self.compute_total_cr_deposition()
@@ -265,25 +269,43 @@ class ComputeStats(object):
 
         return anistropy
 
+    def run_computation(self, int_id, r_cm, I_0, loc):
+        # print('Analyzing {} at ({}, {})'.format(int_id, r_cm[1], r_cm[0]))
+        grid_coords = self.mk_grid(loc)
+        I_rr, I_xy, cr_coords = self.compute_higher_moments(I_0, r_cm,
+                                                            grid_coords,
+                                                            int_id)
+        self.cr_affected_pixels.append(cr_coords)
+        self.anisotropy[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
+                                      + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
+        self.sizes[int_id] = np.sqrt(I_rr.sum() / 2)
+
+
     def compute_stats(self):
         self.get_data()
-        anisotropy = {}
-        sizes = {}
-        cr_affected_pixels = []
-
         cr_incident_rate = float(len(self.int_ids))/self.integration_time
         R_cm = self.compute_first_moment()
-        cr_deposition = self.compute_total_cr_deposition()
-        loop_gen = zip(self.int_ids, R_cm, cr_deposition, self.cr_locs)
+        self.cr_deposition = self.compute_total_cr_deposition()
+
+        loop_gen = zip(self.int_ids, R_cm, self.cr_deposition, self.cr_locs)
+        results = []
+        start_time = time.time()
         for int_id, r_cm, I_0, loc in loop_gen:
-            grid_coords = self.mk_grid(loc)
-            I_rr, I_xy, cr_coords = self.compute_higher_moments(I_0, r_cm,
-                                                    grid_coords, int_id)
-            cr_affected_pixels.append(cr_coords)
-            anisotropy[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
-                                         + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
-            sizes[int_id] = np.sqrt(I_rr.sum()/2)
-        cr_affected_pixels = [a for data in cr_affected_pixels for a in data]
-        return np.asarray(cr_affected_pixels), np.asarray(cr_incident_rate),\
-               sizes, anisotropy, np.asarray([self.int_ids, cr_deposition])
+            # grid_coords = self.mk_grid(loc)
+            # I_rr, I_xy, cr_coords = self.compute_higher_moments(I_0, r_cm,
+            #                                         grid_coords, int_id)
+            # self.cr_affected_pixels.append(cr_coords)
+            # self.anisotropy[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
+            #                              + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
+            # self.sizes[int_id] = np.sqrt(I_rr.sum()/2)
+            datum = dask.delayed(self.run_computation)(int_id, r_cm, I_0, loc)
+            results.append(datum)
+        dask.compute(*results)
+        end_time = time.time()
+        print((end_time - start_time)/60)
+        self.cr_affected_pixels = [a for data in self.cr_affected_pixels for a in data]
+        return np.asarray(self.cr_affected_pixels), \
+               np.asarray(cr_incident_rate),\
+               self.sizes, \
+               self.anisotropy, np.asarray([self.int_ids, self.cr_deposition])
 
