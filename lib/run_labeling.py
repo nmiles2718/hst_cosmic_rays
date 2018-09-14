@@ -73,7 +73,7 @@ def highlight_max(s):
     highlight the maximum in a Series yellow.
     '''
     is_max = s == s.max()
-    return ['background-color: #B22222' if v else '' for v in is_max]
+    return ['background-color: #DC143C' if v else '' for v in is_max]
 
 def highlight_min(s):
     is_min = s == s.min()
@@ -83,15 +83,15 @@ def low_outliers(s):
     med = s.median()
     std = s.std()
     print(std)
-    flags = s < med + 3*std
+    flags = s < med - 5*std
     return ['background-color: #87CEEB' if a else '' for a in flags]
 
 def high_outliers(s):
     med = s.median()
     std = s.std()
     print(std)
-    flags = s > med + 3*std
-    return ['background-color: #DC143C' if a else '' for a in flags]
+    flags = s > med + 5*std
+    return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
 def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     """Send out an html markup email with an embedded gif and table
@@ -111,19 +111,20 @@ def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     df.drop(columns='date-obs', inplace=True)
     df.sort_index(inplace=True)
     s = (df.style
-         # .apply(highlight_max, subset=['shape [pix]',
-         #                                           'size [pix]',
-         #                                           'electron_deposition'])
-         # .apply(highlight_min, subset=['shape [pix]',
-         #                               'size [pix]',
-         #                               'electron_deposition'])
          .apply(high_outliers, subset=['shape [pix]',
                                        'size [pix]',
                                        'electron_deposition'])
          .apply(low_outliers, subset=['shape [pix]',
                                             'size [pix]',
                                             'electron_deposition'])
-         .set_properties(**{'text-align':'center'})
+         .apply(highlight_max, subset=['shape [pix]',
+                                                    'size [pix]',
+                                                    'electron_deposition'])
+          .apply(highlight_min, subset=['shape [pix]',
+                                        'size [pix]',
+                                        'electron_deposition'])
+
+          .set_properties(**{'text-align':'center'})
          .format({'shape [pix]':'{:.3f}','size [pix]':'{:.3f}'})
          .set_table_styles(css)
          )
@@ -153,8 +154,6 @@ def SendEmail(toSubj, data_for_email, gif_file, gif=False):
                     <body>
                         <p><b> All cosmic ray statistics reported are averages for 
                         the entire image</b></p>
-                        <p> Outliers that are 3 sigma above the median are red</p>
-                        <p> Outliers that are 3 sigma below the median are blue</p>
                         {}
                     </body>
                 </html>
@@ -441,7 +440,7 @@ def main(instr, initialize):
                    ' {} to {}'.format(start.datetime.date(),
                                       stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, gif=False)
-            write_processed_ranges(start, stop)
+            write_processed_ranges(start, stop, instr)
         clean_files(instr)
 
 

@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 
+import argparse
 from astropy.io import fits
 from astropy.time import Time
 import h5py
 import numpy as np
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-instr', help='ACS_WFC, WFC3_UVIS, STIS_CCD')
+
+
 def make_file(instr, subgrp):
     if instr == 'ACS_WFC':
         f_out = './acs_cr_rate_test.hdf5'
     else:
-        f_out = './{}_cr_rate_test.hdf5'.format(instr.lower())
+        f_out = './{}_cr_rate_test.hdf5'.format(instr.split('_')[0].lower())
     with h5py.File(f_out,'w') as f:
         grp = f.create_group(instr)
         subgrp = grp.create_group(subgrp)
@@ -39,8 +44,9 @@ def write_data(f_data, f_out, instr):
     f_out.close()
 
 
-def main(instr='ACS_WFC'):
-    fname = '/Users/nmiles/hstcosmicrays/data/ACS/acs_sizes.hdf5'
+def main(instr):
+    name = instr.split('_')[0]
+    fname = './../data/{}/{}_cr_sizes.hdf5'.format(name, name.lower())
     f_out = make_file(instr, 'incident_cr_rate')
     write_data(fname, f_out, instr)
 
@@ -49,4 +55,5 @@ def main(instr='ACS_WFC'):
 
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
+    main(args.instr)
