@@ -83,14 +83,14 @@ def low_outliers(s):
     med = s.median()
     std = s.std()
     print(std)
-    flags = s < med - 5*std
+    flags = s < med - 2.5*std
     return ['background-color: #87CEEB' if a else '' for a in flags]
 
 def high_outliers(s):
     med = s.median()
     std = s.std()
     print(std)
-    flags = s > med + 5*std
+    flags = s > med + 2.5*std
     return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
 def SendEmail(toSubj, data_for_email, gif_file, gif=False):
@@ -173,6 +173,8 @@ def get_metadata(fname):
     meta = GenerateMetadata(fname)
     # Get image specific data (date-obs, expstart, expend, etc..)
     meta.get_image_data()
+    # Get pointing information (WCS)
+    meta.get_wcs_info()
     # Get HST specific data (latitude, longitude, altitude)
     meta.get_observatory_info()
     return meta.metadata

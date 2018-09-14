@@ -19,7 +19,7 @@ class ComputeStats(object):
         self.int_ids = np.unique(label)[1:]
         self.cr_locs = ndimage.find_objects(label)
         self.sci = None
-        self.integration_time = None
+        self.integration_time = 0
         self.anisotropy = {}
         self.sizes = {}
         self.cr_affected_pixels = []
@@ -35,9 +35,13 @@ class ComputeStats(object):
             prhdr = hdu[0].header
             scihdr = hdu[1].header
             if 'exptime' in prhdr:
-                self.integration_time = prhdr['exptime'] + 56 # add ~113/2 for readout
+                self.integration_time += prhdr['exptime'] # add ~113/2 for readout
+                if 'flashdur' in prhdr:
+                    self.integration_time += prhdr['flashdur']
             elif 'exptime' in scihdr:
-                self.integration_time = scihdr['exptime'] + 56
+                self.integration_time += scihdr['exptime']
+                if 'flashdur' in scihdr:
+                    self.integration_time += scihdr['flashdur']
             try:
                 ext1 = hdu.index_of(sci1)
                 ext1_data = hdu[ext1].data
