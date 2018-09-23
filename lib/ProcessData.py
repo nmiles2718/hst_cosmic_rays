@@ -6,10 +6,13 @@ import os
 
 # non native imports
 from astropy.io import fits
-from acstools import acsrej
-from numpy import where
+
 from numpy import array
 from numpy import array_split
+from numpy import concatenate
+from numpy import where
+
+from acstools import acsrej
 from stistools import ocrreject
 from wfc3tools import wf3rej
 
@@ -51,29 +54,36 @@ class ProcessData(object):
     def check_for_artifact(self, f):
         """ Grab the DQ extensions from fits file
         """
-        dq1 = (ext, 1)  # Chip 2
-        dq2 = (ext, 2)  # Chip 1
+        dq1 = ('dq', 1)  # Chip 2
+        dq2 = ('dq', 2)  # Chip 1
         with fits.open(f) as hdu:
+            prhdr = hdu[0].header
+            scihdr = hdu[1].header
+            if 'exptime' in prhdr:
+                expt = prhdr['exptime']
+            else:
+                expt = scihdr['exptime']
             try:
                 ext1 = hdu.index_of(dq1)
                 ext1_data = hdu[ext1].data
             except KeyError:
-                print('{1} is missing for {0}'.format(self.fname, dq1))
+                print('{1} is missing for {0}'.format(f, dq1))
                 ext1 = None
             try:
                 ext2 = hdu.index_of(dq2)
                 ext2_data = hdu[ext2].data
             except KeyError:
-                print('{1} is missing for {0}'.format(self.fname, dq2))
+                print('{1} is missing for {0}'.format(f, dq2))
                 ext2 = None
         # If second DQ ext is missing, only work with the first
         # Otherwise combine each DQ ext to make full-frame
         if not ext2:
             self.dq = ext1_data
         else:
-            self.dq = np.concatenate([ext1_data, ext2_data], axis=0)
-        artifacts = np.where(self.dq == 2)[0]
-        if artifacts.size > 0:
+            self.dq = concatenate([ext1_data, ext2_data], axis=0)
+        artifacts = where(self.dq == 2)[0]
+
+        if artifacts.size > 0 or expt < 0.1:
             return True
         else:
             return False
