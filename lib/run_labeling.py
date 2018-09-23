@@ -2,7 +2,7 @@
 
 import argparse
 from astropy.io import fits
-import dask
+from dask.distributed import Client
 from collections import defaultdict
 from email.message import EmailMessage
 from email.headerregistry import Address
@@ -432,15 +432,13 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     -------
 
     """
-
+    client = Client()
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
     run_start = time.time()
     cr_data = defaultdict(list)
-    results = []
-    for f in flist:
-        results.append(dask.delayed(analyze_file)(f))
-    results = dask.compute(*results)
+    results = client.map(analyze_file, flist)
+    results = client.gather(results)
 
     if 'hrc' in instr.lower():
         path = prefix.upper()
@@ -644,7 +642,9 @@ def main(instr, initialize):
                            total_time)
                 SendEmail(subj, data_for_email, gif_file, gif=False)
                 write_processed_ranges(start, stop, instr)
-            clean_files(instr)
+            break
+        break
+            #clean_files(instr)
 
 
 if __name__ == '__main__':
