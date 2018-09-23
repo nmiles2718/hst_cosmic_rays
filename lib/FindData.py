@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 from datetime import date
-import itertools
 import warnings
 
 from astropy.time import Time
 from astroquery.mast import Observations
-import pandas as pd
+from numpy import array
+from pandas import date_range
+
+
 
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-06-01',
@@ -24,12 +26,14 @@ class FindData(object):
         self._target_name = 'DARK'
         self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
         self._stop = Time(date.today().isoformat(), format='iso')
+        # Uncomment for STIS debugging
+        # self._stop = Time('2000-01-01', format='iso')
         self._SubGroupDescription = ['FLT', 'SPT']
         # Storing the results
         self._products = {}
         self._filtered_table = None
         self.dates = None
-        self.t_exptime = [800, 1200]
+        self.t_exptime = [0.1, 1500]
 
     def get_date_ranges(self):
         """
@@ -41,14 +45,29 @@ class FindData(object):
 
 
         # very roundabout way of generating a list of MJD dates separated by a month
-        pd_range = pd.date_range(start=self._start.iso,
+        pd_range = date_range(start=self._start.iso,
                                    end=self._stop.iso,
                                    freq='1MS')
         dates = [Time(date.date().isoformat(), format='iso')
                  for date in pd_range]
-        date_ranges_even = zip(dates[::2], dates[1::2])
-        date_ranges_odd = zip(dates[1::2], dates[2:-2:2])
-        self.dates = itertools.chain(date_ranges_even, date_ranges_odd)
+        date_ranges_even = list(zip(dates[::2], dates[1::2]))
+        date_ranges_odd = list(zip(dates[1::2], dates[2:-2:2]))
+
+
+        date_ranges = sorted(date_ranges_even + date_ranges_odd,
+                              key=lambda x: x[0])
+        if 'ACS' in self._instr:
+            print(len(date_ranges))
+            failure = Time('2007-01-27', format='iso')
+            sm4 = Time('2009-05-01', format='iso')
+            keep = []
+            for range in date_ranges:
+                if range[0] >= failure and range[1] <= sm4:
+                    continue
+                keep.append(range)
+            self.dates = array(keep)
+        else:
+            self.dates = array(date_ranges)
 
     def query(self, range, aws=False):
         """
@@ -60,9 +79,6 @@ class FindData(object):
 
         """
 
-        # date_ranges_odd = zip(self.dates[::2], self.dates[1::2])
-        # date_ranges_even = zip(self.dates[1::2],self.dates[2:-2:2])
-        # date_ranges = itertools.chain(date_ranges_even, date_ranges_odd)
         if aws:
             Observations.enable_s3_hst_dataset()
         start, stop = range
@@ -76,7 +92,8 @@ class FindData(object):
                     obstype=self._obstype,
                     target_name=self._target_name,
                     instrument_name=self._instr,
-                    t_min = [start.mjd, stop.mjd]
+                    t_min = [start.mjd, stop.mjd],
+                    t_exptime = self.t_exptime
                 )
             except Exception as e:
                 print(e,'Date range [{}, {}]'.format(start.iso, stop.iso))

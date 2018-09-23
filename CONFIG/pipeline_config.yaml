@@ -3,9 +3,9 @@ ACS_WFC:
     - ./../crrejtab/ACS/mastDownload/HST/*/*flt.fits
   hdf5_files:
     - ./../data/ACS/acs_cr_affected_pixels.hdf5
-    - ./../data/ACS/acs_cr_shapes.hdf5
-    - ./../data/ACS/acs_cr_sizes.hdf5
     - ./../data/ACS/acs_cr_rate.hdf5
+    - ./../data/ACS/acs_cr_sizes.hdf5
+    - ./../data/ACS/acs_cr_shapes.hdf5
     - ./../data/ACS/acs_cr_deposition.hdf5
   astroquery:
     - '2002-03-01'
@@ -14,9 +14,9 @@ ACS_HRC:
     - ./../crrejtab/ACS/mastDownload/HST/*/*flt.fits
   hdf5_files:
     - ./../data/ACS/acs_hrc_cr_affected_pixels.hdf5
-    - ./../data/ACS/acs_hrc_cr_shapes.hdf5
-    - ./../data/ACS/acs_hrc_cr_sizes.hdf5
     - ./../data/ACS/acs_hrc_cr_rate.hdf5
+    - ./../data/ACS/acs_hrc_cr_sizes.hdf5
+    - ./../data/ACS/acs_hrc_cr_shapes.hdf5
     - ./../data/ACS/acs_hrc_cr_deposition.hdf5
   astroquery:
     - '2002-03-01'
@@ -25,9 +25,9 @@ WFC3_UVIS:
     - ./../crrejtab/WFC3/mastDownload/HST/*/*flt.fits
   hdf5_files:
     - ./../data/WFC3/wfc3_cr_affected_pixels.hdf5
-    - ./../data/WFC3/wfc3_cr_shapes.hdf5
-    - ./../data/WFC3/wfc3_cr_sizes.hdf5
     - ./../data/WFC3/wfc3_cr_rate.hdf5
+    - ./../data/WFC3/wfc3_cr_sizes.hdf5
+    - ./../data/WFC3/wfc3_cr_shapes.hdf5
     - ./../data/WFC3/wfc3_cr_deposition.hdf5
   astroquery:
     - '2009-05-01'
@@ -36,9 +36,9 @@ STIS_CCD:
     - ./../crrejtab/STIS/mastDownload/HST/*/*flt.fits
   hdf5_files:
     - ./../data/STIS/stis_cr_affected_pixels.hdf5
-    - ./../data/STIS/stis_cr_shapes.hdf5
-    - ./../data/STIS/stis_cr_sizes.hdf5
     - ./../data/STIS/stis_cr_rate.hdf5
+    - ./../data/STIS/stis_cr_sizes.hdf5
+    - ./../data/STIS/stis_cr_shapes.hdf5
     - ./../data/STIS/stis_cr_deposition.hdf5
   astroquery:
   - '1997-02-01'
@@ -47,15 +47,15 @@ WFPC2_WFC:
     - ./../crrejtab/WFPC2/mastDownload/HST/*/*flt.fits
   hdf5_files:
     - ./../data/WFPC2/wfpc2_cr_affected_pixels.hdf5
-    - ./../data/WFPC2/wfpc2_cr_shapes.hdf5
-    - ./../data/WFPC2/wfpc2_cr_sizes.hdf5
     - ./../data/WFPC2/wfpc2_cr_rate.hdf5
+    - ./../data/WFPC2/wfpc2_cr_sizes.hdf5
+    - ./../data/WFPC2/wfpc2_cr_shapes.hdf5
     - ./../data/WFPC2/wfpc2_cr_deposition.hdf5
   astroquery:
   - '1995-01-01'
 subgrp_names:
   - cr_affected_pixels
-  - shapes
-  - sizes
   - incident_cr_rate
+  - sizes
+  - shapes
   - deposition

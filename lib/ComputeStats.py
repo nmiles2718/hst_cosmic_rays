@@ -20,7 +20,7 @@ class ComputeStats(object):
         self.cr_locs = ndimage.find_objects(label)
         self.sci = None
         self.integration_time = 0
-        self.anisotropy = {}
+        self.shapes = {}
         self.sizes = {}
         self.cr_affected_pixels = []
         self.cr_deposition = None
@@ -242,7 +242,7 @@ class ComputeStats(object):
             sizes[int_id] = np.sqrt(second_moment.sum() / 2)
         return sizes
 
-    def compute_anisotropy(self, int_it, r_cm, I_0, loc):
+    def compute_shapes(self, int_it, r_cm, I_0, loc):
         """
 
         Parameters
@@ -258,7 +258,7 @@ class ComputeStats(object):
 
         """
 
-        anistropy = {}
+        shapes = {}
         R_cm = self.compute_first_moment()
         cr_deposition = self.compute_total_cr_deposition()
         loop_gen = zip(self.int_ids, R_cm, cr_deposition, self.cr_locs)
@@ -268,10 +268,10 @@ class ComputeStats(object):
                                                   grid_coords, int_id)
             cross_moment = self.compute_cross_moment(I_0, r_cm,
                                                 grid_coords, int_id)
-            anistropy[int_id] = np.sqrt(((second_moment[0] - second_moment[1])**2
+            shapes[int_id] = np.sqrt(((second_moment[0] - second_moment[1])**2
                                     + 4*cross_moment**2)/(second_moment.sum())**2)
 
-        return anistropy
+        return shapes
 
     def run_computation(self, int_id, r_cm, I_0, loc):
         # print('Analyzing {} at ({}, {})'.format(int_id, r_cm[1], r_cm[0]))
@@ -280,10 +280,15 @@ class ComputeStats(object):
                                                             grid_coords,
                                                             int_id)
         self.cr_affected_pixels.append(cr_coords)
-        self.anisotropy[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
+        self.shapes[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
                                       + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
         self.sizes[int_id] = np.sqrt(I_rr.sum() / 2)
 
+    def format_data(self, data):
+        keys = list(data.keys())
+        values = list(data.values())
+        data_out = np.asarray([keys, values])
+        return data_out
 
     def compute_stats(self):
         self.get_data()
@@ -295,21 +300,23 @@ class ComputeStats(object):
         results = []
         start_time = time.time()
         for int_id, r_cm, I_0, loc in loop_gen:
-            # grid_coords = self.mk_grid(loc)
-            # I_rr, I_xy, cr_coords = self.compute_higher_moments(I_0, r_cm,
-            #                                         grid_coords, int_id)
-            # self.cr_affected_pixels.append(cr_coords)
-            # self.anisotropy[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
-            #                              + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
-            # self.sizes[int_id] = np.sqrt(I_rr.sum()/2)
-            datum = dask.delayed(self.run_computation)(int_id, r_cm, I_0, loc)
-            results.append(datum)
-        dask.compute(*results)
+            grid_coords = self.mk_grid(loc)
+            I_rr, I_xy, cr_coords = self.compute_higher_moments(I_0, r_cm,
+                                                    grid_coords, int_id)
+            self.cr_affected_pixels.append(cr_coords)
+            self.shapes[int_id] = np.sqrt(((I_rr[0] - I_rr[1]) ** 2
+                                         + 4 * I_xy ** 2) / (I_rr.sum()) ** 2)
+            self.sizes[int_id] = np.sqrt(I_rr.sum()/2)
+            # datum = dask.delayed(self.run_computation)(int_id, r_cm, I_0, loc)
+            # results.append(datum)
+        # dask.compute(*results)
         end_time = time.time()
         print((end_time - start_time)/60)
         self.cr_affected_pixels = [a for data in self.cr_affected_pixels for a in data]
+        self.sizes = self.format_data(self.sizes)
+        self.shapes = self.format_data(self.shapes)
         return np.asarray(self.cr_affected_pixels), \
                np.asarray(cr_incident_rate),\
                self.sizes, \
-               self.anisotropy, np.asarray([self.int_ids, self.cr_deposition])
+               self.shapes, np.asarray([self.int_ids, self.cr_deposition])
 
