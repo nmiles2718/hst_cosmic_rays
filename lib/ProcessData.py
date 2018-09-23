@@ -6,7 +6,7 @@ import os
 
 # non native imports
 from astropy.io import fits
-
+from dask.distributed import Client
 from numpy import array
 from numpy import array_split
 from numpy import concatenate
@@ -24,22 +24,23 @@ class ProcessData(object):
         self.input = {}
         self.output = defaultdict(list)
         self.dq = None
+        self.i = 0
 
 
-    def ACS(self, input, i):
+    def ACS(self, input):
         if 'wfc' in self.instr.lower():
             crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
         else:
             crrejtab = './../crrejtab/ACS/n4e12510j_crr_HRC.fits'
-        output = 'tmp_crj_{}.fits'.format(i)
+        output = 'tmp_crj_{}.fits'.format(self.i)
 
         # if the file exist increment i by one before processing.
         while os.path.isfile(output):
-            i+=1
-            output = 'tmp_crj_{}.fits'.format(i)
+            self.i+=1
+            output = 'tmp_crj_{}.fits'.format(self.i)
         try:
             acsrej.acsrej(input=input,
-                          output='tmp_crj_{}.fits'.format(i),
+                          output='tmp_crj_{}.fits'.format(self.i),
                           verbose=True,
                           crrejtab=crrejtab,
                           crmask=True,
@@ -90,14 +91,13 @@ class ProcessData(object):
 
 
 
-    def WFC3(self, input, i):
-        print(input)
+    def WFC3(self, input):
 
-        output = 'tmp_crj_{}.fits'.format(i)
+        output = 'tmp_crj_{}.fits'.format(self.i)
         # if the file exist increment i by one before processing.
         while os.path.isfile(output):
-            i += 1
-            output = 'tmp_crj_{}.fits'.format(i)
+            self.i += 1
+            output = 'tmp_crj_{}.fits'.format(self.i)
 
         crrejtab = './../crrejtab/WFC3/n9i1435li_crr_UVIS.fits'
         for f in input:
@@ -105,7 +105,7 @@ class ProcessData(object):
                 hdu[0].header['CCDTAB']='./../crrejtab/WFC3/t291659mi_ccd.fits'
         try:
             wf3rej(input=input,
-                   output='tmp_crj_{}.fits'.format(i),
+                   output='tmp_crj_{}.fits'.format(self.i),
                    verbose=True,
                    crrejtab=crrejtab,
                    crmask=True,
@@ -120,21 +120,21 @@ class ProcessData(object):
         else:
             self.output['passed'].append(input)
 
-    def STIS(self, input, i):
-        if len(input) < 4:
+    def STIS(self, input):
+        if len(input) < 2:
             self.output['failed'].append(input)
         else:
-            output = 'tmp_crj_{}.fits'.format(i)
+            output = 'tmp_crj_{}.fits'.format(self.i)
 
             # if the file exist increment i by one before processing.
             while os.path.isfile(output):
-                i += 1
-                output = 'tmp_crj_{}.fits'.format(i)
+                self.i += 1
+                output = 'tmp_crj_{}.fits'.format(self.i)
 
             crrejtab = './../crrejtab/STIS/j3m1403io_crr.fits'
             try:
                 ocrreject.ocrreject(' '.join(input),
-                                    output='tmp_crj_{}.fits'.format(i),
+                                    output='tmp_crj_{}.fits'.format(self.i),
                                     crrejtab=crrejtab,
                                     verbose=True,
                                     crmask='yes',
@@ -160,32 +160,36 @@ class ProcessData(object):
 
         found_exptimes = []
         found_sizes = []
+        removed = []
+        files_to_process = self.flist
+        print(len(self.flist))
         # we have to make a list of all exptimes, then sort by unique ones
-        for f in self.flist:
+        for f in files_to_process:
             has_artifact = self.check_for_artifact(f)
             if has_artifact:
+                removed.append(f)
+                print('Removing {} for analysis'.format(f))
                 self.flist.remove(f)
-                continue
-
+        for f in self.flist:
             with fits.open(f) as hdu:
                 prhdr = hdu[0].header
                 scihdr = hdu[1].header
-
-
             if 'exptime' in prhdr:
                 found_exptimes.append(prhdr['exptime'])
             elif 'exptime' in scihdr:
                 found_exptimes.append(scihdr['exptime'])
-            found_sizes.append('{},{}'.format(scihdr['NAXIS1'],
-                                              scihdr['NAXIS2']))
+            found_sizes.append('{}'.format(prhdr['CCDAMP']))
+
+        print(len(self.flist), len(found_exptimes), len(found_sizes))
+        self.output['failed'].append(removed)
         # Find the unique values
         unique_sizes = set(found_sizes)
         unique_exp = set(found_exptimes)
         self.flist = array(self.flist)
         for ap in unique_sizes:
             for t in unique_exp:
-                print(self.flist[where((array(found_exptimes) == t) &
-                                 (array(found_sizes) == ap))[0]])
+                # print(self.flist[where((array(found_exptimes) == t) &
+                #                  (array(found_sizes) == ap))[0]])
                 idx = where((array(found_exptimes) == t) &
                                  (array(found_sizes) == ap))[0]
                 if not idx.any():
@@ -195,14 +199,18 @@ class ProcessData(object):
                                                             ap,
                                                             t))
                     print('-'*60)
+                    for f in self.flist[idx]:
+                        print(fits.getval(f, 'exptime'))
                     self.input['{}_{}'.format(ap, t)] = self.flist[idx]
 
         # Now we check to make sure each list of files is less than the limit
         for key, val in self.input.items():
-            if len(val) > 60:
-                print('Exceeding input limit, splitting to smaller groups')
-                split = array_split(val, 2)
+            if len(val) > 50:
+                print('{} exceeds input limit, ' \
+                      'splitting to smaller groups'.format(key))
+                split = array_split(val, 4)
             # Convert tuple to list for checking later
+                print(split)
                 self.input[key] = tuple(split)
 
 
@@ -210,29 +218,35 @@ class ProcessData(object):
         print('-'*60)
         print('Rejecting cosmic rays...')
         print('-'*60)
-        i=0
         if 'acs' in self.instr.lower():
             for key in self.input.keys():
+                print('Processing {}'.format(key))
                 if isinstance(self.input[key], tuple):
-                    self.ACS(list(self.input[key][0]), i)
-                    self.ACS(list(self.input[key][1]), i)
+                    self.ACS(list(self.input[key][0]))
+                    self.ACS(list(self.input[key][1]))
+                    self.ACS(list(self.input[key][2]))
+                    self.ACS(list(self.input[key][3]))
                 else:
-                    self.ACS(list(self.input[key]), i)
+                    self.ACS(list(self.input[key]))
         elif 'wfc3' in self.instr.lower():
             for key in self.input.keys():
                 if isinstance(self.input[key],tuple):
 
-                    self.WFC3(list(self.input[key][0]), 0)
-                    self.WFC3(list(self.input[key][1]), 1)
+                    self.WFC3(list(self.input[key][0]))
+                    self.WFC3(list(self.input[key][1]))
+                    self.WFC3(list(self.input[key][2]))
+                    self.WFC3(list(self.input[key][3]))
                 else:
-                    self.WFC3(list(self.input[key]), 2)
+                    self.WFC3(list(self.input[key]))
         elif 'stis' in self.instr.lower():
             for key in self.input.keys():
                 if isinstance(self.input[key], tuple):
-                    self.STIS(list(self.input[key][0]), 0)
-                    self.STIS(list(self.input[key][1]), 1)
+                    self.STIS(list(self.input[key][0]))
+                    self.STIS(list(self.input[key][1]))
+                    self.STIS(list(self.input[key][2]))
+                    self.STIS(list(self.input[key][3]))
                 else:
-                    self.STIS(list(self.input[key]), 2)
+                    self.STIS(list(self.input[key]))
         if 'failed' in self.output.keys():
             self.output['failed'] = list(itertools.chain.from_iterable(
                 self.output['failed']))
@@ -241,6 +255,7 @@ class ProcessData(object):
 
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('./../crrejtab/WFC3/mastDownload/HST/*/*flt.fits')
-    p = ProcessData('wfc3_uvis',flist)
+    flist = glob.glob('./../crrejtab/ACS/mastDownload/HST/*/*flt.fits')
+    p = ProcessData('acs_wfc',flist)
     p.sort()
+    p.cr_reject()

@@ -313,9 +313,9 @@ def write_out_errors(fname, imgs ):
     -------
 
     """
-    print(imgs)
     with open(fname,'a+') as fobj:
         for img_name in imgs:
+            print('Failed to process {}'.format(img_name))
             fobj.write('{}\n'.format(img_name))
 
 
@@ -350,6 +350,7 @@ def process_dataset(instr, flist):
     processor = ProcessData(instr, flist)
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
+
     processor.cr_reject()
     if 'failed' in processor.output.keys():
         f_out = './../crrejtab/{}/{}_failed_' \
@@ -432,13 +433,16 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     -------
 
     """
-    client = Client()
+    run_start = time.time()
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
-    run_start = time.time()
     cr_data = defaultdict(list)
+    # Start the client to generate multiple works for analysis portion
+    client = Client()
     results = client.map(analyze_file, flist)
     results = client.gather(results)
+    # We are done with parallelization portion, so close to the client
+    client.close()
 
     if 'hrc' in instr.lower():
         path = prefix.upper()
@@ -642,9 +646,7 @@ def main(instr, initialize):
                            total_time)
                 SendEmail(subj, data_for_email, gif_file, gif=False)
                 write_processed_ranges(start, stop, instr)
-            break
-        break
-            #clean_files(instr)
+            clean_files(instr)
 
 
 if __name__ == '__main__':
