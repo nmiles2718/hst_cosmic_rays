@@ -2,7 +2,7 @@
 
 import argparse
 from astropy.io import fits
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 from collections import defaultdict
 from email.message import EmailMessage
 from email.headerregistry import Address
@@ -437,11 +437,17 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
+    split = np.array_split(np.asarray(flist), 2)
     # Start the client to generate multiple works for analysis portion
-    client = Client()
-    results = client.map(analyze_file, flist)
-    results = client.gather(results)
+    cluster = LocalCluster()
+    client = Client(cluster)
+    results = []
+    for s in split:
+        data = client.map(analyze_file, s)
+        results.append(client.gather(data))
+    results = results[0] + results [1]
     # We are done with parallelization portion, so close to the client
+    cluster.close()
     client.close()
 
     if 'hrc' in instr.lower():
