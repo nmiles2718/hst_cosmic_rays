@@ -467,6 +467,7 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
 
+
     # Start the client to generate multiple works for analysis portion
     split = np.array_split(np.asarray(flist), 2)
     # Start the client to generate multiple works for analysis portion
