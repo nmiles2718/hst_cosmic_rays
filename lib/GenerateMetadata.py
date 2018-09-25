@@ -91,7 +91,6 @@ class GenerateMetadata(object):
                 lon_ += 2 * np.pi
             lon_ /= DEGtoRAD
             lat_ /= DEGtoRAD
-            print(lat_, lon_)
         else:
             altitude = np.nan
             lat_ = np.nan

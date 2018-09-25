@@ -2,7 +2,7 @@
 
 import argparse
 from astropy.io import fits
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 from collections import defaultdict
 from email.message import EmailMessage
 from email.headerregistry import Address
@@ -131,7 +131,7 @@ def high_outliers(s):
     flags = s > med + 1.25*std
     return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
-def SendEmail(toSubj, data_for_email, gif_file, gif=False):
+def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
     """Send out an html markup email with an embedded gif and table
 
     Parameters
@@ -146,6 +146,7 @@ def SendEmail(toSubj, data_for_email, gif_file, gif=False):
     """
     css = email_styling()
     df = pd.DataFrame(data_for_email, index=data_for_email['date-obs'])
+    df = df[df['size [pix]'].notnull()]
     df.drop(columns='date-obs', inplace=True)
     df.sort_index(inplace=True)
     s = (df.style
@@ -181,25 +182,52 @@ def SendEmail(toSubj, data_for_email, gif_file, gif=False):
         <html>
             <head></head>
             <body>
+                <h2>Processing times</h2>
+                <ul>
+                    <li>Downloading data: {} minutes </li>
+                    <li>CR rejection: {} minutes</li>
+                    <li>Labeling analysis: {} minutes </li>
+                    <li>Total time: {} minutes <li<
+                </ul>
+                <h2> Statistics </h2>
                 <p><b> All cosmic ray statistics reported are averages for 
                 the entire image</b></p>
+                <p><b> All cosmic ray statistics reported are averages for 
+                        the entire image</b></p>
                 {}
                 <img src="cid:{}">
             </body>
         </html>
-        """.format(html_tb, gif_cid[1:-1])
-        msg.add_alternative(body_str, subtype='html')
+        """.format(times['download_time'],
+                   times['rejection_time'],
+                   times['analysis_time'],
+                   times['total'],
+                   html_tb,
+                   gif_cid[1:-1])
+        msg.add_alternative(body_str, subtype='html',)
     else:
         body_str = """
                 <html>
                     <head></head>
                     <body>
-                        <p><b> All cosmic ray statistics reported are averages for 
-                        the entire image</b></p>
-                        {}
+                    <h2>Processing times</h2>
+                        <ul>
+                            <li>Downloading data: {} minutes </li>
+                            <li>CR rejection: {} minutes</li>
+                            <li>Labeling analysis: {} minutes </li>
+                            <li>Total time: {} minutes </li>
+                        </ul>
+                    <h2> Cosmic Ray Statistics </h2>
+                    <p><b> All cosmic ray statistics reported are averages for 
+                            the entire image</b></p>
+                            {}
                     </body>
                 </html>
-                """.format(html_tb)
+                """.format(times['download_time'],
+                           times['rejection_time'],
+                           times['analysis_time'],
+                           times['total'],
+                           html_tb)
         msg.add_alternative(body_str, subtype='html')
     if gif:
         with open(gif_file,'rb') as img:
@@ -233,7 +261,7 @@ def get_metadata(imgname):
     return meta.metadata
 
 
-def write_out(dset_name, fout, data, grp, subgrp):
+def write_out(dset_name, fout, data, grp, subgrp, metadata):
     """ Write out the data
 
     Parameters
@@ -253,13 +281,11 @@ def write_out(dset_name, fout, data, grp, subgrp):
     with h5py.File(fout,'a', libver='latest') as f:
         print('/{}/{}'.format(grp, subgrp))
         grp = f['/{}/{}'.format(grp,subgrp)]
-        metadata = get_metadata(dset_name)
         dset = grp.create_dataset(name='{}'.format(os.path.basename(dset_name)),
                                       shape=data.shape,
                                       data=data,
                                       dtype=np.float64)
         for (key, val) in metadata.items():
-            print(key, val)
             dset.attrs[key] = val
 
 
@@ -347,6 +373,7 @@ def process_dataset(instr, flist):
     -------
     failed : list of images that could not be CR rejected for various reasons
     """
+    start_time = time.time()
     processor = ProcessData(instr, flist)
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
@@ -358,7 +385,9 @@ def process_dataset(instr, flist):
         write_out_errors(f_out,
                          processor.output['failed'])
     failed = set(processor.output['failed'])
-    return failed
+    end_time = time.time()
+
+    return failed, (end_time - start_time)/60
 
 
 def generate_gif(flist, start_date, instr):
@@ -437,11 +466,19 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     prefix = instr.split('_')[0]
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
+
     # Start the client to generate multiple works for analysis portion
-    client = Client()
-    results = client.map(analyze_file, flist)
-    results = client.gather(results)
+    split = np.array_split(np.asarray(flist), 2)
+    # Start the client to generate multiple works for analysis portion
+    cluster = LocalCluster()
+    client = Client(cluster)
+    results = []
+    for s in split:
+        data = client.map(analyze_file, s)
+        results.append(client.gather(data))
+    results = results[0] + results[1]
     # We are done with parallelization portion, so close to the client
+    cluster.close()
     client.close()
 
     if 'hrc' in instr.lower():
@@ -461,7 +498,8 @@ def analyze_data(flist, instr, start, subgrp_names, i):
         './../data/{}/{}_cr_deposition_{}.hdf5'.format(path, fs, i + 1)
     ]
 
-    # affected, rate, sizes, shapes, deposition
+    file_metadata = []
+    # 0: affected, 1: rate, 2: sizes, 3: shapes, 4: deposition
     for i, result in enumerate(results):
         # format the data for writing out
         # Keys are the file and subgrp combos (e.g acs_cr_sizes_1.hdf5, sizes)
@@ -470,6 +508,10 @@ def analyze_data(flist, instr, start, subgrp_names, i):
         cr_data[(fout[2], subgrp_names[2])].append(result[2])
         cr_data[(fout[3], subgrp_names[3])].append(result[3])
         cr_data[(fout[4], subgrp_names[4])].append(result[4])
+
+        # Grab metadata for each file (exptime, pointing, lat/lon, etc..)
+        metadata = get_metadata(flist[i])
+        file_metadata.append(metadata)
 
         # grab data for email notification
         data_for_email['processing_time [min]'].append(result[5])
@@ -501,16 +543,23 @@ def analyze_data(flist, instr, start, subgrp_names, i):
             data_for_email['exptime'].append(hdr['texptime'])
         else:
             data_for_email['exptime'].append('EXPTIME missing')
-
+    failed = []
     for j, key in enumerate(cr_data.keys()):
         for i, data in enumerate(cr_data[key]):
+            if np.isnan(data_for_email['electron_deposition'][i]):
+                print('NaN dataset, skipping {}'.format(flist[i]))
+                failed.append(flist[i])
+                continue
             write_out(dset_name=flist[i],
                       fout=key[0],
                       data=data,
                       grp=instr,
-                      subgrp=key[1])
-
-
+                      subgrp=key[1],
+                      metadata=file_metadata[i])
+    f_out = './../crrejtab/{}/{}_failed_to_process.txt'.format(
+                                                        instr.split('_')[0],
+                                                        instr)
+    write_out_errors(f_out, failed)
     run_stop = time.time()
     total_time = (run_stop - run_start)/60
     gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
@@ -589,6 +638,25 @@ def read_processed_ranges(instr):
     return dates
 
 
+def download_data(finder, start, stop):
+    """
+
+    Parameters
+    ----------
+    finder
+    start
+    stop
+
+    Returns
+    -------
+
+    """
+    start_time = time.time()
+    finder.query(range=(start, stop))
+    finder.download(start.datetime.date().isoformat())
+    end_time = time.time()
+    return (end_time - start_time)/60
+
 def main(instr, initialize):
     """ Run the pipeline as whole
 
@@ -621,33 +689,48 @@ def main(instr, initialize):
     date_chunks = np.array_split(finder.dates, 4)
     for i, chunk in enumerate(date_chunks):
         for (start, stop) in chunk:
+            process_times = {'download_time': 0,
+                             'rejection_time': 0,
+                             'analysis_time': 0,
+                             'total': 0}
             if '{} {}'.format(start.iso, stop.iso) in analyzed_dates:
                 print('Already analyzed {} to {}'.format(start.iso, stop.iso))
                 continue
+
             print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
-            finder.query(range=(start, stop))
-            finder.download(start.datetime.date().isoformat())
+            # start_time = time.time()
+            # finder.query(range=(start, stop))
+            # finder.download(start.datetime.date().isoformat())
+            # end_time = time.time()
+            # download_time = download_data(finder, start, stop)
+            # process_times['download_time'] = download_time
+
             flist = glob.glob(search_pattern)
-            failed = process_dataset(instr, flist)
+            failed, rejection_time = process_dataset(instr, flist)
+            process_times['rejection_time'] = rejection_time
+
             f_to_analyze = list(set(flist).difference(failed))
             if not f_to_analyze:
                 print('No files to analyze, something happened with processing.')
-            else:
-                gif_file, data_for_email, total_time = \
-                    analyze_data(f_to_analyze,
-                                 instr,
-                                 start,
-                                 cfg['subgrp_names'],
-                                 i)
-                subj = 'Finished analyzing darks from {} to {}.' \
-                       ' Total processing time {:.3f} minutes'.\
-                    format(start.datetime.date(),
-                           stop.datetime.date(),
-                           total_time)
-                SendEmail(subj, data_for_email, gif_file, gif=False)
-                write_processed_ranges(start, stop, instr)
-            clean_files(instr)
+                continue
 
+            gif_file, data_for_email, analysis_time = \
+                analyze_data(f_to_analyze,
+                             instr,
+                             start,
+                             cfg['subgrp_names'],
+                             i)
+            process_times['analysis_time'] = analysis_time
+
+            process_times['total'] = sum(process_times.values())
+            subj = 'Finished {} analyzing darks from {} to {}.' \
+                   .format(instr, start.datetime.date(),stop.datetime.date())
+            SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
+            write_processed_ranges(start, stop, instr)
+
+            # clean_files(instr)
+            break
+        break
 
 if __name__ == '__main__':
     args = parser.parse_args()

@@ -3,14 +3,16 @@ from collections import defaultdict
 import glob
 import itertools
 import os
+import time
 
 # non native imports
 from astropy.io import fits
-from dask.distributed import Client
+from multiprocessing import Pool
 from numpy import array
 from numpy import array_split
 from numpy import concatenate
 from numpy import where
+from numpy.random import randint
 
 from acstools import acsrej
 from stistools import ocrreject
@@ -28,6 +30,7 @@ class ProcessData(object):
 
 
     def ACS(self, input):
+        failed = []
         if 'wfc' in self.instr.lower():
             crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
         else:
@@ -36,21 +39,22 @@ class ProcessData(object):
 
         # if the file exist increment i by one before processing.
         while os.path.isfile(output):
-            self.i+=1
+            self.i+= randint(0, 500)
             output = 'tmp_crj_{}.fits'.format(self.i)
         try:
-            acsrej.acsrej(input=input,
-                          output='tmp_crj_{}.fits'.format(self.i),
+             acsrej.acsrej(input=input,
+                          output=output,
                           verbose=True,
                           crrejtab=crrejtab,
                           crmask=True,
                           initgues='med',
                           skysub='mode')
-        except Exception as e:
+             if not os.path.isfile(output):
+                 raise (FileNotFoundError)
+        except Exception:
             self.output['failed'].append(input)
         else:
             self.output['passed'].append(input)
-
 
     def check_for_artifact(self, f):
         """ Grab the DQ extensions from fits file
@@ -162,14 +166,14 @@ class ProcessData(object):
         found_sizes = []
         removed = []
         files_to_process = self.flist
-        print(len(self.flist))
         # we have to make a list of all exptimes, then sort by unique ones
         for f in files_to_process:
             has_artifact = self.check_for_artifact(f)
             if has_artifact:
                 removed.append(f)
-                print('Removing {} for analysis'.format(f))
+                print('Removing {} from analysis'.format(f))
                 self.flist.remove(f)
+
         for f in self.flist:
             with fits.open(f) as hdu:
                 prhdr = hdu[0].header
@@ -180,7 +184,6 @@ class ProcessData(object):
                 found_exptimes.append(scihdr['exptime'])
             found_sizes.append('{}'.format(prhdr['CCDAMP']))
 
-        print(len(self.flist), len(found_exptimes), len(found_sizes))
         self.output['failed'].append(removed)
         # Find the unique values
         unique_sizes = set(found_sizes)
@@ -210,24 +213,41 @@ class ProcessData(object):
                       'splitting to smaller groups'.format(key))
                 split = array_split(val, 4)
             # Convert tuple to list for checking later
-                print(split)
                 self.input[key] = tuple(split)
 
+    def format_inputs(self):
+        data = []
+        for key in self.input.keys():
+            if isinstance(self.input[key], tuple):
+                for val in self.input[key]:
+                    data.append(list(val))
+            else:
+                data.append(list(self.input[key]))
+        return data
 
     def cr_reject(self):
+        # cluster = LocalCluster(processes=False)
+        # client = Client(cluster)
+        start_time = time.time()
         print('-'*60)
         print('Rejecting cosmic rays...')
         print('-'*60)
         if 'acs' in self.instr.lower():
-            for key in self.input.keys():
-                print('Processing {}'.format(key))
-                if isinstance(self.input[key], tuple):
-                    self.ACS(list(self.input[key][0]))
-                    self.ACS(list(self.input[key][1]))
-                    self.ACS(list(self.input[key][2]))
-                    self.ACS(list(self.input[key][3]))
-                else:
-                    self.ACS(list(self.input[key]))
+            print(self.input.values())
+            data = self.format_inputs()
+            with Pool(processes=os.cpu_count()) as p:
+                p.map(self.ACS, data)
+            # print(self.output['failed'])
+            # for key in self.input.keys():
+            #     print('Processing {}'.format(key))
+            #     if isinstance(self.input[key], tuple):
+            #         self.ACS(list(self.input[key][0]))
+            #         self.ACS(list(self.input[key][1]))
+            #         self.ACS(list(self.input[key][2]))
+            #         self.ACS(list(self.input[key][3]))
+            #     else:
+            #         self.ACS(list(self.input[key]))
+
         elif 'wfc3' in self.instr.lower():
             for key in self.input.keys():
                 if isinstance(self.input[key],tuple):
@@ -251,6 +271,8 @@ class ProcessData(object):
             self.output['failed'] = list(itertools.chain.from_iterable(
                 self.output['failed']))
         print('Done!')
+        end_time = time.time()
+        print((end_time - start_time)/60)
 
 
 if __name__ == "__main__":
