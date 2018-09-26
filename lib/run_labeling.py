@@ -2,8 +2,8 @@
 
 import argparse
 from astropy.io import fits
-from dask.distributed import Client, LocalCluster
 from collections import defaultdict
+import dask
 from email.message import EmailMessage
 from email.headerregistry import Address
 from email.utils import make_msgid
@@ -12,14 +12,13 @@ import h5py
 import numpy as np
 import os
 import pandas as pd
-import time
-
 import smtplib
 import shutil
 import sys
+import time
 import yaml
-sys.path.append('/user/nmiles/animated_fits/lib')
 
+sys.path.append('/user/nmiles/animated_fits/lib')
 # local imports
 from mkAnimation import AnimationObj
 from CosmicRayLabel import CosmicRayLabel
@@ -182,14 +181,14 @@ def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
         <html>
             <head></head>
             <body>
-                <h2>Processing times</h2>
+                <h2>Processing Times</h2>
                 <ul>
                     <li>Downloading data: {} minutes </li>
                     <li>CR rejection: {} minutes</li>
                     <li>Labeling analysis: {} minutes </li>
-                    <li>Total time: {} minutes <li<
+                    <li>Total time: {} minutes </li>
                 </ul>
-                <h2> Statistics </h2>
+                <h2> Cosmic Ray Statistics </h2>
                 <p><b> All cosmic ray statistics reported are averages for 
                 the entire image</b></p>
                 <p><b> All cosmic ray statistics reported are averages for 
@@ -210,7 +209,7 @@ def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
                 <html>
                     <head></head>
                     <body>
-                    <h2>Processing times</h2>
+                    <h2>Processing Times</h2>
                         <ul>
                             <li>Downloading data: {} minutes </li>
                             <li>CR rejection: {} minutes</li>
@@ -470,17 +469,12 @@ def analyze_data(flist, instr, start, subgrp_names, i):
 
     # Start the client to generate multiple works for analysis portion
     split = np.array_split(np.asarray(flist), 2)
-    # Start the client to generate multiple works for analysis portion
-    cluster = LocalCluster()
-    client = Client(cluster)
     results = []
     for s in split:
-        data = client.map(analyze_file, s)
-        results.append(client.gather(data))
+        delayed = [dask.delayed(analyze_file)(f) for f in s]
+        results.append(list(dask.compute(*delayed, scheduler='processes')))
+
     results = results[0] + results[1]
-    # We are done with parallelization portion, so close to the client
-    cluster.close()
-    client.close()
 
     if 'hrc' in instr.lower():
         path = prefix.upper()
@@ -699,22 +693,21 @@ def main(instr, initialize):
                 continue
 
             print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
-            # start_time = time.time()
-            # finder.query(range=(start, stop))
-            # finder.download(start.datetime.date().isoformat())
-            # end_time = time.time()
-            # download_time = download_data(finder, start, stop)
-            # process_times['download_time'] = download_time
+            # Download the data
+            download_time = download_data(finder, start, stop)
+            process_times['download_time'] = download_time
 
+            # Run cr rejection
             flist = glob.glob(search_pattern)
             failed, rejection_time = process_dataset(instr, flist)
             process_times['rejection_time'] = rejection_time
-
             f_to_analyze = list(set(flist).difference(failed))
+
             if not f_to_analyze:
                 print('No files to analyze, something happened with processing.')
                 continue
 
+            # Run the analysis
             gif_file, data_for_email, analysis_time = \
                 analyze_data(f_to_analyze,
                              instr,
@@ -728,10 +721,9 @@ def main(instr, initialize):
                    .format(instr, start.datetime.date(),stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
             write_processed_ranges(start, stop, instr)
+            clean_files(instr)
 
-            # clean_files(instr)
-            break
-        break
+
 
 if __name__ == '__main__':
     args = parser.parse_args()

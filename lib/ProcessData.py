@@ -7,7 +7,7 @@ import time
 
 # non native imports
 from astropy.io import fits
-from multiprocessing import Pool
+import dask
 from numpy import array
 from numpy import array_split
 from numpy import concatenate
@@ -27,34 +27,6 @@ class ProcessData(object):
         self.output = defaultdict(list)
         self.dq = None
         self.i = 0
-
-
-    def ACS(self, input):
-        failed = []
-        if 'wfc' in self.instr.lower():
-            crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
-        else:
-            crrejtab = './../crrejtab/ACS/n4e12510j_crr_HRC.fits'
-        output = 'tmp_crj_{}.fits'.format(self.i)
-
-        # if the file exist increment i by one before processing.
-        while os.path.isfile(output):
-            self.i+= randint(0, 500)
-            output = 'tmp_crj_{}.fits'.format(self.i)
-        try:
-             acsrej.acsrej(input=input,
-                          output=output,
-                          verbose=True,
-                          crrejtab=crrejtab,
-                          crmask=True,
-                          initgues='med',
-                          skysub='mode')
-             if not os.path.isfile(output):
-                 raise (FileNotFoundError)
-        except Exception:
-            self.output['failed'].append(input)
-        else:
-            self.output['passed'].append(input)
 
     def check_for_artifact(self, f):
         """ Grab the DQ extensions from fits file
@@ -93,10 +65,33 @@ class ProcessData(object):
         else:
             return False
 
+    def ACS(self, input):
+        if 'wfc' in self.instr.lower():
+            crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
+        else:
+            crrejtab = './../crrejtab/ACS/n4e12510j_crr_HRC.fits'
+        output = 'tmp_crj_{}.fits'.format(self.i)
 
+        # if the file exist increment i by one before processing.
+        while os.path.isfile(output):
+            self.i+= randint(0, 500)
+            output = 'tmp_crj_{}.fits'.format(self.i)
+        try:
+             acsrej.acsrej(input=input,
+                          output=output,
+                          verbose=True,
+                          crrejtab=crrejtab,
+                          crmask=True,
+                          initgues='med',
+                          skysub='mode')
+             if not os.path.isfile(output):
+                 raise (FileNotFoundError)
+        except Exception:
+            self.output['failed'].append(input)
+        else:
+            self.output['passed'].append(input)
 
     def WFC3(self, input):
-
         output = 'tmp_crj_{}.fits'.format(self.i)
         # if the file exist increment i by one before processing.
         while os.path.isfile(output):
@@ -138,7 +133,7 @@ class ProcessData(object):
             crrejtab = './../crrejtab/STIS/j3m1403io_crr.fits'
             try:
                 ocrreject.ocrreject(' '.join(input),
-                                    output='tmp_crj_{}.fits'.format(self.i),
+                                    output=output,
                                     crrejtab=crrejtab,
                                     verbose=True,
                                     crmask='yes',
@@ -203,7 +198,7 @@ class ProcessData(object):
                                                             t))
                     print('-'*60)
                     for f in self.flist[idx]:
-                        print(fits.getval(f, 'exptime'))
+                        print(fits.getval(f, 'exptime', ext=('sci',1)))
                     self.input['{}_{}'.format(ap, t)] = self.flist[idx]
 
         # Now we check to make sure each list of files is less than the limit
@@ -226,27 +221,16 @@ class ProcessData(object):
         return data
 
     def cr_reject(self):
-        # cluster = LocalCluster(processes=False)
-        # client = Client(cluster)
+
         start_time = time.time()
         print('-'*60)
         print('Rejecting cosmic rays...')
         print('-'*60)
         if 'acs' in self.instr.lower():
-            print(self.input.values())
+            # Parallelized CR rejection
             data = self.format_inputs()
-            with Pool(processes=os.cpu_count()) as p:
-                p.map(self.ACS, data)
-            # print(self.output['failed'])
-            # for key in self.input.keys():
-            #     print('Processing {}'.format(key))
-            #     if isinstance(self.input[key], tuple):
-            #         self.ACS(list(self.input[key][0]))
-            #         self.ACS(list(self.input[key][1]))
-            #         self.ACS(list(self.input[key][2]))
-            #         self.ACS(list(self.input[key][3]))
-            #     else:
-            #         self.ACS(list(self.input[key]))
+            a = [dask.delayed(self.ACS)(d) for d in data]
+            dask.compute(*a, scheduler='processes')
 
         elif 'wfc3' in self.instr.lower():
             for key in self.input.keys():
@@ -259,14 +243,17 @@ class ProcessData(object):
                 else:
                     self.WFC3(list(self.input[key]))
         elif 'stis' in self.instr.lower():
-            for key in self.input.keys():
-                if isinstance(self.input[key], tuple):
-                    self.STIS(list(self.input[key][0]))
-                    self.STIS(list(self.input[key][1]))
-                    self.STIS(list(self.input[key][2]))
-                    self.STIS(list(self.input[key][3]))
-                else:
-                    self.STIS(list(self.input[key]))
+            data = self.format_inputs()
+            a = [dask.delayed(self.STIS)(d) for d in data]
+            dask.compute(*a, scheduler='processes')
+            # for key in self.input.keys():
+            #     if isinstance(self.input[key], tuple):
+            #         self.STIS(list(self.input[key][0]))
+            #         self.STIS(list(self.input[key][1]))
+            #         self.STIS(list(self.input[key][2]))
+            #         self.STIS(list(self.input[key][3]))
+            #     else:
+            #         self.STIS(list(self.input[key]))
         if 'failed' in self.output.keys():
             self.output['failed'] = list(itertools.chain.from_iterable(
                 self.output['failed']))
@@ -277,7 +264,7 @@ class ProcessData(object):
 
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('./../crrejtab/ACS/mastDownload/HST/*/*flt.fits')
-    p = ProcessData('acs_wfc',flist)
+    flist = glob.glob('./../crrejtab/STIS/mastDownload/HST/*/*flt.fits')
+    p = ProcessData('stis_ccd',flist)
     p.sort()
     p.cr_reject()
