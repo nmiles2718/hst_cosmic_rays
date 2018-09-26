@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 from astropy.io import fits
-import dask
 import numpy as np
-import pandas as pd
 from scipy import ndimage
 import time
 
@@ -292,7 +290,11 @@ class ComputeStats(object):
 
     def compute_stats(self):
         self.get_data()
-        cr_incident_rate = float(len(self.int_ids))/self.integration_time
+        try:
+            cr_incident_rate = float(len(self.int_ids))/self.integration_time
+        except ZeroDivisionError:
+            cr_incident_rate = np.nan
+
         R_cm = self.compute_first_moment()
         self.cr_deposition = self.compute_total_cr_deposition()
 
