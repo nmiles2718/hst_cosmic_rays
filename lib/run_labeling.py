@@ -466,15 +466,10 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
 
+    # Process all images at once
+    delayed = [dask.delayed(analyze_file)(f) for f in flist]
+    results = list(dask.compute(*delayed, scheduler='processes'))
 
-    # Start the client to generate multiple works for analysis portion
-    split = np.array_split(np.asarray(flist), 2)
-    results = []
-    for s in split:
-        delayed = [dask.delayed(analyze_file)(f) for f in s]
-        results.append(list(dask.compute(*delayed, scheduler='processes')))
-
-    results = results[0] + results[1]
 
     if 'hrc' in instr.lower():
         path = prefix.upper()

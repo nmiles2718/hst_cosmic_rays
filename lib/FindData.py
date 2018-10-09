@@ -33,7 +33,7 @@ class FindData(object):
         self._products = {}
         self._filtered_table = None
         self.dates = None
-        self.t_exptime = [0.1, 1500]
+        self.t_exptime = [0.1, 4000]
 
     def get_date_ranges(self):
         """

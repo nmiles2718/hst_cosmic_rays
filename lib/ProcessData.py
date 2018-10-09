@@ -197,8 +197,8 @@ class ProcessData(object):
                                                             ap,
                                                             t))
                     print('-'*60)
-                    for f in self.flist[idx]:
-                        print(fits.getval(f, 'exptime', ext=('sci',1)))
+                    #for f in self.flist[idx]:
+                    #    print(fits.getval(f, 'exptime', ext=('sci',1)))
                     self.input['{}_{}'.format(ap, t)] = self.flist[idx]
 
         # Now we check to make sure each list of files is less than the limit
@@ -233,27 +233,14 @@ class ProcessData(object):
             dask.compute(*a, scheduler='processes')
 
         elif 'wfc3' in self.instr.lower():
-            for key in self.input.keys():
-                if isinstance(self.input[key],tuple):
-
-                    self.WFC3(list(self.input[key][0]))
-                    self.WFC3(list(self.input[key][1]))
-                    self.WFC3(list(self.input[key][2]))
-                    self.WFC3(list(self.input[key][3]))
-                else:
-                    self.WFC3(list(self.input[key]))
+            data = self.format_inputs()
+            a = [dask.delayed(self.WFC3)(d) for d in data]
+            dask.compute(*a, scheduler='processes')
+        
         elif 'stis' in self.instr.lower():
             data = self.format_inputs()
             a = [dask.delayed(self.STIS)(d) for d in data]
             dask.compute(*a, scheduler='processes')
-            # for key in self.input.keys():
-            #     if isinstance(self.input[key], tuple):
-            #         self.STIS(list(self.input[key][0]))
-            #         self.STIS(list(self.input[key][1]))
-            #         self.STIS(list(self.input[key][2]))
-            #         self.STIS(list(self.input[key][3]))
-            #     else:
-            #         self.STIS(list(self.input[key]))
         if 'failed' in self.output.keys():
             self.output['failed'] = list(itertools.chain.from_iterable(
                 self.output['failed']))

@@ -16,13 +16,59 @@ plt.style.use('ggplot')
 
 
 class PlotData(object):
-    def __init__(self, fname, instr, subgrp):
+    def __init__(self, fname, instr, subgrp, flist):
         self.fname = fname
         self.instr = instr
-        self.data = []
+        self.flist = flist
+        self.data = None
+        self.data_df = None
         self.subgrp = subgrp
         self.ax = None
         self.fig = None
+        self.detector_size ={'ACS_WFC': 37.748,
+                             'ACS_HRC': 4.624 ,
+                             'WFC3_UVIS': 37.804,
+                             'WFC3_IR': 3.397,
+                             'STIS_CCD': 4.624}
+
+    def read_rate(self):
+        data_out = defaultdict(list)
+        for f in self.flist:
+            fobj = h5py.File(f, mode='r')
+            sgrp = fobj[self.instr.upper()+'/'+self.subgrp]
+            for key in sgrp.keys():
+                dset = sgrp[key].value
+                attrs = sgrp[key].attrs
+                data_out[self.subgrp].append(np.nanmedian(dset))
+                for at_key in attrs.keys():
+                    val = attrs[at_key]
+                    if at_key == 'date':
+                        val = Time(val, format='iso')
+                    data_out['{}'.format(at_key)].append(val)
+        data_out['mjd'] = [val.mjd for val in data_out['date']]
+        date_index = pd.DatetimeIndex([val.iso for val in data_out['date']])
+        self.data_df = pd.DataFrame(data_out, index = date_index)
+        self.data_df.sort_index(inplace=True)
+    
+
+    def read_data(self):
+        data_out = defaultdict(list)
+        for f in self.flist:
+            fobj = h5py.File(f, mode='r')
+            sgrp = fobj[self.instr.upper()+'/'+self.subgrp]
+            for key in sgrp.keys():
+                dset = sgrp[key][:][1]
+                attrs = sgrp[key].attrs
+                data_out['var_average'].append(np.nanmedian(dset))
+                for at_key in attrs.keys():
+                    val = attrs[at_key]
+                    if at_key == 'date':
+                        val = Time(val, format='iso')
+                    data_out['{}'.format(at_key)].append(val)
+        date_index = pd.DatetimeIndex([val.iso for val in data_out['date']])
+        self.data_df = pd.DataFrame(data_out, index = date_index)
+    
+
 
     def plot_data(self, ax=None, bins=30, range=[0, 3], fill_value=-1,c='r'):
         """ plot a histogram of data, defaults are set for sizes
@@ -37,16 +83,21 @@ class PlotData(object):
         -------
 
         """
+        # Read in the data if it doesn't exist already
         tmp = []
-        with h5py.File(self.fname, mode='r') as fobj:
-            subgrp_ = fobj[self.instr.upper()+'/'+self.subgrp]
-            print(subgrp_)
-            for name in subgrp_.keys():
-                dset = np.log10(subgrp_[name][:][1])
-                tmp.append(da.from_array(dset,chunks=(20000)))
-        x = da.concatenate(tmp, axis=0)
-        print(x.shape)
-        self.data = da.ma.fix_invalid(x, fill_value=fill_value)
+        if self.data is None:
+            for f in self.flist:
+                print('Analyzing file {}'.format(f))
+                with h5py.File(f, mode='r') as fobj:
+                    subgrp_ = fobj[self.instr.upper()+'/'+self.subgrp]
+                    print(subgrp_)
+                    for name in subgrp_.keys():
+                        dset = np.log10(subgrp_[name][:][1])
+                        tmp.append(da.from_array(dset,chunks=(20000)))
+            x = da.concatenate(tmp, axis=0)
+            print(x.shape)
+            self.data = da.ma.fix_invalid(x, fill_value=fill_value)
+        
         h, edges = da.histogram(self.data, bins=bins,
                                 range=range, density=True)
 
@@ -68,36 +119,25 @@ class PlotData(object):
                         drawstyle='steps-mid', color=c)
         # plt.show()
 
-    def plot_rate_vs_time(self):
-        data=defaultdict(list)
-        with h5py.File(self.fname, mode='r') as fobj:
-            subgrp_ = fobj[self.instr+'/'+self.subgrp]
-            for name in subgrp_.keys():
-                dset = subgrp_[name]
-                if dset.value == 0:
-                    continue
-                    print('Error analyzing {}'.format(key))
-                data['rate'].append(dset.value/37.748)
-                d = dset.attrs['date']
-                t = dset.attrs['time']
-                date_obs = Time('{} {}'.format(d, t),
-                                format='iso')
-                data['date'].append(date_obs)
-
-        data['mjd'] = [date.mjd for date in data['date']]
-        index = pd.DatetimeIndex([val.iso for val in data['date']])
-        df = pd.DataFrame(data, index=index)
-        df.sort_index(inplace=True)
-        df1 = df[['rate','mjd']]
-        averaged = df1.rolling(window='60D', min_periods=60).mean()
-        print(averaged)
+    def plot_rate_vs_time(self, ax= None, window='20D', min_periods=20):
+        if self.data_df is None:
+            self.read_rate()
+        flags = self.data_df.exptime.gt(800)
+        df1 = self.data_df[['incident_cr_rate','mjd']][flags]
+        averaged = df1.rolling(window=window, min_periods=min_periods).mean()
         averaged_no_nan = averaged.dropna()
-        plt.scatter([Time(val, format='mjd').to_datetime() for val in averaged_no_nan['mjd']]
-                        ,averaged_no_nan['rate'])
-        plt.ylabel('Cosmic Ray Rate [CR/s/cm^2]')
-        plt.title('ACS/WFC Smoothed Cosmic Ray Rate')
-        plt.savefig('cr_incidence_rolling_average.png',)
-        plt.show()
+        if ax is None:
+            self.fig, self.ax = plt.subplots(figsize=(7,5),
+                                       nrows=1,
+                                       ncols=1)
+        else:
+            self.ax = ax
+        self.ax.scatter([Time(val, format='mjd').to_datetime() for val in averaged_no_nan['mjd']],averaged_no_nan['incident_cr_rate']/self.detector_size[self.instr],label=self.instr)
+        self.ax.set_xlabel('Date')
+        self.ax.set_ylabel('Cosmic Ray Rate [CR/s/cm^2]')
+        self.ax.set_title('Smoothed Cosmic Ray Rate')
+       # plt.savefig('cr_incidence_rolling_average.png',)
+       # plt.show()
 
 
     def plot_hst_loc(self):
