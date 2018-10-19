@@ -8,6 +8,8 @@ import costools
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rc,rcParams
+rc('font', weight='bold', family='sans-serif')
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.basemap import Basemap
 import pandas as pd
@@ -18,11 +20,12 @@ plt.style.use('ggplot')
 class PlotData(object):
     def __init__(self, fname, instr, subgrp, flist):
         self.fname = fname
-        self.instr = instr
+        self.instr = instr.upper()
         self.flist = flist
         self.data = None
         self.data_df = None
         self.subgrp = subgrp
+        self.num_images = 0
         self.ax = None
         self.fig = None
         self.detector_size ={'ACS_WFC': 37.748,
@@ -70,7 +73,8 @@ class PlotData(object):
     
 
 
-    def plot_data(self, ax=None, bins=30, range=[0, 3], fill_value=-1,c='r'):
+    def plot_data(self, ax=None, bins=30, loglog=True,
+                  range=[0, 3], fill_value=-1,c='r'):
         """ plot a histogram of data, defaults are set for sizes
 
         Parameters
@@ -85,39 +89,58 @@ class PlotData(object):
         """
         # Read in the data if it doesn't exist already
         tmp = []
+
         if self.data is None:
             for f in self.flist:
                 print('Analyzing file {}'.format(f))
                 with h5py.File(f, mode='r') as fobj:
                     subgrp_ = fobj[self.instr.upper()+'/'+self.subgrp]
-                    print(subgrp_)
-                    for name in subgrp_.keys():
+                    keys = list(subgrp_.keys())
+                    self.num_images += len(keys)
+                    for name in keys:
                         dset = np.log10(subgrp_[name][:][1])
                         tmp.append(da.from_array(dset,chunks=(20000)))
+
             x = da.concatenate(tmp, axis=0)
             print(x.shape)
             self.data = da.ma.fix_invalid(x, fill_value=fill_value)
-        
-        h, edges = da.histogram(self.data, bins=bins,
-                                range=range, density=True)
 
+        h, edges = da.histogram(self.data, bins=bins,
+                                range=range)
+        hist = h.compute()
         # Create an axis if it doesnt exists
+        lw = 1.75
         if ax is None:
-            self.fig, self.ax = plt.subplots(figsize=(5,5),
+            self.fig, self.ax = plt.subplots(figsize=(7,5),
                                       nrows=1,
                                       ncols=1)
             # Normalize by the highest count
             # self.data[subgrp] /= np.nanmax(self.data[subgrp])
-
+            if loglog:
             # self.ax.step(edges[:-1], h.compute(), color='r')
-            self.ax.semilogy(edges[:-1], h.compute(),
-                             label='{}/{}'.format(*self.instr.split('_')),
-                             drawstyle='steps-mid', color=c)
+                self.ax.semilogy(edges[:-1], hist/np.max(hist),
+                                 label='{}/{}'.format(*self.instr.split('_')),
+                                 drawstyle='steps-mid', color=c, lw=lw)
+            else:
+                self.ax.step(edges[:-1], hist/np.max(hist),
+                                 label='{}/{}'.format(*self.instr.split('_')),
+                                 where='mid', color=c,lw=lw)
         else:
-            ax.semilogy(edges[:-1], h.compute(),
-                        label='{}/{}'.format(*self.instr.split('_')),
-                        drawstyle='steps-mid', color=c)
-        # plt.show()
+            self.ax = ax
+            if loglog:
+            # self.ax.step(edges[:-1], h.compute(), color='r')
+                self.ax.semilogy(edges[:-1], hist/np.max(hist),
+                                 label='{}/{}'.format(*self.instr.split('_')),
+                                 drawstyle='steps-mid', color=c,lw=lw)
+            else:
+                self.ax.step(edges[:-1], hist/np.max(hist),
+                                 label='{}/{}'.format(*self.instr.split('_')),
+                                 where='mid', color=c,lw=lw)
+        self.ax.tick_params(axis='both', which='major',
+                            labelsize=10, width=2)
+        self.ax.legend(loc='best')
+
+
 
     def plot_rate_vs_time(self, ax= None, window='20D', min_periods=20):
         if self.data_df is None:
@@ -132,7 +155,10 @@ class PlotData(object):
                                        ncols=1)
         else:
             self.ax = ax
-        self.ax.scatter([Time(val, format='mjd').to_datetime() for val in averaged_no_nan['mjd']],averaged_no_nan['incident_cr_rate']/self.detector_size[self.instr],label=self.instr)
+        self.ax.scatter([Time(val, format='mjd').to_datetime()
+                         for val in averaged_no_nan['mjd']],
+                        averaged_no_nan['incident_cr_rate']/self.detector_size[self.instr],
+                        label=self.instr)
         self.ax.set_xlabel('Date')
         self.ax.set_ylabel('Cosmic Ray Rate [CR/s/cm^2]')
         self.ax.set_title('Smoothed Cosmic Ray Rate')
