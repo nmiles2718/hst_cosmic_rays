@@ -13,7 +13,10 @@ import os
 class GenerateMetadata(object):
     def __init__(self, fname):
         self.flt = fname # file name will always be the FLT
-        self.spt = fname.replace('_flt.fits','_spt.fits')
+        if 'c0m.fits' in fname:
+            self.spt = fname.replace('_c0m.fits','_shm.fits')
+        else:
+            self.spt = fname.replace('_flt.fits','_spt.fits')
         self.date = None
 
         self.metadata = {}

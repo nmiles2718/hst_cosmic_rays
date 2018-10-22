@@ -13,22 +13,30 @@ from pandas import date_range
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-06-01',
         'STIS':'1997-02-01',
-        'WFPC2':'1992-06-13'}
+        'WFPC2':['1994-01-01','2009-05-30']}
 
 class FindData(object):
 
     def __init__(self, instr):
         # Query parameters
-        self._instr = instr.replace('_','/') # Format the instrument name
+        if instr == 'WFPC2':
+            self._instr = instr
+            self._SubGroupDescription = ['C0M', 'SHM']
+            self._start = Time(_CFG[self._instr][0], format='iso')
+            self._stop = Time(_CFG[self._instr][1], format='iso')
+        else:
+            self._instr = instr.replace('_','/') # Format the instrument name
+            self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
+            self._stop = Time(date.today().isoformat(), format='iso')
+            self._SubGroupDescription = ['FLT', 'SPT']
         self._collection = 'HST'
         self._product_type = ['image','spectrum'] # DOES NOT WORK FOR STIS, MUST BE SPECTRUM
         self._obstype = 'cal'
         self._target_name = 'DARK'
-        self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
-        self._stop = Time(date.today().isoformat(), format='iso')
+
         # Uncomment for STIS debugging
         # self._stop = Time('2000-01-01', format='iso')
-        self._SubGroupDescription = ['FLT', 'SPT']
+
         # Storing the results
         self._products = {}
         self._filtered_table = None

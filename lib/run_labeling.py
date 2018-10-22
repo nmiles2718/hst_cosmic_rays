@@ -109,7 +109,6 @@ def low_outliers(s):
     """
     med = s.median()
     std = s.std()
-    print(std)
     flags = s < med - 1.25*std
     return ['background-color: #87CEEB' if a else '' for a in flags]
 
@@ -126,7 +125,6 @@ def high_outliers(s):
     """
     med = s.median()
     std = s.std()
-    print(std)
     flags = s > med + 1.25*std
     return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
@@ -419,6 +417,17 @@ def generate_gif(flist, start_date, instr):
     ani.animate(flist=flist)
     return save
 
+
+def format_wfpc2(data):
+    print('reformatting wfpc2 data')
+    int_ids = []
+    stats = []
+    for chip_results in data:
+        int_ids = int_ids + list(chip_results[0])
+        stats = stats + list(chip_results[1])
+    return np.asarray([int_ids, stats])
+
+
 def analyze_file(f):
     """ Analyze the cosmic rays marked in the input file
 
@@ -436,13 +445,42 @@ def analyze_file(f):
     """
     start_time = time.time()
     label_obj = CosmicRayLabel(f)
-    label_obj.get_data()
-    label_obj.get_label()
-    stats_obj = ComputeStats(f, label_obj.label)
-    cr_affected, cr_rate, sizes, shapes, deposition = \
-        stats_obj.compute_stats()
+
+    if 'c0m.fits' in f:
+        # WFPC2 data is SOOOO ANNOYING
+        label_obj.label_wfpc2_data()
+        cr_affected = []
+        cr_rate = []
+        sizes = []
+        shapes = []
+        deposition = []
+        for label, sci in zip(label_obj.label,label_obj.sci):
+            stats_obj = ComputeStats(f, label, sci, label_obj.integration_time)
+            affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp = \
+                stats_obj.compute_stats(threshold=False)
+
+            cr_affected.append(affected_tmp)
+            cr_rate.append(rate_tmp)
+            sizes.append(sizes_tmp)
+            shapes.append(shapes_tmp)
+            deposition.append(deposition_tmp)
+        # Combine data from each chip into single array
+        sizes = format_wfpc2(sizes)
+        shapes = format_wfpc2(shapes)
+        deposition = format_wfpc2(deposition)
+        # combined all pixel coords
+        cr_affected = np.asarray([val for data in cr_affected for val in data])
+        cr_rate = np.asarray([sum(cr_rate)])
+    else:
+        label_obj.get_data()
+        label_obj.get_label()
+        stats_obj = ComputeStats(f, label_obj.label)
+
+        cr_affected, cr_rate, sizes, shapes, deposition = \
+            stats_obj.compute_stats()
     end_time = time.time()
     processing_time = (end_time - start_time)/ 60
+    # print(len(sizes[0]), len(shapes[0]), len(deposition[0]))
     return cr_affected, cr_rate, sizes, shapes, deposition, processing_time
 
 
@@ -466,6 +504,7 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
 
+    # results = analyze_file(flist[0])
     # Process all images at once
     delayed = [dask.delayed(analyze_file)(f) for f in flist]
     results = list(dask.compute(*delayed, scheduler='processes'))
@@ -694,9 +733,13 @@ def main(instr, initialize):
 
             # Run cr rejection
             flist = glob.glob(search_pattern)
-            failed, rejection_time = process_dataset(instr, flist)
-            process_times['rejection_time'] = rejection_time
-            f_to_analyze = list(set(flist).difference(failed))
+            if instr =='WFPC2':
+                # WFPC2 has to be handle separately
+                f_to_analyze = flist
+            else:
+                failed, rejection_time = process_dataset(instr, flist)
+                process_times['rejection_time'] = rejection_time
+                f_to_analyze = list(set(flist).difference(failed))
 
             if not f_to_analyze:
                 print('No files to analyze, something happened with processing.')
@@ -712,7 +755,7 @@ def main(instr, initialize):
             process_times['analysis_time'] = analysis_time
 
             process_times['total'] = sum(process_times.values())
-            subj = 'Finished {} analyzing darks from {} to {}.' \
+            subj = 'Finished analyzing {} darks from {} to {}.' \
                    .format(instr, start.datetime.date(),stop.datetime.date())
             SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
             write_processed_ranges(start, stop, instr)
@@ -720,8 +763,9 @@ def main(instr, initialize):
 
 
 
+
 if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()
     main(args.instr.upper(), args.initialize)
-    # main('ACS_WFC', True)
+    # main('WFPC2', True)
