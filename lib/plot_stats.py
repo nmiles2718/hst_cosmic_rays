@@ -73,7 +73,7 @@ class PlotData(object):
     
 
 
-    def plot_data(self, ax=None, bins=30, loglog=True,
+    def plot_data(self, ax=None, bins=30, logx=True, logy=True,
                   range=[0, 3], fill_value=-1,c='r'):
         """ plot a histogram of data, defaults are set for sizes
 
@@ -89,7 +89,10 @@ class PlotData(object):
         """
         # Read in the data if it doesn't exist already
         tmp = []
-
+        if '_' in self.instr:
+            label = self.instr.replace('_','/')
+        else:
+            label = self.instr
         if self.data is None:
             for f in self.flist:
                 print('Analyzing file {}'.format(f))
@@ -98,7 +101,10 @@ class PlotData(object):
                     keys = list(subgrp_.keys())
                     self.num_images += len(keys)
                     for name in keys:
-                        dset = np.log10(subgrp_[name][:][1])
+                        if logx:
+                            dset = np.log10(subgrp_[name][:][1])
+                        else:
+                            dset = subgrp_[name][:][1]
                         tmp.append(da.from_array(dset,chunks=(20000)))
 
             x = da.concatenate(tmp, axis=0)
@@ -116,25 +122,26 @@ class PlotData(object):
                                       ncols=1)
             # Normalize by the highest count
             # self.data[subgrp] /= np.nanmax(self.data[subgrp])
-            if loglog:
+            if logy:
             # self.ax.step(edges[:-1], h.compute(), color='r')
-                self.ax.semilogy(edges[:-1], hist/np.max(hist),
-                                 label='{}/{}'.format(*self.instr.split('_')),
+
+                self.ax.semilogy(edges[:-1], hist,
+                                 label=label,
                                  drawstyle='steps-mid', color=c, lw=lw)
             else:
-                self.ax.step(edges[:-1], hist/np.max(hist),
-                                 label='{}/{}'.format(*self.instr.split('_')),
+                self.ax.step(edges[:-1], hist,
+                                 label=label,
                                  where='mid', color=c,lw=lw)
         else:
             self.ax = ax
-            if loglog:
+            if logy:
             # self.ax.step(edges[:-1], h.compute(), color='r')
-                self.ax.semilogy(edges[:-1], hist/np.max(hist),
-                                 label='{}/{}'.format(*self.instr.split('_')),
+                self.ax.semilogy(edges[:-1], hist,
+                                 label=label,
                                  drawstyle='steps-mid', color=c,lw=lw)
             else:
-                self.ax.step(edges[:-1], hist/np.max(hist),
-                                 label='{}/{}'.format(*self.instr.split('_')),
+                self.ax.step(edges[:-1], hist,
+                                 label=label,
                                  where='mid', color=c,lw=lw)
         self.ax.tick_params(axis='both', which='major',
                             labelsize=10, width=2)

@@ -42,9 +42,9 @@ STIS_CCD:
     - ./../data/STIS/stis_cr_deposition.hdf5
   astroquery:
   - '1997-02-01'
-WFPC2_WFC:
+WFPC2:
   search_pattern:
-    - ./../crrejtab/WFPC2/mastDownload/HST/*/*flt.fits
+    - ./../crrejtab/WFPC2/mastDownload/HST/*/*c0m.fits
   hdf5_files:
     - ./../data/WFPC2/wfpc2_cr_affected_pixels.hdf5
     - ./../data/WFPC2/wfpc2_cr_rate.hdf5

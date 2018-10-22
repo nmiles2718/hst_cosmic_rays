@@ -9,15 +9,15 @@ class ComputeStats(object):
     """
     Origin of coordinates (0,0)
     """
-    def __init__(self, fname, label):
+    def __init__(self, fname, label, sci=None, integration_time=0):
         self.fname = fname
         self.label = label
         self.max_x = label.shape[1]
         self.max_y = label.shape[0]
         self.int_ids = np.unique(label)[1:]
-        self.cr_locs = ndimage.find_objects(label)
-        self.sci = None
-        self.integration_time = 0
+        self.cr_locs = np.asarray(ndimage.find_objects(label))
+        self.sci = sci
+        self.integration_time = integration_time
         self.shapes = {}
         self.sizes = {}
         self.cr_affected_pixels = []
@@ -92,7 +92,7 @@ class ComputeStats(object):
         r_cm = ndimage.measurements.center_of_mass(self.sci,
                                                    labels=self.label,
                                                    index=self.int_ids)
-        return r_cm
+        return np.asarray(r_cm)
 
     def compute_higher_moments(self, I_0, I_ci, grid_coords, index):
         """
@@ -289,7 +289,8 @@ class ComputeStats(object):
         return data_out
 
     def compute_stats(self):
-        self.get_data()
+        if self.sci is None:
+            self.get_data()
         try:
             cr_incident_rate = float(len(self.int_ids))/self.integration_time
         except ZeroDivisionError:
@@ -299,7 +300,7 @@ class ComputeStats(object):
         self.cr_deposition = self.compute_total_cr_deposition()
 
         loop_gen = zip(self.int_ids, R_cm, self.cr_deposition, self.cr_locs)
-        results = []
+        # results = []
         start_time = time.time()
         for int_id, r_cm, I_0, loc in loop_gen:
             grid_coords = self.mk_grid(loc)
