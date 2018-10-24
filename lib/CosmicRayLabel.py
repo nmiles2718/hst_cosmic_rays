@@ -94,6 +94,7 @@ class CosmicRayLabel(object):
         with fits.open(self.fname) as hdu:
             prhdr = hdu[0].header
             scihdr = hdu[1].header
+            gain = prhdr['ATODGAIN']
             if 'exptime' in prhdr:
                 self.integration_time += prhdr['exptime']  # add ~113/2 for readout
                 if 'flashdur' in prhdr:
@@ -106,7 +107,7 @@ class CosmicRayLabel(object):
             for ext in [pc, wf2, wf3, wf4]:
                 try:
                     ext = hdu.index_of(ext)
-                    ext_data = hdu[ext].data
+                    ext_data = gain * hdu[ext].data
                 except KeyError:
                     print('{1} is missing for {0}'.format(self.fname, ext))
                     ext1 = None
@@ -142,10 +143,10 @@ class CosmicRayLabel(object):
                                                     sigma_upper=2)
             print('mean: {}, median: {}, std: {}'.format(mean, median, std))
 
-            self.dq = np.where(sci_data > median + 10*std, 1, 0)
+            self.dq = np.where(sci_data > median + 5*std, 1, 0)
             self.label.append(self.get_label(wfpc2=True,
                                              bit_comp=False,
-                                             threshold=3))
+                                             threshold=2))
             # Generate a segmentation map based on identified sources
             # segm = detect_sources(sci_data - median,
             #                       threshold=median + 10 * std,

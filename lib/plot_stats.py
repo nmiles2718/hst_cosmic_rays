@@ -28,11 +28,13 @@ class PlotData(object):
         self.num_images = 0
         self.ax = None
         self.fig = None
+        # Detector sizes in cm^2
         self.detector_size ={'ACS_WFC': 37.748,
                              'ACS_HRC': 4.624 ,
                              'WFC3_UVIS': 37.804,
                              'WFC3_IR': 3.397,
-                             'STIS_CCD': 4.624}
+                             'STIS_CCD': 4.624,
+                             'WFPC2':5.76}
 
     def read_rate(self):
         data_out = defaultdict(list)
@@ -148,23 +150,33 @@ class PlotData(object):
         self.ax.legend(loc='best')
 
 
-
-    def plot_rate_vs_time(self, ax= None, window='20D', min_periods=20):
+    def plot_rate_vs_time(self, ax= None, ptype='rolling', window='20D', min_periods=20):
         if self.data_df is None:
             self.read_rate()
         flags = self.data_df.exptime.gt(800)
         df1 = self.data_df[['incident_cr_rate','mjd']][flags]
-        averaged = df1.rolling(window=window, min_periods=min_periods).mean()
-        averaged_no_nan = averaged.dropna()
+
+        if ptype == 'rolling':
+            averaged = df1.rolling(window=window, min_periods=min_periods).mean()
+        elif ptype == 'resample':
+            averaged = df1.resample(rule=window).median()
+        else:
+            averaged = df1
+
+        ave_no_nan = averaged.dropna()
         if ax is None:
             self.fig, self.ax = plt.subplots(figsize=(7,5),
                                        nrows=1,
                                        ncols=1)
         else:
             self.ax = ax
+        # Normalize the CR rate by the detector size
+        avg_no_nan.loc[:,'incident_cr_rate'] = ave_no_nan['incident_cr_rate']/\
+                                               self.detector_size[self.instr]
+
         self.ax.scatter([Time(val, format='mjd').to_datetime()
-                         for val in averaged_no_nan['mjd']],
-                        averaged_no_nan['incident_cr_rate']/self.detector_size[self.instr],
+                         for val in avg_no_nan['mjd']],
+                        avg_no_nan['incident_cr_rate'],
                         label=self.instr)
         self.ax.set_xlabel('Date')
         self.ax.set_ylabel('Cosmic Ray Rate [CR/s/cm^2]')
@@ -214,7 +226,7 @@ class PlotData(object):
             m.plot(lon_, lat_,
                    marker='+',
                    markersize=10,
-                   latlon=10,
+                   latlon=True,
                    c='w',label='z={:.2f}km'.format(alt_))
         # plt.legend(bbox_to_anchor=(0., 0.95, 1., .102), loc=3, ncol=4,
         #            mode="expand", borderaxespad=0.)
