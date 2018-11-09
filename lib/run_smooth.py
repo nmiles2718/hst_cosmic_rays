@@ -8,9 +8,6 @@ import pandas as pd
 import sys
 import os
 
-sys.path.append('/Users/nmiles/cosmic_ray_analysis/lib/')
-import generateRegion as gr
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-fname',

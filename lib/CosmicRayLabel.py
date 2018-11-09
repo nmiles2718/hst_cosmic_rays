@@ -140,7 +140,7 @@ class CosmicRayLabel(object):
 
             # Generate some stats to use for the source detection
             mean, median, std = sigma_clipped_stats(sci_data, sigma_lower=3,
-                                                    sigma_upper=2)
+                                                    sigma_upper=3)
             print('mean: {}, median: {}, std: {}'.format(mean, median, std))
 
             self.dq = np.where(sci_data > median + 5*std, 1, 0)

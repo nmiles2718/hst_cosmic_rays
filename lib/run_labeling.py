@@ -181,10 +181,10 @@ def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
             <body>
                 <h2>Processing Times</h2>
                 <ul>
-                    <li>Downloading data: {} minutes </li>
-                    <li>CR rejection: {} minutes</li>
-                    <li>Labeling analysis: {} minutes </li>
-                    <li>Total time: {} minutes </li>
+                    <li>Downloading data: {:.3f} minutes </li>
+                    <li>CR rejection: {:.3f} minutes</li>
+                    <li>Labeling analysis: {:.3f} minutes </li>
+                    <li>Total time: {:.3f} minutes </li>
                 </ul>
                 <h2> Cosmic Ray Statistics </h2>
                 <p><b> All cosmic ray statistics reported are averages for 
@@ -278,6 +278,7 @@ def write_out(dset_name, fout, data, grp, subgrp, metadata):
     with h5py.File(fout,'a', libver='latest') as f:
         print('/{}/{}'.format(grp, subgrp))
         grp = f['/{}/{}'.format(grp,subgrp)]
+        print(os.path.basename(dset_name))
         dset = grp.create_dataset(name='{}'.format(os.path.basename(dset_name)),
                                       shape=data.shape,
                                       data=data,
@@ -457,7 +458,7 @@ def analyze_file(f):
         for label, sci in zip(label_obj.label,label_obj.sci):
             stats_obj = ComputeStats(f, label, sci, label_obj.integration_time)
             affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp = \
-                stats_obj.compute_stats(threshold=False)
+                stats_obj.compute_stats()
 
             cr_affected.append(affected_tmp)
             cr_rate.append(rate_tmp)
@@ -611,13 +612,10 @@ def clean_files(instr):
     """
     crjs = glob.glob('./tmp*')
     val = instr.split('_')[0]
-    if not crjs:
-        pass
-    else:
+    if crjs is not None:
         for a in crjs:
             os.remove(a)
-        shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val),
-                      ignore_errors=True)
+    shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val), ignore_errors=True)
 
 
 def write_processed_ranges(start, stop, instr):
@@ -760,8 +758,6 @@ def main(instr, initialize):
             SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
             write_processed_ranges(start, stop, instr)
             clean_files(instr)
-
-
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ from pandas import date_range
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-06-01',
         'STIS':'1997-02-01',
-        'WFPC2':['1994-01-01','2009-05-30']}
+        'WFPC2':['1994-01-01','2009-06-01']}
 
 class FindData(object):
 
