@@ -65,6 +65,8 @@ class ProcessData(object):
         else:
             return False
 
+
+
     def ACS(self, input):
         if 'wfc' in self.instr.lower():
             crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
@@ -186,8 +188,6 @@ class ProcessData(object):
         self.flist = array(self.flist)
         for ap in unique_sizes:
             for t in unique_exp:
-                # print(self.flist[where((array(found_exptimes) == t) &
-                #                  (array(found_sizes) == ap))[0]])
                 idx = where((array(found_exptimes) == t) &
                                  (array(found_sizes) == ap))[0]
                 if not idx.any():
@@ -221,7 +221,6 @@ class ProcessData(object):
         return data
 
     def cr_reject(self):
-
         start_time = time.time()
         print('-'*60)
         print('Rejecting cosmic rays...')

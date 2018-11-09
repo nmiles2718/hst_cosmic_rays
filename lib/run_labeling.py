@@ -9,6 +9,7 @@ from email.headerregistry import Address
 from email.utils import make_msgid
 import glob
 import h5py
+import itertools
 import numpy as np
 import os
 import pandas as pd
@@ -25,7 +26,9 @@ from CosmicRayLabel import CosmicRayLabel
 from ComputeStats import ComputeStats
 from FindData import FindData
 from ProcessData import ProcessData
+from process_IR import ProcessIR
 from GenerateMetadata import GenerateMetadata
+from scipy import ndimage
 
 enocding_file = '/grp/hst/acs7/nmiles/cr_repo/lib/encoding_errors.txt'
 
@@ -273,10 +276,10 @@ def write_out(dset_name, fout, data, grp, subgrp, metadata):
     -------
 
     """
-    print('Output filename: {}'.format(fout))
-    print('HDF5 structure: /{}/{}'.format(grp, subgrp))
+    # print('Output filename: {}'.format(fout))
+    # print('HDF5 structure: /{}/{}'.format(grp, subgrp))
     with h5py.File(fout,'a', libver='latest') as f:
-        print('/{}/{}'.format(grp, subgrp))
+        # print('/{}/{}'.format(grp, subgrp))
         grp = f['/{}/{}'.format(grp,subgrp)]
         print(os.path.basename(dset_name))
         dset = grp.create_dataset(name='{}'.format(os.path.basename(dset_name)),
@@ -317,7 +320,7 @@ def initialize_hdf5(instr, instr_cfg, subgrp_names):
     for j, f in enumerate(new_flist):
         if not os.path.isdir(os.path.dirname(f)):
             os.mkdir(os.path.dirname(f))
-        print('File structure: /{}/{}'.format(instr, subgrp_names[i]))
+        # print('File structure: /{}/{}'.format(instr, subgrp_names[i]))
         with h5py.File(f,'w') as fobj:
             grp = fobj.create_group(instr)
             subgrp = grp.create_group(subgrp_names[i])
@@ -339,7 +342,7 @@ def write_out_errors(fname, imgs ):
     """
     with open(fname,'a+') as fobj:
         for img_name in imgs:
-            print('Failed to process {}'.format(img_name))
+            # print('Failed to process {}'.format(img_name))
             fobj.write('{}\n'.format(img_name))
 
 
@@ -359,7 +362,7 @@ def find_files_to_download(instr):
     return finder
 
 
-def process_dataset(instr, flist):
+def process_dataset(instr, flist, use_pipeline=True):
     """ Run cr crejection on the dataset
 
     Parameters
@@ -375,9 +378,11 @@ def process_dataset(instr, flist):
     processor = ProcessData(instr, flist)
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
-
-    processor.cr_reject()
+    if use_pipeline:
+        processor.cr_reject()
     if 'failed' in processor.output.keys():
+        processor.output['failed'] = list(itertools.chain.from_iterable(
+            processor.output['failed']))
         f_out = './../crrejtab/{}/{}_failed_' \
                 'to_process.txt'.format(instr.split('_')[0], instr)
         write_out_errors(f_out,
@@ -386,6 +391,26 @@ def process_dataset(instr, flist):
     end_time = time.time()
 
     return failed, (end_time - start_time)/60
+
+
+def decompose(f):
+    """ Decompose each IMA file into 16 different multi-ext fits files
+
+    Parameters
+    ----------
+    flist
+
+    Returns
+    -------
+
+    """
+    p = ProcessIR(f)
+    try:
+        p.write_out()
+    except Exception:
+        return os.path.dirname(f)
+    else:
+        return None
 
 
 def generate_gif(flist, start_date, instr):
@@ -419,14 +444,140 @@ def generate_gif(flist, start_date, instr):
     return save
 
 
-def format_wfpc2(data):
-    print('reformatting wfpc2 data')
+def combine_separate_extensions(data):
+    """ Convenience funciton for handling WFPC2 and WFC3/IR data
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
+    """
+    # print('reformatting wfpc2 data')
     int_ids = []
     stats = []
     for chip_results in data:
         int_ids = int_ids + list(chip_results[0])
         stats = stats + list(chip_results[1])
     return np.asarray([int_ids, stats])
+
+def analyze_reads(f0, f1):
+    """ Analyze cosmic rays in IR data
+
+    Since IR data is readout using non-destructive reads we need to subtract
+    off the cr label from the previous read to ensure we only analyze cosmic
+    rays from the specific read
+
+    Parameters
+    ----------
+    f0
+    f1
+
+    Returns
+    -------
+    """
+
+    # Generate the label from the previous read so we can determine what cosmic
+    # rays hit only during read f1
+    cr_label_f0 = CosmicRayLabel(f0)
+
+    cr_label_f0.get_data(ext='dq')
+    cr_label_f0.get_label(bit_flag=8192, threshold=1)
+    # print(sigma_clipped_stats(cr_label_f0.sci[cr_label_f0.sci > 0]))
+    # Turn the label from read f0 into a 2D array of 1's and 0's
+    previous_label = np.where(cr_label_f0.label > 0, 1, 0)
+
+
+    cr_label_f1 = CosmicRayLabel(f1)
+    cr_label_f1.get_data(ext='dq')
+    cr_label_f1.get_label(bit_flag=8192, threshold=1)
+    # cr_label_f1.get_data(ext='sci')
+    # cr_label_f1.get_label(bit_flag=8192)
+    # print(sigma_clipped_stats(cr_label_f1.sci))
+
+    # Turn the label from read f1 into a 2D array for 1's and 0's
+    tmp = np.where(cr_label_f1.label > 0, 1, 0)
+    # Subtract off the previous label, since they are both just 1's and 0's
+    # and everything in f0 is also in f1, the difference will remove all
+    # previously flagged cosmic rays
+    cr_label_f1.dq = tmp - previous_label
+    cr_label_f1.get_label(bit_comp=False)
+    # Get science data to pass to stats object
+    cr_label_f1.get_data(ext='sci')
+    with fits.open(f1) as hdu:
+        hdr = hdu[1].header
+        # Each read is normalize by the TOTAL integration time for a SAMPLE
+        # Hence we need to multiply by that factor to compute total e- deposited
+        total_integration_time = hdr['samptime']
+
+        # To determine the CR rate, we use the total time for the single sample
+        sample_integration_time = hdr['deltatim']
+
+    stats_obj = ComputeStats(f1,
+                             cr_label_f1.label,
+                             sci = total_integration_time*cr_label_f1.sci,
+                             integration_time = sample_integration_time)
+    cr_affected, cr_rate, sizes, shapes, deposition = \
+        stats_obj.compute_stats()
+    # We return the total number of cosmic rays so that we can
+    # define variables for holding the computed statistics
+    return cr_affected, cr_rate, sizes, shapes, deposition
+
+def analyze_IR(ima_dir):
+    """
+
+    Parameters
+    ----------
+    imd_dir
+
+    Returns
+    -------
+
+    """
+    start_time = time.time()
+    # print(ima_dir)
+
+    reads = glob.glob(ima_dir + '/read*.fits')
+    # print(reads)
+    num = [int(f.split('_')[1].split('.')[0]) for f in reads]
+    # Sort them by read number, 1 corresponds to 0th read, 2 corresponds
+    # to the 1st read, .., N+1 corresponds to the Nth read (last read)
+    tmp = list(zip(reads, num))
+    tmp.sort(key=lambda val: val[1])
+    # Unpack the sorted list to create pairs of sequential reads
+    reads = list(zip(*tmp))[0]
+
+    # Note that we skip the 0th read since each read has had the 0th read
+    # subtracted off, including the 0th read itself
+    sequential_reads = [(reads[i], reads[i + 1])
+                             for i in range(1, len(reads) - 1, 1)]
+    cr_affected = []
+    cr_rate = []
+    sizes = []
+    shapes = []
+    deposition = []
+    # Loop through all of the reads and compute the stats
+    for pair in sequential_reads:
+        affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp =\
+            analyze_reads(*pair)
+        cr_affected.append(affected_tmp)
+        cr_rate.append(rate_tmp)
+        sizes.append(sizes_tmp)
+        shapes.append(shapes_tmp)
+        deposition.append(deposition_tmp)
+    sizes = combine_separate_extensions(sizes)
+    shapes = combine_separate_extensions(shapes)
+    deposition = combine_separate_extensions(deposition)
+    cr_affected = np.asarray([val for data in cr_affected for val in data])
+    cr_rate_avg = np.asarray([np.mean(cr_rate)])
+    print('Observed CR rate for {} samples is: {} cr/s'.format(len(cr_rate),
+                                                            cr_rate_avg))
+    end_time = time.time()
+    processing_time = (end_time - start_time) / 60
+    print(sizes.shape, shapes.shape, deposition.shape)
+    return cr_affected, cr_rate_avg, sizes, shapes, deposition, processing_time
 
 
 def analyze_file(f):
@@ -466,14 +617,16 @@ def analyze_file(f):
             shapes.append(shapes_tmp)
             deposition.append(deposition_tmp)
         # Combine data from each chip into single array
-        sizes = format_wfpc2(sizes)
-        shapes = format_wfpc2(shapes)
-        deposition = format_wfpc2(deposition)
+        sizes = combine_separate_extensions(sizes)
+        shapes = combine_separate_extensions(shapes)
+        deposition = combine_separate_extensions(deposition)
         # combined all pixel coords
         cr_affected = np.asarray([val for data in cr_affected for val in data])
         cr_rate = np.asarray([sum(cr_rate)])
     else:
-        label_obj.get_data()
+        # Setting ext='sci' will use the threshold label procedure
+        # Setting ext='dq' will use the DQ labeling procedure
+        label_obj.get_data(ext='dq')
         label_obj.get_label()
         stats_obj = ComputeStats(f, label_obj.label)
 
@@ -481,21 +634,21 @@ def analyze_file(f):
             stats_obj.compute_stats()
     end_time = time.time()
     processing_time = (end_time - start_time)/ 60
-    # print(len(sizes[0]), len(shapes[0]), len(deposition[0]))
+    # # print(len(sizes[0]), len(shapes[0]), len(deposition[0]))
     return cr_affected, cr_rate, sizes, shapes, deposition, processing_time
 
 
-def analyze_data(flist, instr, start, subgrp_names, i):
+def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
     """ Analyze the list of files that were successfully processed
 
     Parameters
     ----------
     flist : list of files to process
-    instr : instr we are processing (e.g. ACS/WFC, ACS/HRC
+    instr : instr we are processing (e.g. ACS/WFC, ACS/HRC)
     start : start date of month
     subgrp_names : subgrp_names for stats (sizes, shapes, etc.)
     i : integer correspoding which hdf5 file to write data too (1 - 4)
-
+    IR : boolean switch for processing IR data
     Returns
     -------
 
@@ -505,13 +658,22 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     data_for_email = defaultdict(list)
     cr_data = defaultdict(list)
 
+    if IR:
+        # We pass the path to the directory containing all of the individual
+        # reads that were created from the original IMA file
+        ima_data = [os.path.dirname(f) for f in flist]
+        delayed = [dask.delayed(analyze_IR)(ima) for ima in ima_data]
+        results = list(dask.compute(*delayed, scheduler='single-threaded'))
+
+
     # results = analyze_file(flist[0])
-    # Process all images at once
-    delayed = [dask.delayed(analyze_file)(f) for f in flist]
-    results = list(dask.compute(*delayed, scheduler='processes'))
+    else:
+        # Process all images at once
+        delayed = [dask.delayed(analyze_file)(f) for f in flist]
+        results = list(dask.compute(*delayed, scheduler='processes'))
 
 
-    if 'hrc' in instr.lower():
+    if 'hrc' in instr.lower() or 'ir' in instr.lower():
         path = prefix.upper()
         fs = instr.lower()
     else:
@@ -540,10 +702,13 @@ def analyze_data(flist, instr, start, subgrp_names, i):
         cr_data[(fout[4], subgrp_names[4])].append(result[4])
 
         # Grab metadata for each file (exptime, pointing, lat/lon, etc..)
+        # TODO: Need to figure out how to handle IR data
+        # the issuse is the flist is a set of directory paths, and not filepaths
         metadata = get_metadata(flist[i])
         file_metadata.append(metadata)
 
         # grab data for email notification
+        data_for_email['filename'].append(flist[i])
         data_for_email['processing_time [min]'].append(result[5])
         data_for_email['CR count'].append(len(result[2][1]))
         try:
@@ -564,7 +729,7 @@ def analyze_data(flist, instr, start, subgrp_names, i):
             data_for_email['date-obs'].append(hdr['date-obs'] + ' ' +
                                               hdr['time-obs'])
         elif 'tdateobs' in hdr:
-            print(hdr['tdateobs'])
+            # print(hdr['tdateobs'])
             data_for_email['date-obs'].append(hdr['tdateobs'] + ' '
                                               + hdr['ttimeobs'])
         if 'exptime' in hdr:
@@ -576,10 +741,12 @@ def analyze_data(flist, instr, start, subgrp_names, i):
     failed = []
     for j, key in enumerate(cr_data.keys()):
         for i, data in enumerate(cr_data[key]):
+            # Don't bother to write out nan results
             if np.isnan(data_for_email['electron_deposition'][i]):
-                print('NaN dataset, skipping {}'.format(flist[i]))
+                # print('NaN dataset, skipping {}'.format(flist[i]))
                 failed.append(flist[i])
                 continue
+            print(key[0], key[1], flist[i])
             write_out(dset_name=flist[i],
                       fout=key[0],
                       data=data,
@@ -615,7 +782,9 @@ def clean_files(instr):
     if crjs is not None:
         for a in crjs:
             os.remove(a)
+            
     shutil.rmtree('./../crrejtab/{}/mastDownload'.format(val), ignore_errors=True)
+
 
 
 def write_processed_ranges(start, stop, instr):
@@ -696,6 +865,12 @@ def main(instr, initialize):
     5) Analyze the cosmic rays flagged in the processed images
     6) Save the results and send email notification
 
+    To use pipeline CR rejection, set use_pipeline=True in the process()
+    function call, as well as, setting ext='dq' in the labeling function calls
+
+    To use threshold labeling, set use_pipeline=False and ext='sci' in the same
+    places mentioned above.
+
     Parameters
     ----------
     instr : Instrument to analyze (STIS_CCD, ACS_WFC, ACS_HRC, WFC3_UVIS, etc..)
@@ -729,27 +904,53 @@ def main(instr, initialize):
             download_time = download_data(finder, start, stop)
             process_times['download_time'] = download_time
 
-            # Run cr rejection
-            flist = glob.glob(search_pattern)
-            if instr =='WFPC2':
-                # WFPC2 has to be handle separately
-                f_to_analyze = flist
+            if instr == 'WFC3_IR' or instr == 'NICMOS':
+                # Before proceeding we have to decompose each IMA into 16
+                # separate files, one for each NDR
+                flist = glob.glob(search_pattern)
+                ima_dirs = [os.path.dirname(f) for f in flist]
+                # If a file raises an error during decomposition it will return
+                # the directory where the data is written too
+                results = [dask.delayed(decompose)(f) for f in flist]
+                results = dask.compute(*results, schedulers='processes')
+                # Only analyze data that was successfully decomposed
+                f_to_analyze = list(set(flist).difference(set(results)))
+                if not f_to_analyze:
+                    # print('No files to analyze, something happened with processing.')
+                    continue
+                gif_file, data_for_email, analysis_time = \
+                    analyze_data(f_to_analyze,
+                                 instr,
+                                 start,
+                                 cfg['subgrp_names'],
+                                 i,
+                                 IR=True)
             else:
-                failed, rejection_time = process_dataset(instr, flist)
-                process_times['rejection_time'] = rejection_time
-                f_to_analyze = list(set(flist).difference(failed))
+                # Run cr rejection
+                flist = glob.glob(search_pattern)
+                if instr =='WFPC2':
+                    # WFPC2 has to be handle separately
+                    f_to_analyze = flist
 
-            if not f_to_analyze:
-                print('No files to analyze, something happened with processing.')
-                continue
 
-            # Run the analysis
-            gif_file, data_for_email, analysis_time = \
-                analyze_data(f_to_analyze,
-                             instr,
-                             start,
-                             cfg['subgrp_names'],
-                             i)
+                else:
+                    failed, rejection_time = process_dataset(instr,
+                                                             flist,
+                                                             use_pipeline=False)
+                    process_times['rejection_time'] = rejection_time
+                    f_to_analyze = list(set(flist).difference(failed))
+
+                if not f_to_analyze:
+                    # print('No files to analyze, something happened with processing.')
+                    continue
+
+                # Run the analysis
+                gif_file, data_for_email, analysis_time = \
+                    analyze_data(f_to_analyze,
+                                 instr,
+                                 start,
+                                 cfg['subgrp_names'],
+                                 i)
             process_times['analysis_time'] = analysis_time
 
             process_times['total'] = sum(process_times.values())
@@ -758,8 +959,8 @@ def main(instr, initialize):
             SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
             write_processed_ranges(start, stop, instr)
             clean_files(instr)
-
-
+            
+            
 if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()

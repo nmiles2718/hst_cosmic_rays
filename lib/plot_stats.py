@@ -32,7 +32,7 @@ class PlotData(object):
         self.detector_size ={'ACS_WFC': 37.748,
                              'ACS_HRC': 4.624 ,
                              'WFC3_UVIS': 37.804,
-                             'WFC3_IR': 3.397,
+                             'WFC3_IR': 3.331,
                              'STIS_CCD': 4.624,
                              'WFPC2':5.76}
 
@@ -163,7 +163,7 @@ class PlotData(object):
         else:
             averaged = df1
 
-        ave_no_nan = averaged.dropna()
+        avg_no_nan = averaged.dropna()
         if ax is None:
             self.fig, self.ax = plt.subplots(figsize=(7,5),
                                        nrows=1,
@@ -171,7 +171,7 @@ class PlotData(object):
         else:
             self.ax = ax
         # Normalize the CR rate by the detector size
-        avg_no_nan.loc[:,'incident_cr_rate'] = ave_no_nan['incident_cr_rate']/\
+        avg_no_nan.loc[:,'incident_cr_rate'] = avg_no_nan['incident_cr_rate']/\
                                                self.detector_size[self.instr]
 
         self.ax.scatter([Time(val, format='mjd').to_datetime()

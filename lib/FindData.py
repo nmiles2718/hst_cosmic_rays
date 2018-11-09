@@ -24,6 +24,11 @@ class FindData(object):
             self._SubGroupDescription = ['C0M', 'SHM']
             self._start = Time(_CFG[self._instr][0], format='iso')
             self._stop = Time(_CFG[self._instr][1], format='iso')
+        elif 'IR' in instr:
+            self._instr = instr.replace('_', '/')
+            self._SubGroupDescription = ['IMA', 'SPT']
+            self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
+            self._stop = Time(date.today().isoformat(), format='iso')
         else:
             self._instr = instr.replace('_','/') # Format the instrument name
             self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
@@ -41,7 +46,7 @@ class FindData(object):
         self._products = {}
         self._filtered_table = None
         self.dates = None
-        self.t_exptime = [0.1, 4000]
+        self.t_exptime = [200, 10000]
 
     def get_date_ranges(self):
         """
