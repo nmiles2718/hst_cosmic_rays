@@ -4,9 +4,14 @@ from astropy.io import fits
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.stats import sigma_clipped_stats
+from astropy.visualization import ImageNormalize, LinearStretch, ZScaleInterval
+
+import matplotlib.pyplot as plt
+from matplotlib import colors
 import numpy as np
 from photutils import detect_sources, deblend_sources
 from scipy import ndimage
+
 
 class CosmicRayLabel(object):
     def __init__(self, fname):
@@ -19,6 +24,7 @@ class CosmicRayLabel(object):
     def get_data(self, ext='dq'):
         """ Grab the DQ extensions from fits file
         """
+
         dq1 = (ext,1) # Chip 2
         dq2 = (ext,2) # Chip 1
         with fits.open(self.fname) as hdu:
@@ -36,11 +42,14 @@ class CosmicRayLabel(object):
                 ext2 = None
         # If second DQ ext is missing, only work with the first
         # Otherwise combine each DQ ext to make full-frame
-        if not ext2:
+        if not ext2 and ext=='dq':
             self.dq = ext1_data
-        else:
+        elif ext=='dq':
             self.dq = np.concatenate([ext1_data,ext2_data], axis=0)
-     
+        elif not ext2 and ext=='sci':
+            self.sci = ext1_data
+        elif ext=='sci':
+            self.sci = np.concatenate([ext1_data, ext2_data], axis=0)
 
     def get_label(self, bit_flag=8192, bit_comp=True,threshold=2,
                   structure_element=np.ones((3, 3)), wfpc2=False):
@@ -48,20 +57,30 @@ class CosmicRayLabel(object):
 
         Parameters
         ----------
-        dq -- DQ data extension
-        bit_flag -- BIT value to search for
-        structure_element -- structure element for labeling
+        dq : DQ data extension
+        bit_flag : BIT value to search for
+        structure_element : structure element for labeling
 
         Returns
         -------
         label
         num_feat
         """
-        if bit_comp:
-            dq_bit = np.bitwise_and(self.dq , bit_flag)
-        else:
-            dq_bit = self.dq
-        label, num_feat = ndimage.label(dq_bit,
+        if self.dq is None:
+            mean, median, std = sigma_clipped_stats(self.sci[self.sci >0],
+                                                    sigma_lower=3,
+                                                    sigma_upper=3)
+            print('mean: {}, median: {}, std: {}'.format(mean, median, std))
+            self.dq = np.where(self.sci > median + 5 * std, 1, 0)
+        elif bit_comp:
+            bad_pixels = np.bitwise_and(self.dq, 4)
+            unstable_pixels = np.bitwise_and(self.dq, 32)
+            crs = np.bitwise_and(self.dq, bit_flag)
+            self.dq = np.where((crs > 0) &
+                               (bad_pixels==0) &
+                               (unstable_pixels==0), bit_flag, 0)
+
+        label, num_feat = ndimage.label(self.dq,
                                              structure=structure_element)
         print('A total of {} objects were identified'.format(num_feat))
 
@@ -75,8 +94,8 @@ class CosmicRayLabel(object):
         # Create a 2-D mask from the 1-D array of large cosmic rays, and set all
         # labels of cosmic rays smaller than threshold to 0 so they are ignored.
         label_mask = large_CRs[label]
-        dq_bit[~label_mask] = 0
-        label, num_feat = ndimage.label(dq_bit,
+        self.dq[~label_mask] = 0
+        label, num_feat = ndimage.label(self.dq,
                                              structure=structure_element)
         print('After thresholding there are {} objects'.format(num_feat))
         if not wfpc2:
@@ -86,6 +105,7 @@ class CosmicRayLabel(object):
 
     def get_wfpc2_data(self):
         """ Grab the SCI extensions from WFPC2 fits file """
+
         pc = ('sci', 1)  # Chip 2
         wf2 = ('sci', 2)  # Chip 1
         wf3 = ('sci', 3)
@@ -117,7 +137,7 @@ class CosmicRayLabel(object):
         # Otherwise combine each DQ ext to make full-frame
         self.sci = detector_data
 
-    def label_wfpc2_data(self, deblend=False):
+    def label_wfpc2_data(self):
         """ Generate a label for each CCD chip in the WFPC2 detector
 
         Parameters
@@ -130,12 +150,6 @@ class CosmicRayLabel(object):
         """
         self.get_wfpc2_data()
         self.label = []
-
-
-        # Generate a kernel for use in the segmentation mapping, normalize it's value to 1
-        # sigma = 2. * gaussian_fwhm_to_sigma  # convert FWHM of 2.75 pix to sigma
-        # kernel = Gaussian2DKernel(sigma, x_size=5, y_size=5)
-        # kernel.normalize()
         for sci_data in self.sci:
 
             # Generate some stats to use for the source detection
@@ -143,40 +157,61 @@ class CosmicRayLabel(object):
                                                     sigma_upper=2)
             print('mean: {}, median: {}, std: {}'.format(mean, median, std))
 
-            self.dq = np.where(sci_data > median + 5*std, 1, 0)
+            self.dq = np.where(sci_data > np.absolute(median) + 3*std, 1, 0)
             self.label.append(self.get_label(wfpc2=True,
                                              bit_comp=False,
                                              threshold=2))
-            # Generate a segmentation map based on identified sources
-            # segm = detect_sources(sci_data - median,
-            #                       threshold=median + 10 * std,
-            #                       npixels=4,
-            #                       filter_kernel=kernel,
-            #                       connectivity=8)
-            # if deblend:
-            #     # Deblend sources
-            #     print('deblending')
-            #     segm_deblend = deblend_sources(sci_data - median,
-            #                                    segm.data,
-            #                                    npixels=4,
-            #                                    nlevels=32,
-            #                                    filter_kernel=kernel,
-            #                                    contrast=0.1,
-            #                                    connectivity=8,
-            #                                    )
-            #     segm = segm_deblend
-            # self.label.append(segm.data)
 
+    def generate_label(self, use_dq=True, threshold=2):
+        if use_dq:
+            self.get_data(ext='dq')
+        else:
+            self.get_data(ext='sci')
+        self.get_label(threshold=threshold)
 
+    def mk_fig(self):
+        """ Generate a figure with two axes for plotting the label
 
-    def generate_label(self):
-        self.get_data()
-        self.get_label()
+        Returns
+        -------
+        fig
+        ax1
+        ax2
+        """
+        grid = plt.GridSpec(1, 2, wspace=0.2, hspace=0.15)
+        fig = plt.figure(figsize=(8, 5))
+        ax1 = fig.add_subplot(grid[0, 0])
+        ax2 = fig.add_subplot(grid[0, 1], sharex=ax1, sharey=ax1)
+        for ax in [ax1, ax2]:
+            ax.grid(False)
+            ax.tick_params(axis='both', bottom=False,
+                           labelbottom=False,
+                           left=False,
+                           labelleft=False)
+        return fig, ax1, ax2
 
+    def plot(self):
+        """ Plot the label
 
-def main():
-    pass
+        Returns
+        -------
 
+        """
 
-if __name__ == '__main__':
-    main()
+        fig, ax1, ax2 = self.mk_fig()
+        ncolors = np.max(self.label) + 1
+        prng = np.random.RandomState(1234)
+        h = prng.uniform(low=0.0, high=1.0, size=ncolors)
+        s = prng.uniform(low=0.2, high=0.7, size=ncolors)
+        v = prng.uniform(low=0.5, high=1.0, size=ncolors)
+        hsv = np.dstack((h, s, v))
+
+        rgb = np.squeeze(colors.hsv_to_rgb(hsv))
+        rgb[0] = (0,0,0)
+        cmap = colors.ListedColormap(rgb)
+        norm = ImageNormalize(self.sci,
+                              stretch=LinearStretch(),
+                              interval=ZScaleInterval())
+        ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
+        ax2.imshow(self.label, cmap=cmap, origin='lower')
+        plt.show()

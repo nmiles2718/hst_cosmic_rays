@@ -14,9 +14,12 @@ class GenerateMetadata(object):
     def __init__(self, fname):
         self.flt = fname # file name will always be the FLT
         if 'c0m.fits' in fname:
-            self.spt = fname.replace('_c0m.fits','_shm.fits')
+            self.spt = fname.replace('_c0m.fits', '_shm.fits')
+        elif 'ima.fits' in fname:
+            self.spt = fname.replace('_ima.fits', '_shm.fits')
         else:
             self.spt = fname.replace('_flt.fits','_spt.fits')
+
         self.date = None
 
         self.metadata = {}
@@ -38,7 +41,7 @@ class GenerateMetadata(object):
         with fits.open(self.flt) as hdu:
             prhdr = hdu[0].header
             scihdr = hdu[1].header
-            wcs_obj = WCS(scihdr)
+
             if 'date-obs' in prhdr and 'time-obs' in prhdr:
                 date_obs = prhdr['date-obs']
                 time_obs = prhdr['time-obs']

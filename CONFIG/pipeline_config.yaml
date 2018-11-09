@@ -31,6 +31,19 @@ WFC3_UVIS:
     - ./../data/WFC3/wfc3_cr_deposition.hdf5
   astroquery:
     - '2009-05-01'
+
+WFC3_IR:
+  search_pattern:
+    - ./../crrejtab/WFC3/mastDownload/HST/*/*ima.fits
+  hdf5_files:
+    - ./../data/WFC3/wfc3_IR_cr_affected_pixels.hdf5
+    - ./../data/WFC3/wfc3_IR_cr_rate.hdf5
+    - ./../data/WFC3/wfc3_IR_cr_sizes.hdf5
+    - ./../data/WFC3/wfc3_IR_cr_shapes.hdf5
+    - ./../data/WFC3/wfc3_IR_cr_deposition.hdf5
+  astroquery:
+    - '2009-05-01'
+
 STIS_CCD:
   search_pattern:
     - ./../crrejtab/STIS/mastDownload/HST/*/*flt.fits

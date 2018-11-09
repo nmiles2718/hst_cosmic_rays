@@ -23,7 +23,6 @@ class ComputeStats(object):
         self.cr_affected_pixels = []
         self.cr_deposition = None
 
-
     def get_data(self):
         """ Grab the SCI extensions from fits file
         """
@@ -181,7 +180,7 @@ class ComputeStats(object):
         x_slice = slice_tuple[1]
 
         if int(x_slice.stop) == self.max_x and int(y_slice.stop) == self.max_y:
-            print('Cosmic ray struck the edge!!!!!!!!!!!!')
+            # print('Cosmic ray struck the edge!!!!!!!!!!!!')
             y_coords = np.linspace(y_slice.start, y_slice.stop,
                                    int(y_slice.stop - y_slice.start) + 1,
                                    endpoint=False)
@@ -191,14 +190,14 @@ class ComputeStats(object):
                                    endpoint=False)
 
         elif int(y_slice.stop) == self.max_y:
-            print('Cosmic ray struck the edge!!!!!!!!!!!!')
+            # print('Cosmic ray struck the edge!!!!!!!!!!!!')
             y_coords = np.linspace(y_slice.start, y_slice.stop,
                                    int(y_slice.stop - y_slice.start) + 1,
                                    endpoint=False)
             x_coords = np.linspace(x_slice.start, x_slice.stop,
                                    int(x_slice.stop - x_slice.start) + 1)
         elif int(x_slice.stop) == self.max_x:
-            print('Cosmic ray struck the edge!!!!!!!!!!!!')
+            # print('Cosmic ray struck the edge!!!!!!!!!!!!')
             y_coords = np.linspace(y_slice.start, y_slice.stop,
                                    int(y_slice.stop - y_slice.start) + 1)
             x_coords = np.linspace(x_slice.start, x_slice.stop,

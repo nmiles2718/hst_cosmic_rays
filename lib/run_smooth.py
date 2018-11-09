@@ -8,13 +8,11 @@ import pandas as pd
 import sys
 import os
 
-sys.path.append('/Users/nmiles/cosmic_ray_analysis/lib/')
-import generateRegion as gr
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-fname',
-                    help='/path/to/flshfile/',
+                    help='/path/to/file/',
                     type=str)
 parser.add_argument('-fout',
                     help='filename to write to (default smoothed.fits)',
@@ -140,10 +138,7 @@ def main(fname, sigma_low, sigma_high, box_size, num_iter, fout):
                                highthres=sigma_high,
                                dx=round(box_size / 2),
                                dy=round(box_size / 2))
-    # mkRegion(high_coords, 'smoothed_high_sigma_coords.fits',
-    #          color='red')
-    # mkRegion(low_coords, 'smoothed_low_sigma_coords.fits',
-    #          color='green')
+
     print('Number of smoothed coords {}'.format(len(high_coords + low_coords)))
     hdu_o = fits.HDUList()
     hdu_o.append(fits.ImageHDU(chip_smooth))
