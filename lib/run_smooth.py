@@ -8,7 +8,6 @@ import pandas as pd
 import sys
 import os
 
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-fname',
