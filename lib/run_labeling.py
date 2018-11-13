@@ -2,6 +2,8 @@
 
 import argparse
 from astropy.io import fits
+import boto3
+from botocore.exceptions import ClientError
 from collections import defaultdict
 import dask
 from email.message import EmailMessage
@@ -34,10 +36,16 @@ enocding_file = '/grp/hst/acs7/nmiles/cr_repo/lib/encoding_errors.txt'
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('-aws',
+                    default=False,
+                    action='store_true',
+                    help='Flag for running the pipeline on AWS.')
+
 parser.add_argument('-instr',
                     default='acs_wfc',
                     help='HST instrument to process (acs_wfc, '
                          'wfc3_uvis, stis_ccd, acs_hrc)')
+
 parser.add_argument('-initialize',
                     action='store_true',
                     default=False,
@@ -131,6 +139,136 @@ def high_outliers(s):
     flags = s > med + 1.25*std
     return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
+def SendEmailAWS(toSubj, data_for_email, times):
+    """Send out an html markup email with an embedded gif and table
+
+       Parameters
+       ----------
+       toSubj: email subject line
+       data_for_email: data to render into an html table
+       gif_file:
+
+       Returns
+       -------
+
+       """
+    css = email_styling()
+    df = pd.DataFrame(data_for_email, index=data_for_email['date-obs'])
+    df = df[df['size [pix]'].notnull()]
+    df.drop(columns='date-obs', inplace=True)
+    df.sort_index(inplace=True)
+    s = (df.style
+         .apply(high_outliers, subset=['shape [pix]',
+                                       'size [pix]',
+                                       'electron_deposition',
+                                       'CR count'])
+         .apply(low_outliers, subset=['shape [pix]',
+                                      'size [pix]',
+                                      'electron_deposition',
+                                      'CR count'])
+         .apply(highlight_max, subset=['shape [pix]',
+                                       'size [pix]',
+                                       'electron_deposition',
+                                       'CR count'])
+         .apply(highlight_min, subset=['shape [pix]',
+                                       'size [pix]',
+                                       'electron_deposition',
+                                       'CR count'])
+
+         .set_properties(**{'text-align': 'center'})
+         .format({'shape [pix]': '{:.3f}', 'size [pix]': '{:.3f}'})
+         .set_table_styles(css)
+         )
+    html_tb = s.render(index=False)
+    # This address must be verified with Amazon SES.
+    SENDER = "natemiles92@gmail.com"
+
+    # Replace recipient@example.com with a "To" address. If your account
+    # is still in the sandbox, this address must be verified.
+    RECIPIENT = "nmiles@stsci.edu"
+
+    # Specify a configuration set. If you do not want to use a configuration
+    # set, comment the following variable, and the
+    # ConfigurationSetName=CONFIGURATION_SET argument below.
+    # CONFIGURATION_SET = "ConfigSet"
+
+    # If necessary, replace us-west-2 with the AWS Region you're using for Amazon SES.
+    AWS_REGION = "us-east-1"
+
+    # The subject line for the email.
+    SUBJECT = toSubj
+
+    # The email body for recipients with non-HTML email clients.
+    BODY_TEXT = "{}".format(df.to_string(index=True,
+                                         header=True,
+                                         justify='center'))
+
+    # The HTML body of the email.
+    BODY_HTML = """
+                <html>
+                    <head></head>
+                    <body>
+                    <h2>Processing Times</h2>
+                        <ul>
+                            <li>Downloading data: {:.3f} minutes </li>
+                            <li>CR rejection: {:.3f} minutes</li>
+                            <li>Labeling analysis: {:.3f} minutes </li>
+                            <li>Total time: {:.3f} minutes </li>
+                        </ul>
+                    <h2> Cosmic Ray Statistics </h2>
+                    <p><b> All cosmic ray statistics reported are averages for 
+                            the entire image</b></p>
+                            {}
+                    </body>
+                </html>
+                """.format(times['download_time'],
+                           times['rejection_time'],
+                           times['analysis_time'],
+                           times['total'],
+                           html_tb)
+
+    # The character encoding for the email.
+    CHARSET = "UTF-8"
+
+    # Create a new SES resource and specify a region.
+    client = boto3.client('ses', region_name=AWS_REGION)
+    # Try to send the email.
+    try:
+        # Provide the contents of the email.
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [
+                    RECIPIENT,
+                ],
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': BODY_HTML,
+                    },
+                    'Text': {
+                        'Charset': CHARSET,
+                        'Data': BODY_TEXT,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': SUBJECT,
+                },
+            },
+            Source=SENDER,
+            # If you are not using a configuration set, comment or delete the
+            # following line
+            # ConfigurationSetName=CONFIGURATION_SET,
+        )
+    # Display an error if something goes wrong.
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+    else:
+        print("Email sent! Message ID:"),
+        print(response['MessageId'])
+
 def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
     """Send out an html markup email with an embedded gif and table
 
@@ -212,10 +350,10 @@ def SendEmail(toSubj, data_for_email, gif_file, times, gif=False):
                     <body>
                     <h2>Processing Times</h2>
                         <ul>
-                            <li>Downloading data: {} minutes </li>
-                            <li>CR rejection: {} minutes</li>
-                            <li>Labeling analysis: {} minutes </li>
-                            <li>Total time: {} minutes </li>
+                            <li>Downloading data: {:.3f} minutes </li>
+                            <li>CR rejection: {:.3f} minutes</li>
+                            <li>Labeling analysis: {:.3f} minutes </li>
+                            <li>Total time: {:.3f} minutes </li>
                         </ul>
                     <h2> Cosmic Ray Statistics </h2>
                     <p><b> All cosmic ray statistics reported are averages for 
@@ -663,7 +801,7 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
         # reads that were created from the original IMA file
         ima_data = [os.path.dirname(f) for f in flist]
         delayed = [dask.delayed(analyze_IR)(ima) for ima in ima_data]
-        results = list(dask.compute(*delayed, scheduler='single-threaded'))
+        results = list(dask.compute(*delayed, scheduler='processes'))
 
 
     # results = analyze_file(flist[0])
@@ -834,7 +972,7 @@ def read_processed_ranges(instr):
     return dates
 
 
-def download_data(finder, start, stop):
+def download_data(finder, start, stop, aws):
     """
 
     Parameters
@@ -848,12 +986,12 @@ def download_data(finder, start, stop):
 
     """
     start_time = time.time()
-    finder.query(range=(start, stop))
+    finder.query(range=(start, stop), aws=aws)
     finder.download(start.datetime.date().isoformat())
     end_time = time.time()
     return (end_time - start_time)/60
 
-def main(instr, initialize):
+def main(instr, initialize, aws):
     """ Run the pipeline as whole
 
     1) Generate a range of dates to analyze
@@ -875,7 +1013,7 @@ def main(instr, initialize):
     ----------
     instr : Instrument to analyze (STIS_CCD, ACS_WFC, ACS_HRC, WFC3_UVIS, etc..)
     initialize :  Whether or not to create a new batch of HDF5 files
-
+    aws : Whether or not to use AWS services
     Returns
     -------
 
@@ -901,7 +1039,7 @@ def main(instr, initialize):
 
             print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
             # Download the data
-            download_time = download_data(finder, start, stop)
+            download_time = download_data(finder, start, stop, aws)
             process_times['download_time'] = download_time
 
             if instr == 'WFC3_IR' or instr == 'NICMOS':
@@ -956,7 +1094,10 @@ def main(instr, initialize):
             process_times['total'] = sum(process_times.values())
             subj = 'Finished analyzing {} darks from {} to {}.' \
                    .format(instr, start.datetime.date(),stop.datetime.date())
-            SendEmail(subj, data_for_email, gif_file, process_times, gif=False,)
+            if aws:
+                SendEmailAWS(subj, data_for_email, process_times)
+            else:
+                SendEmail(subj, data_for_email, gif_file, process_times, gif=False)
             write_processed_ranges(start, stop, instr)
             clean_files(instr)
             
