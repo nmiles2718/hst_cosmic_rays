@@ -21,9 +21,9 @@ import sys
 import time
 import yaml
 
-sys.path.append('/user/nmiles/animated_fits/lib')
+# sys.path.append('/user/nmiles/animated_fits/lib')
 # local imports
-from mkAnimation import AnimationObj
+# from mkAnimation import AnimationObj
 from CosmicRayLabel import CosmicRayLabel
 from ComputeStats import ComputeStats
 from FindData import FindData
@@ -897,7 +897,8 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
     write_out_errors(f_out, failed)
     run_stop = time.time()
     total_time = (run_stop - run_start)/60
-    gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
+    # gif_file = generate_gif(flist=flist, start_date=start, instr=instr)
+    gif_file = None
     return gif_file, data_for_email, total_time
 
 
@@ -1105,5 +1106,5 @@ def main(instr, initialize, aws):
 if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()
-    main(args.instr.upper(), args.initialize)
+    main(args.instr.upper(), args.initialize, args.aws)
     # main('WFPC2', True)
