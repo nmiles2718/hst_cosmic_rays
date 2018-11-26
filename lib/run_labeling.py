@@ -601,7 +601,7 @@ def combine_separate_extensions(data):
         stats = stats + list(chip_results[1])
     return np.asarray([int_ids, stats])
 
-def analyze_reads(f0, f1):
+def analyze_reads(f0, f1, nicmos=False):
     """ Analyze cosmic rays in IR data
 
     Since IR data is readout using non-destructive reads we need to subtract
@@ -616,34 +616,6 @@ def analyze_reads(f0, f1):
     Returns
     -------
     """
-
-    # Generate the label from the previous read so we can determine what cosmic
-    # rays hit only during read f1
-    cr_label_f0 = CosmicRayLabel(f0)
-
-    cr_label_f0.get_data(ext='dq')
-    cr_label_f0.get_label(bit_flag=8192, threshold=1)
-    # print(sigma_clipped_stats(cr_label_f0.sci[cr_label_f0.sci > 0]))
-    # Turn the label from read f0 into a 2D array of 1's and 0's
-    previous_label = np.where(cr_label_f0.label > 0, 1, 0)
-
-
-    cr_label_f1 = CosmicRayLabel(f1)
-    cr_label_f1.get_data(ext='dq')
-    cr_label_f1.get_label(bit_flag=8192, threshold=1)
-    # cr_label_f1.get_data(ext='sci')
-    # cr_label_f1.get_label(bit_flag=8192)
-    # print(sigma_clipped_stats(cr_label_f1.sci))
-
-    # Turn the label from read f1 into a 2D array for 1's and 0's
-    tmp = np.where(cr_label_f1.label > 0, 1, 0)
-    # Subtract off the previous label, since they are both just 1's and 0's
-    # and everything in f0 is also in f1, the difference will remove all
-    # previously flagged cosmic rays
-    cr_label_f1.dq = tmp - previous_label
-    cr_label_f1.get_label(bit_comp=False)
-    # Get science data to pass to stats object
-    cr_label_f1.get_data(ext='sci')
     with fits.open(f1) as hdu:
         hdr = hdu[1].header
         # Each read is normalize by the TOTAL integration time for a SAMPLE
@@ -652,6 +624,44 @@ def analyze_reads(f0, f1):
 
         # To determine the CR rate, we use the total time for the single sample
         sample_integration_time = hdr['deltatim']
+
+    # Generate the label from the previous read so we can determine what cosmic
+    # rays hit only during read f1
+    cr_label_f0 = CosmicRayLabel(f0)
+    cr_label_f1 = CosmicRayLabel(f1)
+
+    if nicmos:
+        cr_label_f0.get_data(ext='sci')
+        cr_label_f0.get_label(bit_comp=False,
+                              samptime=sample_integration_time,
+                              threshold_l=1, threshold_u=100)
+
+        cr_label_f1.get_data(ext='sci')
+        cr_label_f1.get_label(bit_comp=False,
+                              samptime=sample_integration_time,
+                              threshold_l=1, threshold_u=100)
+    else:
+        cr_label_f0.get_data(ext='dq')
+        cr_label_f0.get_label(bit_flag=8192, threshold=1)
+
+        cr_label_f1.get_data(ext='dq')
+        cr_label_f1.get_label(bit_flag=8192, threshold=1)
+
+    # Turn the label from read f0 into a 2D array of 1's and 0's
+    previous_label = np.where(cr_label_f0.label > 0, 1, 0)
+
+    # Turn the label from read f1 into a 2D array for 1's and 0's
+    tmp = np.where(cr_label_f1.label > 0, 1, 0)
+
+    # Subtract off the previous label, since they are both just 1's and 0's
+    # and everything in f0 is also in f1, the difference will remove all
+    # previously flagged cosmic rays
+    cr_label_f1.dq = tmp - previous_label
+    cr_label_f1.get_label(bit_comp=False)
+
+    # Get science data to pass to stats object
+    cr_label_f1.get_data(ext='sci')
+
 
     stats_obj = ComputeStats(f1,
                              cr_label_f1.label,
@@ -699,7 +709,7 @@ def analyze_IR(ima_dir):
     # Loop through all of the reads and compute the stats
     for pair in sequential_reads:
         affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp =\
-            analyze_reads(*pair)
+            analyze_reads(pair[0], pair[1], nicmos=True)
         cr_affected.append(affected_tmp)
         cr_rate.append(rate_tmp)
         sizes.append(sizes_tmp)
@@ -811,7 +821,7 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
         results = list(dask.compute(*delayed, scheduler='processes'))
 
 
-    if 'hrc' in instr.lower() or 'ir' in instr.lower():
+    if 'hrc' in instr.lower() or 'ir' in instr.lower() or IR:
         path = prefix.upper()
         fs = instr.lower()
     else:
@@ -1043,13 +1053,14 @@ def main(instr, initialize, aws):
             download_time = download_data(finder, start, stop, aws)
             process_times['download_time'] = download_time
 
-            if instr == 'WFC3_IR' or instr == 'NICMOS':
+            if instr == 'WFC3_IR' or 'NICMOS' in instr:
                 # Before proceeding we have to decompose each IMA into 16
                 # separate files, one for each NDR
                 flist = glob.glob(search_pattern)
-                ima_dirs = [os.path.dirname(f) for f in flist]
+
                 # If a file raises an error during decomposition it will return
                 # the directory where the data is written too
+
                 results = [dask.delayed(decompose)(f) for f in flist]
                 results = dask.compute(*results, schedulers='processes')
                 # Only analyze data that was successfully decomposed
@@ -1107,4 +1118,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()
     main(args.instr.upper(), args.initialize, args.aws)
-    # main('WFPC2', True)
+    # main('NICMOS_NIC1', True, False)

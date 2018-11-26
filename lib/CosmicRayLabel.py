@@ -51,7 +51,8 @@ class CosmicRayLabel(object):
         elif ext=='sci':
             self.sci = np.concatenate([ext1_data, ext2_data], axis=0)
 
-    def get_label(self, bit_flag=8192, bit_comp=True,threshold=2,
+    def get_label(self, bit_flag=8192, bit_comp=True, samptime=None,
+                  threshold_l=2, threshold_u = 1000,
                   structure_element=np.ones((3, 3)), wfpc2=False):
         """ Generate a label based of a dq array using ndimage.label()
 
@@ -67,11 +68,31 @@ class CosmicRayLabel(object):
         num_feat
         """
         if self.dq is None:
-            mean, median, std = sigma_clipped_stats(self.sci[self.sci >0],
-                                                    sigma_lower=3,
-                                                    sigma_upper=3)
+            if samptime is None:
+                mean, median, std = sigma_clipped_stats(self.sci[self.sci > 0],
+                                                        sigma_lower=3,
+                                                        sigma_upper=3)
+            else:
+                # Nicmos avg dark current is ~0.1 e/s
+                # We use this information to ensure the amplifier glow does not
+                # contaminate the sigma clipped statistics
+
+                # Do the first round of sigma clipping
+                mean, median, std = sigma_clipped_stats(self.sci[self.sci > 0],
+                                                        sigma_lower=3,
+                                                        sigma_upper=3)
+
+                # Do the second round
+                mean, median, std = sigma_clipped_stats(
+                    self.sci[(self.sci >= median - 3*std) &
+                             (self.sci <= median + 3 * std )],
+                    sigma_lower=3,
+                    sigma_upper=3
+                )
+
             print('mean: {}, median: {}, std: {}'.format(mean, median, std))
             self.dq = np.where(self.sci > median + 5 * std, 1, 0)
+
         elif bit_comp:
             bad_pixels = np.bitwise_and(self.dq, 4)
             unstable_pixels = np.bitwise_and(self.dq, 32)
@@ -89,7 +110,7 @@ class CosmicRayLabel(object):
         sizes = np.bincount(cr_labels)
         arg_max = np.argmax(sizes)
         sizes[arg_max] = 0
-        large_CRs = sizes > threshold
+        large_CRs = (sizes > threshold_l) & (sizes < threshold_u)
 
         # Create a 2-D mask from the 1-D array of large cosmic rays, and set all
         # labels of cosmic rays smaller than threshold to 0 so they are ignored.
@@ -160,14 +181,14 @@ class CosmicRayLabel(object):
             self.dq = np.where(sci_data > np.absolute(median) + 3*std, 1, 0)
             self.label.append(self.get_label(wfpc2=True,
                                              bit_comp=False,
-                                             threshold=2))
+                                             threshold_l=2, threshold_u=500))
 
-    def generate_label(self, use_dq=True, threshold=2):
+    def generate_label(self, use_dq=True, threshold_l=None, threshold_u=None):
         if use_dq:
             self.get_data(ext='dq')
         else:
             self.get_data(ext='sci')
-        self.get_label(threshold=threshold)
+        self.get_label(threshold_l=threshold_l, threshold_u=threshold_u)
 
     def mk_fig(self):
         """ Generate a figure with two axes for plotting the label

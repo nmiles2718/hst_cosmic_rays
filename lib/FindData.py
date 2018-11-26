@@ -13,17 +13,23 @@ from pandas import date_range
 _CFG = {'ACS':'2002-03-01',
         'WFC3':'2009-06-01',
         'STIS':'1997-02-01',
-        'WFPC2':['1994-01-01','2009-06-01']}
+        'WFPC2':[['1994-01-01','2009-06-01'],['C0M','SHM']],
+        'NICMOS':[['1997-04-01','2009-10-22'],['IMA', 'SPT']]}
 
 class FindData(object):
 
     def __init__(self, instr):
         # Query parameters
-        if instr == 'WFPC2':
+        if 'NIC' in instr:
+            self._instr = instr.replace('_', '/')
+            self._SubGroupDescription = _CFG[instr.split('_')[0]][1]
+            self._start = Time(_CFG[instr.split('_')[0]][0][0], format='iso')
+            self._stop = Time(_CFG[instr.split('_')[0]][0][1], format='iso')
+        elif instr == 'WFPC2':
             self._instr = instr
-            self._SubGroupDescription = ['C0M', 'SHM']
-            self._start = Time(_CFG[self._instr][0], format='iso')
-            self._stop = Time(_CFG[self._instr][1], format='iso')
+            self._SubGroupDescription = _CFG[instr][1]
+            self._start = Time(_CFG[instr][0][0], format='iso')
+            self._stop = Time(_CFG[instr][0][1], format='iso')
         elif 'IR' in instr:
             self._instr = instr.replace('_', '/')
             self._SubGroupDescription = ['IMA', 'SPT']
@@ -100,7 +106,7 @@ class FindData(object):
             warnings.simplefilter('error')
             try:
                 obsTable = Observations.query_criteria(
-                    obs_collection=self._collection,
+                    project=self._collection,
                     dataproduct_type=self._product_type,
                     obstype=self._obstype,
                     target_name=self._target_name,

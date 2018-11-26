@@ -17,6 +17,8 @@ class GenerateMetadata(object):
             self.spt = fname.replace('_c0m.fits', '_shm.fits')
         elif 'ima.fits' in fname:
             self.spt = fname.replace('_ima.fits', '_shm.fits')
+            if not os.path.exists(self.spt):
+                self.spt = fname.replace('_ima.fits','_spt.fits')
         else:
             self.spt = fname.replace('_flt.fits','_spt.fits')
 

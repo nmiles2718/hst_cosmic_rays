@@ -153,7 +153,7 @@ class PlotData(object):
     def plot_rate_vs_time(self, ax= None, ptype='rolling', window='20D', min_periods=20):
         if self.data_df is None:
             self.read_rate()
-        flags = self.data_df.exptime.gt(800)
+        flags = self.data_df.exptime.gt(200)
         df1 = self.data_df[['incident_cr_rate','mjd']][flags]
 
         if ptype == 'rolling':
