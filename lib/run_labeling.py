@@ -661,11 +661,14 @@ def analyze_reads(f0, f1, nicmos=False):
 
     # Get science data to pass to stats object
     cr_label_f1.get_data(ext='sci')
+    if not nicmos:
+        cr_label_f1.sci = cr_label_f1.sci * total_integration_time
+
 
 
     stats_obj = ComputeStats(f1,
                              cr_label_f1.label,
-                             sci = total_integration_time*cr_label_f1.sci,
+                             sci = cr_label_f1.sci,
                              integration_time = sample_integration_time)
     cr_affected, cr_rate, sizes, shapes, deposition = \
         stats_obj.compute_stats()
