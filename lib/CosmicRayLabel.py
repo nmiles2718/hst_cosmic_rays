@@ -233,9 +233,13 @@ class CosmicRayLabel(object):
         norm = ImageNormalize(self.sci,
                               stretch=LinearStretch(),
                               interval=ZScaleInterval())
-        ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
-        ax2.imshow(self.label, cmap=cmap, origin='lower')
-        plt.show()
+        if isinstance(self.sci, list):
+            ax1.imshow(self.sci[0], norm=norm, cmap='gray', origin='lower')
+            ax2.imshow(self.label[0], cmap=cmap, origin='lower')
+        else:
+            ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
+            ax2.imshow(self.label, cmap=cmap, origin='lower')
+        return fig, ax1, ax2
 
     def generate_label(self):
         self.get_data()

@@ -2,6 +2,7 @@
 
 import argparse
 from astropy.io import fits
+from astropy.time import Time
 import boto3
 from botocore.exceptions import ClientError
 from collections import defaultdict
@@ -425,7 +426,16 @@ def write_out(dset_name, fout, data, grp, subgrp, metadata):
                                       data=data,
                                       dtype=np.float64)
         for (key, val) in metadata.items():
-            dset.attrs[key] = val
+            # Check the datatype and save it accordingly
+            if isinstance(val, np.ndarray):
+                dset.attrs.create(name=key,
+                                  data=val,
+                                  shape=val.shape,
+                                  dtype=np.float64)
+            elif isinstance(val, Time):
+                dset.attrs[key] = val.iso
+            else:
+                dset.attrs[key] = val
 
 
 def initialize_hdf5(instr, instr_cfg, subgrp_names):
@@ -500,7 +510,7 @@ def find_files_to_download(instr):
     return finder
 
 
-def process_dataset(instr, flist, use_pipeline=True):
+def process_dataset(instr, flist):
     """ Run cr crejection on the dataset
 
     Parameters
@@ -516,8 +526,7 @@ def process_dataset(instr, flist, use_pipeline=True):
     processor = ProcessData(instr, flist)
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
-    if use_pipeline:
-        processor.cr_reject()
+    processor.cr_reject()
     if 'failed' in processor.output.keys():
         processor.output['failed'] = list(itertools.chain.from_iterable(
             processor.output['failed']))
@@ -1088,8 +1097,8 @@ def main(instr, initialize, aws):
 
                 else:
                     failed, rejection_time = process_dataset(instr,
-                                                             flist,
-                                                             use_pipeline=False)
+                                                             flist)
+
                     process_times['rejection_time'] = rejection_time
                     f_to_analyze = list(set(flist).difference(failed))
 
@@ -1115,7 +1124,7 @@ def main(instr, initialize, aws):
                 SendEmail(subj, data_for_email, gif_file, process_times, gif=False)
             write_processed_ranges(start, stop, instr)
             clean_files(instr)
-            
+
             
 if __name__ == '__main__':
     args = parser.parse_args()

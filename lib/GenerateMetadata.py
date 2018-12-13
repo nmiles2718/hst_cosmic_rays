@@ -68,44 +68,66 @@ class GenerateMetadata(object):
             self.date = Time('{} {}'.format(date_obs,
                                             time_obs), format='iso')
             self.metadata['date'] = self.date.iso
-            self.metadata['expstart'] = Time(expstart, format='mjd').iso
-            self.metadata['expend'] = Time(expend, format='mjd').iso
+            self.metadata['expstart'] = Time(expstart, format='mjd')
+            self.metadata['expend'] = Time(expend, format='mjd')
             self.metadata['exptime'] = integration_time
 
     def get_observatory_info(self):
         """
-        Compute the lat/lon and altitude of HST
+        Compute the lat/lon and altitude of HST.
+
+        Using the expstart and expend, generate a series MJD dates that correspond
+        to 1 minute intervals. Calculate the lat/lon and altitude at each
+        time step.
 
         """
-        pos_ = {'postnstx': None,
-                'postnsty': None,
-                'postnstz': None}
+
+        altitude_ = []
+        lat_ = []
+        lon_ = []
+
+        # Break up the exposure into one minute intervals
+        time_delta = self.metadata['expend'] - self.metadata['expstart']
+        num_intervals = int(time_delta.to('minute').value)
+
+        # If the number of one minute intervals is less than 2, set the number
+        # of intervals to 5 (arbitrarily chosen)
+        if num_intervals < 2:
+            num_intervals = 5
+        # Generate MJD dates correspond to these one minute intervals
+        time_intervals = np.linspace(self.metadata['expstart'].mjd,
+                                     self.metadata['expend'].mjd,
+                                     num_intervals,
+                                     endpoint=True)
+        # Using the telemetry data for the SPT file, compute HST (lon, lat, z)
         if os.path.isfile(self.spt):
-            with fits.open(self.spt) as hdu:
-                hdr = hdu[0].header
-                for key in pos_.keys():
-                    pos_[key] = hdr[key]
-            # Compute altitude in km's from center of earth
-            altitude = np.sqrt(pos_['postnstx']**2 +
-                               pos_['postnsty']**2 +
-                               pos_['postnstz']**2)
-            altitude -= R_earth.to('km').value
             orbital_params = orbit.HSTOrbit(self.spt)
-            rect_, vel_ = orbital_params.getPos(self.date.mjd)
-            r, ra_, dec_ = rectToSph(rect_)
-            lat_ = dec_
-            lon_ = ra_ - 2 * np.pi * gmst(self.date.mjd)
-            if lon_ < 0:
-                lon_ += 2 * np.pi
-            lon_ /= DEGtoRAD
-            lat_ /= DEGtoRAD
+            # compute coords at beginning and end of exposure
+            for t in time_intervals:
+                rect_, vel_ = orbital_params.getPos(t)
+                r, ra_, dec_ = rectToSph(rect_)
+                altitude_.append(r - R_earth.to('km').value)
+                lat = dec_
+                lon = ra_ - 2 * np.pi * gmst(t)
+                if lon < 0:
+                    lon += 2 * np.pi
+                lon /= DEGtoRAD
+                lat /= DEGtoRAD
+                lat_.append(lat)
+                lon_.append(lon)
+            self.metadata['latitude'] = np.asarray(lat_)
+            self.metadata['longitude'] = np.asarray(lon_)
+            self.metadata['altitude'] = np.asarray(altitude_)
+            self.metadata['time_intervals'] = time_intervals
         else:
-            altitude = np.nan
-            lat_ = np.nan
-            lon_ = np.nan
-        self.metadata['altitude'] = altitude
-        self.metadata['latitude'] = lat_
-        self.metadata['longitude'] = lon_
+            # If the SPT file for some reason doesn't exist, save NaNs
+            self.metadata['altitude'] = np.nan
+            self.metadata['latitude'] = np.nan
+            self.metadata['longitude'] = np.nan
+            self.metadata['time_intervals'] = np.nan
+
+
+
 
 
 
