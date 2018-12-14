@@ -58,6 +58,7 @@ class PlotData(object):
             fobj = h5py.File(f, mode='r')
             sgrp = fobj[self.instr.upper()+'/'+self.subgrp]
             for key in sgrp.keys():
+                data_out['obs_name'].append(key)
                 dset = sgrp[key].value
                 attrs = sgrp[key].attrs
                 exptime = attrs['exptime']
@@ -74,6 +75,11 @@ class PlotData(object):
                     val = attrs[at_key]
                     if at_key == 'date':
                         val = Time(val, format='iso')
+                    elif at_key == 'latitude' or at_key == 'longitude' \
+                        or at_key == 'altitude':
+                        data_out['start_{}'.format(at_key)].append(val[0])
+                        data_out['end_{}'.format(at_key)].append(val[-1])
+                        continue
                     data_out['{}'.format(at_key)].append(val)
         data_out['mjd'] = [val.mjd for val in data_out['date']]
         date_index = pd.DatetimeIndex([val.iso for val in data_out['date']])
@@ -273,7 +279,7 @@ class PlotData(object):
         for line in all_lines:
              line.set(linestyle='-', alpha=0.3, color='w')
 
-    def plot_hst_loc(self, i = 5, df = None):
+    def plot_hst_loc(self, i = 5, df = None, key='start'):
 
         self.fig = plt.figure(figsize=(9, 7))
         # Get the model for the SAA
@@ -292,17 +298,17 @@ class PlotData(object):
                latlon=True,
                label='SAA contour {}'.format(i))
         if df is None:
-            lat, lon, rate = self.data_df['latitude'], \
-                             self.data_df['longitude'], \
+            lat, lon, rate = self.data_df['{}_latitude'.format(key)], \
+                             self.data_df['{}_longitude'.format(key)], \
                              self.data_df['incident_cr_rate']
         else:
-            lat, lon, rate = df['latitude'], \
-                             df['longitude'], \
+            lat, lon, rate = df['{}_latitude'.format(key)], \
+                             df['{}_longitude'.format(key)], \
                              df['incident_cr_rate']
 
         norm = ImageNormalize(rate,
                               stretch=LinearStretch(),
-                              interval=ZScaleInterval())
+                              vmin=0.75, vmax=2)
 
 
         scat = self.map.scatter(lon, lat,
@@ -318,9 +324,63 @@ class PlotData(object):
         cbar.set_label('cosmic rays/s/cm^2', fontweight='bold')
         cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
 
-        self.fig.savefig('lat_lon_testing.png', format='png', dpi=300)
+        self.fig.savefig('lat_lon_{}.png'.format(key), format='png', dpi=300)
         plt.show()
 
+    def get_full_path(self, obsnames):
+        data_out = defaultdict(list)
+        for f in self.flist:
+            print('Analyzing {}'.format(f))
+            fobj = h5py.File(f, mode='r')
+            sgrp = fobj[self.instr.upper()+'/'+self.subgrp]
+            for key in sgrp.keys():
+                if key not in obsnames:
+                    continue
+                dset = sgrp[key].value
+                attrs = sgrp[key].attrs
+                num_intervals = len(attrs['latitude'])
+                data_out['obs_name'].append([key]*num_intervals)
+                data_out['exptime'].append([attrs['exptime']]*num_intervals)
+                exptime = attrs['exptime']
+                factor = (exptime + self.detector_readtime[self.instr.upper()]) \
+                         / exptime
+                if isinstance(dset, Iterable):
+                    dset = np.nanmedian(dset)
+
+                # Multiply by correction factor to account for various instrument
+                # readouts
+                data_out[self.subgrp].append([factor * dset /
+                                             self.detector_size[self.instr]] *\
+                                             num_intervals)
+                data_out['latitude'].append(attrs['latitude'])
+                data_out['longitude'].append(attrs['longitude'])
+                data_out['altitude'].append(attrs['altitude'])
+
+        for key in data_out.keys():
+            data_out[key] = [val for dset in data_out[key] for val in dset]
+        return data_out
+
+
+
+    def plot_full_path(self, df, i):
+        self.fig = plt.figure(figsize=(9, 7))
+        # Get the model for the SAA
+        self.map = Basemap(projection='cyl')
+
+        self.draw_map()
+
+        # Generate an SAA contour
+        saa = [list(t) for t in zip(*costools.saamodel.saaModel(i))]
+        # Ensure the polygon representing the SAA is a closed curve by adding
+        # the starting points to the end of the list of lat/lon coords
+        saa[0].append(saa[0][0])
+        saa[1].append(saa[1][0])
+        self.map.plot(saa[1], saa[0],
+                      c='r',
+                      latlon=True,
+                      label='SAA contour {}'.format(i))
+        self.map.scatter(df['longitude'],df['latitude'], latlon=True)
+        plt.show()
 
 
 

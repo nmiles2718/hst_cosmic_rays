@@ -610,7 +610,7 @@ def combine_separate_extensions(data):
         stats = stats + list(chip_results[1])
     return np.asarray([int_ids, stats])
 
-def analyze_reads(f0, f1, nicmos=False):
+def analyze_reads(f0, f1, instr, nicmos=False):
     """ Analyze cosmic rays in IR data
 
     Since IR data is readout using non-destructive reads we need to subtract
@@ -675,7 +675,7 @@ def analyze_reads(f0, f1, nicmos=False):
 
 
 
-    stats_obj = ComputeStats(f1,
+    stats_obj = ComputeStats(f1, instr,
                              cr_label_f1.label,
                              sci = cr_label_f1.sci,
                              integration_time = sample_integration_time)
@@ -685,7 +685,7 @@ def analyze_reads(f0, f1, nicmos=False):
     # define variables for holding the computed statistics
     return cr_affected, cr_rate, sizes, shapes, deposition
 
-def analyze_IR(ima_dir):
+def analyze_IR(ima_dir, instr):
     """
 
     Parameters
@@ -721,7 +721,7 @@ def analyze_IR(ima_dir):
     # Loop through all of the reads and compute the stats
     for pair in sequential_reads:
         affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp =\
-            analyze_reads(pair[0], pair[1], nicmos=True)
+            analyze_reads(pair[0], pair[1], instr, nicmos=True)
         cr_affected.append(affected_tmp)
         cr_rate.append(rate_tmp)
         sizes.append(sizes_tmp)
@@ -740,7 +740,7 @@ def analyze_IR(ima_dir):
     return cr_affected, cr_rate_avg, sizes, shapes, deposition, processing_time
 
 
-def analyze_file(f):
+def analyze_file(f, instr):
     """ Analyze the cosmic rays marked in the input file
 
     Parameters
@@ -767,7 +767,7 @@ def analyze_file(f):
         shapes = []
         deposition = []
         for label, sci in zip(label_obj.label,label_obj.sci):
-            stats_obj = ComputeStats(f, label, sci, label_obj.integration_time)
+            stats_obj = ComputeStats(f, instr, label, sci, label_obj.integration_time)
             affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp = \
                 stats_obj.compute_stats()
 
@@ -788,7 +788,7 @@ def analyze_file(f):
         # Setting ext='dq' will use the DQ labeling procedure
         label_obj.get_data(ext='dq')
         label_obj.get_label()
-        stats_obj = ComputeStats(f, label_obj.label)
+        stats_obj = ComputeStats(f, instr, label_obj.label)
 
         cr_affected, cr_rate, sizes, shapes, deposition = \
             stats_obj.compute_stats()
@@ -822,7 +822,7 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
         # We pass the path to the directory containing all of the individual
         # reads that were created from the original IMA file
         ima_data = [os.path.dirname(f) for f in flist]
-        delayed = [dask.delayed(analyze_IR)(ima) for ima in ima_data]
+        delayed = [dask.delayed(analyze_IR)(ima, instr=instr) for ima in ima_data]
         results = list(dask.compute(*delayed, scheduler='processes'))
 
 

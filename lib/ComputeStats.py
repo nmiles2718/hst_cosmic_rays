@@ -9,8 +9,9 @@ class ComputeStats(object):
     """
     Origin of coordinates (0,0)
     """
-    def __init__(self, fname, label, sci=None, integration_time=0):
+    def __init__(self, fname, instr, label, sci=None, integration_time=0):
         self.fname = fname
+        self.instr = instr
         self.label = label
         self.max_x = label.shape[1]
         self.max_y = label.shape[0]
@@ -22,6 +23,12 @@ class ComputeStats(object):
         self.sizes = {}
         self.cr_affected_pixels = []
         self.cr_deposition = None
+        self.detector_readtime = {'ACS_WFC': 100./2.,
+                                  'ACS_HRC': 30.0 /2,
+                                  'WFC3_UVIS': 100./2.,
+                                  'WFC3_IR': None,
+                                  'STIS_CCD': 30.0 / 2.,
+                                  'WFPC2': 60. / 2.}
 
     def get_data(self):
         """ Grab the SCI extensions from fits file
@@ -39,6 +46,7 @@ class ComputeStats(object):
                 self.integration_time += scihdr['exptime']
                 if 'flashdur' in scihdr:
                     self.integration_time += scihdr['flashdur']
+            self.integration_time += self.detector_readtime[self.instr]
             try:
                 ext1 = hdu.index_of(sci1)
                 ext1_data = hdu[ext1].data
@@ -57,6 +65,7 @@ class ComputeStats(object):
             self.sci = ext1_data
         else:
             self.sci = np.concatenate([ext1_data,ext2_data], axis=0)
+
 
     def compute_total_cr_deposition(self):
         """Apply image label for a single chip to its corresponding science

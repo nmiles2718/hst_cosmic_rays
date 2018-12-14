@@ -82,6 +82,7 @@ class ProcessData(object):
              acsrej.acsrej(input=input,
                           output=output,
                           verbose=True,
+                          crsigmas='5,4,3',
                           crrejtab=crrejtab,
                           crmask=True,
                           initgues='med',
