@@ -3,6 +3,8 @@
 /lib/*gif
 /crrejtab/*/mastDownload/
 /crrejtab/*/*gif
+/crrejtab/*/*txt
+/crrejtab/WFC3/IR_TEST_DATA/*
 /lib/*fits
 /lib/*tra
 /plots/*png

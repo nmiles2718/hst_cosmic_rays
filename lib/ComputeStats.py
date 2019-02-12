@@ -84,7 +84,7 @@ class ComputeStats(object):
         cr_sum = ndimage.sum(self.sci, labels=self.label, index=self.int_ids)
         return cr_sum
 
-    def compute_first_moment(self):
+    def compute_first_moment(self, sci =None):
         """
 
         Parameters
@@ -96,8 +96,12 @@ class ComputeStats(object):
         -------
 
         """
+        if sci is None:
+            data = self.sci
+        else:
+            data = sci
 
-        r_cm = ndimage.measurements.center_of_mass(self.sci,
+        r_cm = ndimage.measurements.center_of_mass(data,
                                                    labels=self.label,
                                                    index=self.int_ids)
         return np.asarray(r_cm)
