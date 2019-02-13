@@ -204,14 +204,15 @@ class CosmicRayLabel(object):
         ax1 = fig.add_subplot(grid[0, 0])
         ax2 = fig.add_subplot(grid[0, 1], sharex=ax1, sharey=ax1)
         for ax in [ax1, ax2]:
-            ax.grid(False)
-            ax.tick_params(axis='both', bottom=False,
-                           labelbottom=False,
-                           left=False,
-                           labelleft=False)
+            # ax.grid(False)
+            # ax.tick_params(axis='both', bottom=False,
+            #                labelbottom=False,
+            #                left=False,
+            #                labelleft=False)
+            pass
         return fig, ax1, ax2
 
-    def plot(self):
+    def plot(self, show=False):
         """ Plot the label
 
         Returns
@@ -239,6 +240,8 @@ class CosmicRayLabel(object):
         else:
             ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
             ax2.imshow(self.label, cmap=cmap, origin='lower')
+        if show:
+            plt.show()
         return fig, ax1, ax2
 
     def generate_label(self):

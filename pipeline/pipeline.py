@@ -25,15 +25,15 @@ import yaml
 # sys.path.append('/user/nmiles/animated_fits/lib')
 # local imports
 # from mkAnimation import AnimationObj
-from CosmicRayLabel import CosmicRayLabel
-from ComputeStats import ComputeStats
-from FindData import FindData
-from ProcessData import ProcessData
-from process_IR import ProcessIR
-from GenerateMetadata import GenerateMetadata
-from scipy import ndimage
+from label import labeler
+from stat_utils import statshandler
+from download import download
+from process import process
+from process import process_IR
+from utils import GenerateMetadata
 
-enocding_file = '/grp/hst/acs7/nmiles/cr_repo/lib/encoding_errors.txt'
+
+# enocding_file = '/grp/hst/acs7/nmiles/cr_repo/lib/encoding_errors.txt'
 
 parser = argparse.ArgumentParser()
 
@@ -390,7 +390,7 @@ def get_metadata(imgname):
     -------
 
     """
-    meta = GenerateMetadata(imgname)
+    meta = GenerateMetadata.GenerateMetadata(imgname)
     # Get image specific data (date-obs, expstart, expend, etc..)
     meta.get_image_data()
     # Get pointing information (WCS)
@@ -499,15 +499,17 @@ def find_files_to_download(instr):
 
     Parameters
     ----------
-    instr
+    instr : str
+        Instrument name (ACS_HRC, ACS_WFC, STIS_CCD, WFPC2, WFC3_UVIS, etc..)
 
     Returns
     -------
-    finder : Class containing useful attributes for processing steps
+    downloader : :py:class:`~download.download.Downloader`
+        Class containing useful attributes for processing steps
     """
-    finder = FindData(instr)
-    finder.get_date_ranges()
-    return finder
+    downloader = download.Downloader(instr)
+    downloader.get_date_ranges()
+    return downloader
 
 
 def process_dataset(instr, flist):
@@ -523,7 +525,7 @@ def process_dataset(instr, flist):
     failed : list of images that could not be CR rejected for various reasons
     """
     start_time = time.time()
-    processor = ProcessData(instr, flist)
+    processor = process.ProcessData(instr, flist)
     # Sort the files by exposure time and chunk to smaller datasets
     processor.sort()
     processor.cr_reject()
@@ -551,7 +553,7 @@ def decompose(f):
     -------
 
     """
-    p = ProcessIR(f)
+    p = process_IR.ProcessIR(f)
     try:
         p.write_out()
     except Exception:
@@ -636,8 +638,8 @@ def analyze_reads(f0, f1, instr, nicmos=False):
 
     # Generate the label from the previous read so we can determine what cosmic
     # rays hit only during read f1
-    cr_label_f0 = CosmicRayLabel(f0)
-    cr_label_f1 = CosmicRayLabel(f1)
+    cr_label_f0 = labeler.CosmicRayLabel(f0)
+    cr_label_f1 = labeler.CosmicRayLabel(f1)
 
     if nicmos:
         cr_label_f0.get_data(ext='sci')
@@ -675,7 +677,7 @@ def analyze_reads(f0, f1, instr, nicmos=False):
 
 
 
-    stats_obj = ComputeStats(f1, instr,
+    stats_obj = statshandler.ComputeStats(f1, instr,
                              cr_label_f1.label,
                              sci = cr_label_f1.sci,
                              integration_time = sample_integration_time)
@@ -756,7 +758,7 @@ def analyze_file(f, instr):
     deposition : cr signal
     """
     start_time = time.time()
-    label_obj = CosmicRayLabel(f)
+    label_obj = labeler.CosmicRayLabel(f)
 
     if 'c0m.fits' in f:
         # WFPC2 data is SOOOO ANNOYING
@@ -767,7 +769,7 @@ def analyze_file(f, instr):
         shapes = []
         deposition = []
         for label, sci in zip(label_obj.label,label_obj.sci):
-            stats_obj = ComputeStats(f, instr, label, sci, label_obj.integration_time)
+            stats_obj = statshandler.ComputeStats(f, instr, label, sci, label_obj.integration_time)
             affected_tmp, rate_tmp, sizes_tmp, shapes_tmp, deposition_tmp = \
                 stats_obj.compute_stats()
 
@@ -788,7 +790,7 @@ def analyze_file(f, instr):
         # Setting ext='dq' will use the DQ labeling procedure
         label_obj.get_data(ext='dq')
         label_obj.get_label()
-        stats_obj = ComputeStats(f, instr, label_obj.label)
+        stats_obj = statshandler.ComputeStats(f, instr, label_obj.label)
 
         cr_affected, cr_rate, sizes, shapes, deposition = \
             stats_obj.compute_stats()
@@ -829,7 +831,7 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
     # results = analyze_file(flist[0])
     else:
         # Process all images at once
-        delayed = [dask.delayed(analyze_file)(f) for f in flist]
+        delayed = [dask.delayed(analyze_file)(f, instr) for f in flist]
         results = list(dask.compute(*delayed, scheduler='processes'))
 
 
@@ -907,12 +909,12 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
                 failed.append(flist[i])
                 continue
             print(key[0], key[1], flist[i])
-            write_out(dset_name=flist[i],
-                      fout=key[0],
-                      data=data,
-                      grp=instr,
-                      subgrp=key[1],
-                      metadata=file_metadata[i])
+            # write_out(dset_name=flist[i],
+            #           fout=key[0],
+            #           data=data,
+            #           grp=instr,
+            #           subgrp=key[1],
+            #           metadata=file_metadata[i])
     f_out = './../crrejtab/{}/{}_failed_to_process.txt'.format(
                                                         instr.split('_')[0],
                                                         instr)
@@ -992,10 +994,11 @@ def read_processed_ranges(instr):
             dates = [line.strip('\n') for line in lines]
     except FileNotFoundError as e:
         return []
+    print(dates)
     return dates
 
 
-def download_data(finder, start, stop, aws):
+def download_data(downloader, start, stop, aws):
     """
 
     Parameters
@@ -1009,8 +1012,8 @@ def download_data(finder, start, stop, aws):
 
     """
     start_time = time.time()
-    finder.query(range=(start, stop), aws=aws)
-    finder.download(start.datetime.date().isoformat())
+    downloader.query(range=(start, stop), aws=aws)
+    downloader.download(start.datetime.date().isoformat())
     end_time = time.time()
     return (end_time - start_time)/60
 
@@ -1046,10 +1049,10 @@ def main(instr, initialize, aws):
 
     if initialize:
         initialize_hdf5(instr, cfg[instr], cfg['subgrp_names'])
-    finder = find_files_to_download(instr)
+    downloader = find_files_to_download(instr)
     search_pattern = cfg[instr]['search_pattern'][0]
     analyzed_dates = read_processed_ranges(instr)
-    date_chunks = np.array_split(finder.dates, 4)
+    date_chunks = np.array_split(downloader.dates, 4)
     for i, chunk in enumerate(date_chunks):
         for (start, stop) in chunk:
             process_times = {'download_time': 0,
@@ -1062,7 +1065,7 @@ def main(instr, initialize, aws):
 
             print('Analyzing data from {} to {}'.format(start.iso, stop.iso))
             # Download the data
-            download_time = download_data(finder, start, stop, aws)
+            download_time = download_data(downloader, start, stop, aws)
             process_times['download_time'] = download_time
 
             if instr == 'WFC3_IR' or 'NICMOS' in instr:
@@ -1122,12 +1125,13 @@ def main(instr, initialize, aws):
                 SendEmailAWS(subj, data_for_email, process_times)
             else:
                 SendEmail(subj, data_for_email, gif_file, process_times, gif=False)
-            write_processed_ranges(start, stop, instr)
-            clean_files(instr)
-
+            # write_processed_ranges(start, stop, instr)
+            # clean_files(instr)
+            break
+        break
             
 if __name__ == '__main__':
     args = parser.parse_args()
     instr = args.instr.upper()
     main(args.instr.upper(), args.initialize, args.aws)
-    # main('NICMOS_NIC1', True, False)
+    # main('ACS_WFC', False, False)

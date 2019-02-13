@@ -69,7 +69,7 @@ class ProcessData(object):
 
     def ACS(self, input):
         if 'wfc' in self.instr.lower():
-            crrejtab = './../crrejtab/ACS/n4e12511j_crr_WFC.fits'
+            crrejtab = './../crrejtab/ACS/29p1548cj_crr_WFC.fits'
         else:
             crrejtab = './../crrejtab/ACS/n4e12510j_crr_HRC.fits'
         output = 'tmp_crj_{}.fits'.format(self.i)
@@ -82,7 +82,6 @@ class ProcessData(object):
              acsrej.acsrej(input=input,
                           output=output,
                           verbose=True,
-                          crsigmas='5,4,3',
                           crrejtab=crrejtab,
                           crmask=True,
                           initgues='med',

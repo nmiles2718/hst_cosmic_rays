@@ -16,7 +16,7 @@ _CFG = {'ACS':'2002-03-01',
         'WFPC2':[['1994-01-01','2009-06-01'],['C0M','SHM']],
         'NICMOS':[['1997-04-01','2009-10-22'],['IMA', 'SPT']]}
 
-class FindData(object):
+class Downloader(object):
 
     def __init__(self, instr):
         # Query parameters
