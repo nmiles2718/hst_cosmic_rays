@@ -468,7 +468,7 @@ def initialize_hdf5(instr, instr_cfg, subgrp_names):
     for j, f in enumerate(new_flist):
         if not os.path.isdir(os.path.dirname(f)):
             os.mkdir(os.path.dirname(f))
-        # print('File structure: /{}/{}'.format(instr, subgrp_names[i]))
+        # print('File structure: /{}/{}'.format(instr, subgrp_names[_i]))
         with h5py.File(f,'w') as fobj:
             grp = fobj.create_group(instr)
             subgrp = grp.create_group(subgrp_names[i])
@@ -905,16 +905,16 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
         for i, data in enumerate(cr_data[key]):
             # Don't bother to write out nan results
             if np.isnan(data_for_email['electron_deposition'][i]):
-                # print('NaN dataset, skipping {}'.format(flist[i]))
+                # print('NaN dataset, skipping {}'.format(flist[_i]))
                 failed.append(flist[i])
                 continue
             print(key[0], key[1], flist[i])
-            # write_out(dset_name=flist[i],
+            # write_out(dset_name=flist[_i],
             #           fout=key[0],
             #           data=data,
             #           grp=instr,
             #           subgrp=key[1],
-            #           metadata=file_metadata[i])
+            #           metadata=file_metadata[_i])
     f_out = './../crrejtab/{}/{}_failed_to_process.txt'.format(
                                                         instr.split('_')[0],
                                                         instr)
@@ -930,7 +930,7 @@ def clean_files(instr):
     """ Clean up after processing
 
     This will delete the downloaded files, as well as the files produced by
-    the CR rejection process (i.e. the combined image and all trailer files)
+    the CR rejection process (_i.e. the combined image and all trailer files)
 
     Parameters
     ----------
@@ -1050,7 +1050,7 @@ def main(instr, initialize, aws):
     if initialize:
         initialize_hdf5(instr, cfg[instr], cfg['subgrp_names'])
     downloader = find_files_to_download(instr)
-    search_pattern = cfg[instr]['search_pattern'][0]
+    search_pattern = cfg[instr]['search_pattern']
     analyzed_dates = read_processed_ranges(instr)
     date_chunks = np.array_split(downloader.dates, 4)
     for i, chunk in enumerate(date_chunks):

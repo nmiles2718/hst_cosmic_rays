@@ -14,6 +14,9 @@ from scipy import ndimage
 
 
 class CosmicRayLabel(object):
+    """
+    Class for generating the cosmic ray label
+    """
     def __init__(self, fname):
         self.fname = fname
         self.dq = None
@@ -58,9 +61,12 @@ class CosmicRayLabel(object):
 
         Parameters
         ----------
-        dq : DQ data extension
-        bit_flag : BIT value to search for
-        structure_element : structure element for labeling
+        dq : numpy.ndarray
+            DQ data extension
+        bit_flag : int
+            BIT value to search for
+        structure_element : numpy.ndarray
+            structure element for labeling
 
         Returns
         -------

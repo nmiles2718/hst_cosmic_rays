@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from datetime import date
+import logging
+import os
 import warnings
 
 from astropy.time import Time
@@ -10,138 +11,379 @@ from pandas import date_range
 
 
 
-_CFG = {'ACS':'2002-03-01',
-        'WFC3':'2009-06-01',
-        'STIS':'1997-02-01',
-        'WFPC2':[['1994-01-01','2009-06-01'],['C0M','SHM']],
-        'NICMOS':[['1997-04-01','2009-10-22'],['IMA', 'SPT']]}
+__taskname__ = "download"
+__author__ = "Nathan Miles"
+__version__ = "1.0"
+__vdate__ = "22-Jan-2019"
+
+
+logging.basicConfig(format='%(levelname)-4s '
+                           '[%(module)s:%(funcName)s:%(lineno)d]'
+                           ' %(message)s')
+LOG = logging.getLogger('Downloader')
+LOG.setLevel(logging.INFO)
+
+
 
 class Downloader(object):
 
-    def __init__(self, instr):
-        # Query parameters
-        if 'NIC' in instr:
-            self._instr = instr.replace('_', '/')
-            self._SubGroupDescription = _CFG[instr.split('_')[0]][1]
-            self._start = Time(_CFG[instr.split('_')[0]][0][0], format='iso')
-            self._stop = Time(_CFG[instr.split('_')[0]][0][1], format='iso')
-        elif instr == 'WFPC2':
-            self._instr = instr
-            self._SubGroupDescription = _CFG[instr][1]
-            self._start = Time(_CFG[instr][0][0], format='iso')
-            self._stop = Time(_CFG[instr][0][1], format='iso')
-        elif 'IR' in instr:
-            self._instr = instr.replace('_', '/')
-            self._SubGroupDescription = ['IMA', 'SPT']
-            self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
-            self._stop = Time(date.today().isoformat(), format='iso')
-        else:
-            self._instr = instr.replace('_','/') # Format the instrument name
-            self._start = Time(_CFG[self._instr.split('/')[0]], format='iso')
-            self._stop = Time(date.today().isoformat(), format='iso')
-            self._SubGroupDescription = ['FLT', 'SPT']
-        self._collection = 'HST'
-        self._product_type = ['image','spectrum'] # DOES NOT WORK FOR STIS, MUST BE SPECTRUM
-        self._obstype = 'cal'
-        self._target_name = 'DARK'
+    def __init__(self, instr, instr_cfg):
 
-        # Uncomment for STIS debugging
-        # self._stop = Time('2000-01-01', format='iso')
+        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
 
-        # Storing the results
-        self._products = {}
+        self._base = os.path.join('/',
+                                  *self._mod_dir.split('/')[:-2])
+
+        self._instr_cfg = instr_cfg
+
+        self._dates = None
+
+        self._download_dir = os.path.join(
+            self._base,
+            *self._instr_cfg['astroquery']['download_dir'].split('/')
+        )
+
+        self._inactive_range = {
+            'ACS': [
+                Time('2007-01-27', format='iso'),
+                Time('2009-05-01', format='iso')
+            ],
+            'STIS': [
+                Time('2004-08-03', format='iso'),
+                Time('2009-05-01', format='iso')
+            ]
+        }
         self._filtered_table = None
-        self.dates = None
-        self.t_exptime = [10, 10000]
+        self._instr = instr.replace('_', '/') # put into format for astroquery
+        self._msg_div = '-' * 79
+        self._obstype = 'cal'
+        self._product_type = ['image', 'spectrum'] # SPECTRUM is for STIS
+        self._products = {}
+        self._project = 'HST'
+        self._start_date = None
+        self._stop_date = None
+        self._SubGroupDescription = self._instr_cfg['astroquery']['SubGroup' \
+                                                            'Description']
+        self._target_name = 'DARK*'
+        self._t_exptime = [0.5, 10000] # Exposure times to include
 
-    def get_date_ranges(self):
+
+    @property
+    def instr_cfg(self):
+        return self._instr_cfg
+
+    @instr_cfg.getter
+    def instr_cfg(self):
+        """Configuration object
+
+        Corresponds to the configuration object stored in the
+         :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg` attribute
+
+         """
+        return self._instr_cfg
+
+    @property
+    def dates(self):
+        return self._dates
+
+    @dates.getter
+    def dates(self):
+        """A list of one month date intervals"""
+        return self._dates
+
+    @dates.setter
+    def dates(self, value):
+        self._dates = value
+
+    @property
+    def download_dir(self):
+        return self._download_dir
+
+    @download_dir.getter
+    def download_dir(self):
+        """Download directory for the instrument being analyzed
+
+        Corresponds to the value stored in the given instruments info stored in
+        the :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg` attribute
+
         """
-        We search for all files and to find the oldest and newest obs dates.
-        We use those dates to generate a list of date ranges that we will use
-        to query MAST for 1 month chunks of darks.
+        return self._download_dir
 
-        """
+    @property
+    def inactive_range(self):
+        return self._inactive_range
 
+    @inactive_range.getter
+    def inactive_range(self):
+        """Periods of inactivity for each instrument if they exists"""
+        return self._inactive_range
 
-        # very roundabout way of generating a list of MJD dates separated by a month
-        pd_range = date_range(start=self._start.iso,
-                                   end=self._stop.iso,
-                                   freq='1MS')
-        dates = [Time(date.date().isoformat(), format='iso')
-                 for date in pd_range]
-        date_ranges_even = list(zip(dates[::2], dates[1::2]))
-        date_ranges_odd = list(zip(dates[1::2], dates[2:-2:2]))
+    @property
+    def instr(self):
+        return self._instr
 
+    @instr.getter
+    def instr(self):
+        """Name of the instrument that is going to be analyzed"""
+        return self._instr
 
-        date_ranges = sorted(date_ranges_even + date_ranges_odd,
-                              key=lambda x: x[0])
-        if 'ACS' in self._instr:
-            print(len(date_ranges))
-            failure = Time('2007-01-27', format='iso')
-            sm4 = Time('2009-05-01', format='iso')
-            keep = []
-            for range in date_ranges:
-                if range[0] >= failure and range[1] <= sm4:
-                    continue
-                keep.append(range)
-            self.dates = array(keep)
-        else:
-            self.dates = array(date_ranges)
+    @property
+    def obstype(self):
+        return self._obstype
+
+    @obstype.getter
+    def obstype(self):
+        """`obstype` kwarg for MAST query (str)"""
+        return self._obstype
+
+    @property
+    def products(self):
+        return self._products
+
+    @products.getter
+    def products(self):
+        """Filtered version of data products returned by MAST query"""
+        return self._products
+
+    @products.setter
+    def products(self, value):
+        self._products = value
+
+    @property
+    def product_type(self):
+        return self._product_type
+
+    @product_type.getter
+    def product_type(self):
+        """Product types to download """
+        return self._product_type
+
+    @property
+    def project(self):
+        return self._project
+
+    @project.getter
+    def project(self):
+        """`project` kwarg for MAST query (str)"""
+        return self._project
+
+    @property
+    def start_date(self):
+        return self._start_date
+
+    @start_date.getter
+    def start_date(self):
+        """Earliest possible date for any observations taken by instrument"""
+        return self._start_date
+
+    @start_date.setter
+    def start_date(self, value):
+        self._start_date = value
+
+    @property
+    def stop_date(self):
+        return self._stop_date
+
+    @stop_date.getter
+    def stop_date(self):
+        """Latest possible date for any observations taken by instrument"""
+        return self._stop_date
+
+    @stop_date.setter
+    def stop_date(self, value):
+        self._stop_date = value
+
+    @property
+    def SubGroupDescription(self):
+        return self._SubGroupDescription
+
+    @SubGroupDescription.getter
+    def SubGroupDescription(self):
+        """`SubGroupDescription` kwarg for filtering MAST products (list)"""
+        return self._SubGroupDescription
+
+    @property
+    def t_exptime(self):
+        return self._t_exptime
+
+    @t_exptime.getter
+    def t_exptime(self):
+        """Range of exposure times to download"""
+        return self._t_exptime
+
+    @property
+    def target_name(self):
+        return self._target_name
+
+    @target_name.getter
+    def target_name(self):
+        """Name of target to download"""
+        return self._target_name
+
+    # def initialize_dates(self):
+    #     """Determine the start and stop dates of all observations
+    #
+    #     The ranges of dates we wish to analyze will depend on whether or not
+    #     the instrument being analyzed is an active or legacy instrument.
+    #
+    #         - Active instruments have no defined end date, so we set this to
+    #           the current date using :py:meth:`astropy.time.Time.now`
+    #           method.
+    #
+    #         - Legacy instruments have a defined end date that corresponds to
+    #           a date when the instrument either failed or was shutdown.
+    #
+    #     Initializes the :py:attr:`start_date` and
+    #     :py:attr:`stop_date` attributes
+    #     """
+    #     cfg_dates = self.cfg['astroquery']['date_range']
+    #     if isinstance(cfg_dates, list):
+    #         # Inactive instrument have defined date ranges
+    #         self.start_date = Time(cfg_dates[0], format='iso')
+    #         self.stop_date = Time(cfg_dates[1], format='iso')
+    #     else:
+    #         self.start_date = Time(cfg_dates, format='iso')
+    #         self.stop_date = Time.now()
+    #
+    #
+    # def get_date_ranges(self):
+    #     """ Generate a list of tuples containing one month intervals
+    #
+    #     For instruments that experienced failures, intervals that fall in a
+    #     period of inactivity will be automatically removed.
+    #     """
+    #
+    #     # very roundabout way of generating a list of MJD dates separated by a month
+    #     pd_range = date_range(start=self.start_date.iso,
+    #                                end=self.stop_date.iso,
+    #                                freq='1MS')
+    #     dates = [Time(date.date().isoformat(), format='iso')
+    #              for date in pd_range]
+    #     date_ranges_even = list(zip(dates[::2], dates[1::2]))
+    #     date_ranges_odd = list(zip(dates[1::2], dates[2:-2:2]))
+    #
+    #
+    #     date_ranges = sorted(date_ranges_even + date_ranges_odd,
+    #                           key=lambda x: x[0])
+    #
+    #     # Check if the instrument had any failures
+    #     instr = self.instr.split('/')[0]
+    #     if instr in self.inactive_range.keys():
+    #         start_failure = self.inactive_range[instr][0]
+    #         stop_failure = self.inactive_range[instr][1]
+    #         keep = []
+    #
+    #         for range in date_ranges:
+    #             if range[0] >= start_failure and range[1] <= stop_failure:
+    #                 continue
+    #             keep.append(range)
+    #
+    #         # Update the list of date intervals
+    #         self.dates = array(keep)
+    #     else:
+    #         self.dates = array(date_ranges)
 
     def query(self, range, aws=False):
-        """
-        Using the date list generated above, query for 1 month intervals of
-        darks and save them in a dictionary where the key corresponds to the
-        interval start date.
-        Returns
-        -------
+        """ Submit a query to MAST for observations in the date range
+
+        Parameters
+        ----------
+        range : tuple
+            Tuple of `astropy.time.Time` objects correspond to the beginning
+            and end of a one month interval
+        aws : bool
+            If True, query returns references to data hosted in S3.
 
         """
-
+        LOG.info('Submitting query to MAST')
         if aws:
             Observations.enable_s3_hst_dataset()
         start, stop = range
         # there shouldn't be any data taken after the most recent file
+        query_params = {
+            'project': self.project,
+            'dataproduct_type': self.product_type,
+            'obstype': self.obstype,
+            'target_name': self.target_name,
+            'instrument_name': self.instr,
+            't_min': [start.mjd, stop.mjd],
+            't_exptime': self.t_exptime
+        }
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             try:
-                obsTable = Observations.query_criteria(
-                    project=self._collection,
-                    dataproduct_type=self._product_type,
-                    obstype=self._obstype,
-                    target_name=self._target_name,
-                    instrument_name=self._instr,
-                    t_min = [start.mjd, stop.mjd],
-                    t_exptime = self.t_exptime
-                )
+                obsTable = Observations.query_criteria(**query_params)
             except Exception as e:
-                print(e,'Date range [{}, {}]'.format(start.iso, stop.iso))
+                msg = ('{}\n Date range [{}, {}]\n {}'.format(e,
+                                                              start.iso,
+                                                              stop.iso,
+                                                              self._msg_div))
+                LOG.error(msg)
             else:
+                LOG.info('Filtering observations...')
                 products = Observations.get_product_list(obsTable)
-                filtered_products = Observations.filter_products(products,
-                                                                 mrp_only=False,
-                                                                 productSubGroupDescription=self._SubGroupDescription
-                                                                 )
+                filter_params = {
+                    'mrp_only': False,
+                    'productSubGroupDescription':self.SubGroupDescription
+                }
+
+                filt_products = Observations.filter_products(products,
+                                                             **filter_params)
+
                 key = start.datetime.date().isoformat() # 'YYYY-MM-DD'
-                self._products[key] = filtered_products
+                self.products[key] = filt_products
 
     def download(self, key):
-        """
-        Download the one month chunk of data corresponding to the specified
-        key. This will allow us to download only one month at a time, process it,
-        then run the analysis on.
+        """Download the data
 
+        Only download the observations contained in the interval specified by
+        the `key`. The `key` argument must correspond to one of the keys in the
+        :py:attr:`~download.Downloader.products` attribute. If it is not,
+        then a KeyError will be raised and the download will be skipped.
+
+
+        Parameters
+        ----------
+        key : str
+            Date in ISO format (YYYY-MM-DD) of a given intervals start time
+
+        Returns
+        -------
+        None
+            Downloaded data will be stored in directory specified by the
+            :py:attr:`~download.Downloader.download_dir` attribute
         """
-        data_dir = './../crrejtab/{}/'.format(self._instr.split('/')[0])
+        msg = ('Downloading data...\n '
+               'Download Directory: {}\n {}'.format(self.download_dir,
+                                                    self._msg_div))
+        LOG.info(msg)
+        download_params = {
+            'download_dir': self.download_dir,
+            'mrp_only': False,
+            'dataproduct_type': self.product_type,
+            'productSubGroupDescription': self.SubGroupDescription
+        }
         try:
-            download_list = self._products[key]['obsID'].tolist()
+            download_list = self.products[key]['obsID'].tolist()
         except KeyError as e:
-            print(e)
-        else:    
-            Observations.download_products(download_list,
-                                           download_dir=data_dir,
-                                           mrp_only=False,
-                                           dataproduct_type = self._product_type,
-                                           productSubGroupDescription=self._SubGroupDescription)
+            LOG.error('{}\n{}'.format(e, self._msg_div))
+        else:
+            Observations.download_products(download_list, **download_params)
+
+def main():
+    import yaml
+    cfg_file = '/Users/nmiles/hst_cosmic_rays/CONFIG/pipeline_config.yaml'
+    with open(cfg_file) as fobj:
+        cfg = yaml.load(fobj)
+    instr = 'WFC3_UVIS'
+    d = Downloader(instr=instr, instr_cfg=cfg[instr])
+    d.initialize_dates()
+    d.get_date_ranges()
+    d.query(range=d.dates[0], aws=False)
+    d.download(d.dates[0][0].datetime.date().isoformat())
+
+if __name__ == "__main__":
+    main()
+
 
 

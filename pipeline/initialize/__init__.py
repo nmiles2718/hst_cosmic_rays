@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-"""
-Base class for data processing object
-"""
-
 
 from astropy.io import fits
 import numpy as np
