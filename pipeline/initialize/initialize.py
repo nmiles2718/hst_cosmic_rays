@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """
-Module for initializing common things used by the pipeline
+This module contains a class :py:class:`~initialize.initialize.Initializer`
+that contains a series of methods for performing basic initialization of the
+pipeline. In short it will perform the following:
 
-e.g.
-
-    - HDF5 files
-    - List of already processed dates
-    - One month intervals of dates to process
+    - Generate a series of empty HDF5 files for each statistic recorded.
+    - Generate a list of the previously processed date ranges.
+    - Generate a list of date intervals spanning one month periods to be used
+      in the downloading process.
 
 """
 
@@ -29,18 +30,22 @@ LOG.setLevel(logging.INFO)
 
 
 class Initializer(object):
-    """
+    """Class for initializing common things used by the entire pipeline
 
     Parameters
     ----------
-    instr
-    cfg
+    instr : str
+        Instrument to process
+
+    cfg : dict
+        Pipeline configuration object
+
     """
     def __init__(self, instr, cfg):
 
         self._instr = instr
         self._cfg = cfg
-        self._instr_cfg = cfg[self._instr]
+        self._instr_cfg = self._cfg[self._instr]
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
         self._dates = None

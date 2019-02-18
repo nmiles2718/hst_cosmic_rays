@@ -14,9 +14,12 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   pipeline
    download
+   initialize
+   label
    process
+   pipeline
+
 
 
 

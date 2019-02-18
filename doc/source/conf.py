@@ -15,7 +15,7 @@
 import sys
 sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline')
 
-import pipeline
+import pipeline_updated
 
 
 

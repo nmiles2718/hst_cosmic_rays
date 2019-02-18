@@ -6,8 +6,7 @@ import warnings
 
 from astropy.time import Time
 from astroquery.mast import Observations
-from numpy import array
-from pandas import date_range
+
 
 
 
@@ -220,69 +219,6 @@ class Downloader(object):
         """Name of target to download"""
         return self._target_name
 
-    # def initialize_dates(self):
-    #     """Determine the start and stop dates of all observations
-    #
-    #     The ranges of dates we wish to analyze will depend on whether or not
-    #     the instrument being analyzed is an active or legacy instrument.
-    #
-    #         - Active instruments have no defined end date, so we set this to
-    #           the current date using :py:meth:`astropy.time.Time.now`
-    #           method.
-    #
-    #         - Legacy instruments have a defined end date that corresponds to
-    #           a date when the instrument either failed or was shutdown.
-    #
-    #     Initializes the :py:attr:`start_date` and
-    #     :py:attr:`stop_date` attributes
-    #     """
-    #     cfg_dates = self.cfg['astroquery']['date_range']
-    #     if isinstance(cfg_dates, list):
-    #         # Inactive instrument have defined date ranges
-    #         self.start_date = Time(cfg_dates[0], format='iso')
-    #         self.stop_date = Time(cfg_dates[1], format='iso')
-    #     else:
-    #         self.start_date = Time(cfg_dates, format='iso')
-    #         self.stop_date = Time.now()
-    #
-    #
-    # def get_date_ranges(self):
-    #     """ Generate a list of tuples containing one month intervals
-    #
-    #     For instruments that experienced failures, intervals that fall in a
-    #     period of inactivity will be automatically removed.
-    #     """
-    #
-    #     # very roundabout way of generating a list of MJD dates separated by a month
-    #     pd_range = date_range(start=self.start_date.iso,
-    #                                end=self.stop_date.iso,
-    #                                freq='1MS')
-    #     dates = [Time(date.date().isoformat(), format='iso')
-    #              for date in pd_range]
-    #     date_ranges_even = list(zip(dates[::2], dates[1::2]))
-    #     date_ranges_odd = list(zip(dates[1::2], dates[2:-2:2]))
-    #
-    #
-    #     date_ranges = sorted(date_ranges_even + date_ranges_odd,
-    #                           key=lambda x: x[0])
-    #
-    #     # Check if the instrument had any failures
-    #     instr = self.instr.split('/')[0]
-    #     if instr in self.inactive_range.keys():
-    #         start_failure = self.inactive_range[instr][0]
-    #         stop_failure = self.inactive_range[instr][1]
-    #         keep = []
-    #
-    #         for range in date_ranges:
-    #             if range[0] >= start_failure and range[1] <= stop_failure:
-    #                 continue
-    #             keep.append(range)
-    #
-    #         # Update the list of date intervals
-    #         self.dates = array(keep)
-    #     else:
-    #         self.dates = array(date_ranges)
-
     def query(self, range, aws=False):
         """ Submit a query to MAST for observations in the date range
 
@@ -306,7 +242,8 @@ class Downloader(object):
             'obstype': self.obstype,
             'target_name': self.target_name,
             'instrument_name': self.instr,
-            't_min': [start.mjd, stop.mjd],
+            't_min': start.mjd,
+            't_max': stop.mjd,
             't_exptime': self.t_exptime
         }
         with warnings.catch_warnings():
@@ -370,20 +307,20 @@ class Downloader(object):
         else:
             Observations.download_products(download_list, **download_params)
 
-def main():
-    import yaml
-    cfg_file = '/Users/nmiles/hst_cosmic_rays/CONFIG/pipeline_config.yaml'
-    with open(cfg_file) as fobj:
-        cfg = yaml.load(fobj)
-    instr = 'WFC3_UVIS'
-    d = Downloader(instr=instr, instr_cfg=cfg[instr])
-    d.initialize_dates()
-    d.get_date_ranges()
-    d.query(range=d.dates[0], aws=False)
-    d.download(d.dates[0][0].datetime.date().isoformat())
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     import yaml
+#     cfg_file = '/Users/nmiles/hst_cosmic_rays/CONFIG/pipeline_config.yaml'
+#     with open(cfg_file) as fobj:
+#         cfg = yaml.load(fobj)
+#     instr = 'WFC3_UVIS'
+#     d = Downloader(instr=instr, instr_cfg=cfg[instr])
+#     d.initialize_dates()
+#     d.get_date_ranges()
+#     d.query(range=d.dates[0], aws=False)
+#     d.download(d.dates[0][0].datetime.date().isoformat())
+#
+# if __name__ == "__main__":
+#     main()
 
 
 

@@ -1,26 +1,30 @@
 ACS_WFC:
-  search_pattern: /crrejtab/ACS/WFC/mastDownload/HST/*/*flt.fits
+  search_pattern: /data/ACS/WFC/mastDownload/HST/*/*flt.fits
   hdf5_files:
-    - ./../data/ACS/acs_cr_affected_pixels.hdf5
-    - ./../data/ACS/acs_cr_rate.hdf5
-    - ./../data/ACS/acs_cr_sizes.hdf5
-    - ./../data/ACS/acs_cr_shapes.hdf5
-    - ./../data/ACS/acs_cr_deposition.hdf5
+    - ./../results/ACS/acs_cr_affected_pixels.hdf5
+    - ./../results/ACS/acs_cr_rate.hdf5
+    - ./../results/ACS/acs_cr_sizes.hdf5
+    - ./../results/ACS/acs_cr_shapes.hdf5
+    - ./../results/ACS/acs_cr_deposition.hdf5
   astroquery:
     date_range: '2002-03-01'
     SubGroupDescription:
       - 'FLT'
       - 'SPT'
-    download_dir: /crrejtab/ACS/WFC/
+    download_dir: /data/ACS/WFC/
+  crrejtab: /data/ACS/29p1548cj_crr_WFC.fits
+  instr_params:
+    extnums: [1,2]
+    readout_time: 50.0
 
 ACS_HRC:
-  search_pattern: /crrejtab/ACS/HRC/mastDownload/HST/*/*flt.fits
+  search_pattern: /data/ACS/HRC/mastDownload/HST/*/*flt.fits
   hdf5_files:
-    - ./../data/ACS/acs_hrc_cr_affected_pixels.hdf5
-    - ./../data/ACS/acs_hrc_cr_rate.hdf5
-    - ./../data/ACS/acs_hrc_cr_sizes.hdf5
-    - ./../data/ACS/acs_hrc_cr_shapes.hdf5
-    - ./../data/ACS/acs_hrc_cr_deposition.hdf5
+    - ./../results/ACS/acs_hrc_cr_affected_pixels.hdf5
+    - ./../results/ACS/acs_hrc_cr_rate.hdf5
+    - ./../results/ACS/acs_hrc_cr_sizes.hdf5
+    - ./../results/ACS/acs_hrc_cr_shapes.hdf5
+    - ./../results/ACS/acs_hrc_cr_deposition.hdf5
   astroquery:
     date_range:
       - '2002-03-01'
@@ -28,16 +32,20 @@ ACS_HRC:
     SubGroupDescription:
       - 'FLT'
       - 'SPT'
-    download_dir: /crrejtab/ACS/HRC/
+    download_dir: /data/ACS/HRC/
+  crrejtab: /data/ACS/n4e12510j_crr_HRC.fits
+  instr_params:
+    extnums: [1]
+    readout_time: 15.0
 
 NICMOS_NIC1:
-  search_pattern: /crrejtab/NICMOS/NIC1/mastDownload/HST/*/*ima.fits
+  search_pattern: /data/NICMOS/NIC1/mastDownload/HST/*/*ima.fits
   hdf5_files:
-    - ./../data/NICMOS/nicmos_nic1_cr_affected_pixels.hdf5
-    - ./../data/NICMOS/nicmos_nic1_cr_rate.hdf5
-    - ./../data/NICMOS/nicmos_nic1_cr_sizes.hdf5
-    - ./../data/NICMOS/nicmos_nic1_cr_shapes.hdf5
-    - ./../data/NICMOS/nicmos_nic1_cr_deposition.hdf5
+    - ./../results/NICMOS/nicmos_nic1_cr_affected_pixels.hdf5
+    - ./../results/NICMOS/nicmos_nic1_cr_rate.hdf5
+    - ./../results/NICMOS/nicmos_nic1_cr_sizes.hdf5
+    - ./../results/NICMOS/nicmos_nic1_cr_shapes.hdf5
+    - ./../results/NICMOS/nicmos_nic1_cr_deposition.hdf5
   astroquery:
     date_range:
       - '1997-02-01'
@@ -45,16 +53,17 @@ NICMOS_NIC1:
     SubGroupDescription:
       - 'IMA'
       - 'SPT'
-    download_dir: /crrejtab/NICMOS/NIC1/
+    download_dir: /data/NICMOS/NIC1/
+
 
 NICMOS_NIC2:
-  search_pattern: /crrejtab/NICMOS/NIC2/mastDownload/HST/*/*ima.fits
+  search_pattern: /data/NICMOS/NIC2/mastDownload/HST/*/*ima.fits
   hdf5_files:
-    - ./../data/NICMOS/nicmos_nic2_cr_affected_pixels.hdf5
-    - ./../data/NICMOS/nicmos_nic2_cr_rate.hdf5
-    - ./../data/NICMOS/nicmos_nic2_cr_sizes.hdf5
-    - ./../data/NICMOS/nicmos_nic2_cr_shapes.hdf5
-    - ./../data/NICMOS/nicmos_nic2_cr_deposition.hdf5
+    - ./../results/NICMOS/nicmos_nic2_cr_affected_pixels.hdf5
+    - ./../results/NICMOS/nicmos_nic2_cr_rate.hdf5
+    - ./../results/NICMOS/nicmos_nic2_cr_sizes.hdf5
+    - ./../results/NICMOS/nicmos_nic2_cr_shapes.hdf5
+    - ./../results/NICMOS/nicmos_nic2_cr_deposition.hdf5
   astroquery:
     date_range:
       - '1997-02-01'
@@ -62,16 +71,16 @@ NICMOS_NIC2:
     SubGroupDescription:
       - 'IMA'
       - 'SPT'
-    download_dir: /crrejtab/NICMOS/NIC2/
+    download_dir: /data/NICMOS/NIC2/
 
 NICMOS_NIC3:
-  search_pattern: /crrejtab/NICMOS/NIC3/mastDownload/HST/*/*ima.fits
+  search_pattern: /data/NICMOS/NIC3/mastDownload/HST/*/*ima.fits
   hdf5_files:
-    - ./../data/NICMOS/nicmos_nic3_cr_affected_pixels.hdf5
-    - ./../data/NICMOS/nicmos_nic3_cr_rate.hdf5
-    - ./../data/NICMOS/nicmos_nic3_cr_sizes.hdf5
-    - ./../data/NICMOS/nicmos_nic3_cr_shapes.hdf5
-    - ./../data/NICMOS/nicmos_nic3_cr_deposition.hdf5
+    - ./../results/NICMOS/nicmos_nic3_cr_affected_pixels.hdf5
+    - ./../results/NICMOS/nicmos_nic3_cr_rate.hdf5
+    - ./../results/NICMOS/nicmos_nic3_cr_sizes.hdf5
+    - ./../results/NICMOS/nicmos_nic3_cr_shapes.hdf5
+    - ./../results/NICMOS/nicmos_nic3_cr_deposition.hdf5
   astroquery:
     date_range:
       - '1997-02-01'
@@ -79,61 +88,69 @@ NICMOS_NIC3:
     SubGroupDescription:
       - 'IMA'
       - 'SPT'
-    download_dir: /crrejtab/NICMOS/NIC3/
+    download_dir: /data/NICMOS/NIC3/
 
 STIS_CCD:
-  search_pattern: /crrejtab/STIS/CCD/mastDownload/HST/*/*flt.fits
+  search_pattern: /data/STIS/CCD/mastDownload/HST/*/*flt.fits
   hdf5_files:
-    - ./../data/STIS/stis_cr_affected_pixels.hdf5
-    - ./../data/STIS/stis_cr_rate.hdf5
-    - ./../data/STIS/stis_cr_sizes.hdf5
-    - ./../data/STIS/stis_cr_shapes.hdf5
-    - ./../data/STIS/stis_cr_deposition.hdf5
+    - ./../results/STIS/stis_cr_affected_pixels.hdf5
+    - ./../results/STIS/stis_cr_rate.hdf5
+    - ./../results/STIS/stis_cr_sizes.hdf5
+    - ./../results/STIS/stis_cr_shapes.hdf5
+    - ./../results/STIS/stis_cr_deposition.hdf5
   astroquery:
     date_range: '1997-02-01'
     SubGroupDescription:
       - 'FLT'
       - 'SPT'
-    download_dir:  /crrejtab/STIS/CCD/
+    download_dir: /data/STIS/CCD/
+  crrejtab: /data/STIS/j3m1403io_crr.fits
+  instr_params:
+    extnums: [1]
+    readout_time: 15.0
 
 WFC3_IR:
-  search_pattern: /crrejtab/WFC3/IR/mastDownload/HST/*/*ima.fits
+  search_pattern: /data/WFC3/IR/mastDownload/HST/*/*ima.fits
   hdf5_files:
-    - ./../data/WFC3/wfc3_ir_cr_affected_pixels.hdf5
-    - ./../data/WFC3/wfc3_ir_cr_rate.hdf5
-    - ./../data/WFC3/wfc3_ir_cr_sizes.hdf5
-    - ./../data/WFC3/wfc3_ir_cr_shapes.hdf5
-    - ./../data/WFC3/wfc3_ir_cr_deposition.hdf5
+    - ./../results/WFC3/wfc3_ir_cr_affected_pixels.hdf5
+    - ./../results/WFC3/wfc3_ir_cr_rate.hdf5
+    - ./../results/WFC3/wfc3_ir_cr_sizes.hdf5
+    - ./../results/WFC3/wfc3_ir_cr_shapes.hdf5
+    - ./../results/WFC3/wfc3_ir_cr_deposition.hdf5
   astroquery:
     date_range: '2009-05-01'
     SubGroupDescription:
       - 'IMA'
       - 'SPT'
-    download_dir: /crrejtab/WFC3/IR/
+    download_dir: /data/WFC3/IR/
 
 WFC3_UVIS:
-  search_pattern: /crrejtab/WFC3/UVIS/mastDownload/HST/*/*flt.fits
+  search_pattern: /data/WFC3/UVIS/mastDownload/HST/*/*flt.fits
   hdf5_files:
-    - ./../data/WFC3/wfc3_cr_affected_pixels.hdf5
-    - ./../data/WFC3/wfc3_cr_rate.hdf5
-    - ./../data/WFC3/wfc3_cr_sizes.hdf5
-    - ./../data/WFC3/wfc3_cr_shapes.hdf5
-    - ./../data/WFC3/wfc3_cr_deposition.hdf5
+    - ./../results/WFC3/wfc3_cr_affected_pixels.hdf5
+    - ./../results/WFC3/wfc3_cr_rate.hdf5
+    - ./../results/WFC3/wfc3_cr_sizes.hdf5
+    - ./../results/WFC3/wfc3_cr_shapes.hdf5
+    - ./../results/WFC3/wfc3_cr_deposition.hdf5
   astroquery:
     date_range: '2009-05-01'
     SubGroupDescription:
       - 'FLT'
       - 'SPT'
-    download_dir:  /crrejtab/WFC3/UVIS/
+    download_dir: /data/WFC3/UVIS/
+  crrejtab: /data/WFC3/n9i1435li_crr_UVIS.fits
+  instr_params:
+    extnums: [1,2]
+    readout_time: 50.0
 
 WFPC2:
-  search_pattern: /crrejtab/WFPC2/mastDownload/HST/*/*c0m.fits
+  search_pattern: /data/WFPC2/mastDownload/HST/*/*c0m.fits
   hdf5_files:
-    - ./../data/WFPC2/wfpc2_cr_affected_pixels.hdf5
-    - ./../data/WFPC2/wfpc2_cr_rate.hdf5
-    - ./../data/WFPC2/wfpc2_cr_sizes.hdf5
-    - ./../data/WFPC2/wfpc2_cr_shapes.hdf5
-    - ./../data/WFPC2/wfpc2_cr_deposition.hdf5
+    - ./../results/WFPC2/wfpc2_cr_affected_pixels.hdf5
+    - ./../results/WFPC2/wfpc2_cr_rate.hdf5
+    - ./../results/WFPC2/wfpc2_cr_sizes.hdf5
+    - ./../results/WFPC2/wfpc2_cr_shapes.hdf5
+    - ./../results/WFPC2/wfpc2_cr_deposition.hdf5
   astroquery:
     date_range:
       - '1994-01-01'
@@ -141,7 +158,10 @@ WFPC2:
     SubGroupDescription:
       - 'C0M'
       - 'SHM'
-    download_dir:  /crrejtab/WFPC2/
+    download_dir: /data/WFPC2/
+    instr_params:
+      extnums: [1,2,3,4]
+      readout_time: 30
 
 subgrp_names:
   - cr_affected_pixels

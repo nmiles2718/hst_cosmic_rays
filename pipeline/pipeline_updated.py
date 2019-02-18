@@ -5,16 +5,22 @@ import argparse
 import glob
 import logging
 import os
+import sys
 import time
 
 # external packages
+import dask
 import numpy as np
 import yaml
+
+
 
 # local packages
 import download.download as download
 import initialize.initialize as initialize
+import label.labeler as labeler
 import process.process as process
+import stat_utils.statshandler as statshandler
 
 
 __taskname__ = "pipeline"
@@ -57,7 +63,7 @@ parser.add_argument('-ir',
 parser.add_argument('-analyze',
                     help='Run the analysis and extract cosmic ray statistics',
                     action='store_true',
-                    default=False)
+                    default=True)
 
 parser.add_argument('-instr',
                     default='stis_ccd',
@@ -107,6 +113,7 @@ class CosmicRayPipeline(object):
         # Necessary evil to dynamically build absolute paths
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-1])
+        self._flist = None
         self._processing_times = {
             'download': 0,
             'processing': 0,
@@ -120,6 +127,11 @@ class CosmicRayPipeline(object):
         with open(self._cfg_file, 'r') as fobj:
             self._cfg = yaml.load(fobj)
         self._instr_cfg = self.cfg[self._instr]
+
+        self._search_pattern = os.path.join(
+            self.base,
+            *self.instr_cfg['search_pattern'].split('/')
+        )
 
 
     @property
@@ -247,6 +259,32 @@ class CosmicRayPipeline(object):
         self._processing_times = value
 
     @property
+    def flist(self):
+        return self._flist
+
+    @flist.getter
+    def flist(self):
+        """List of files to process"""
+        return self._flist
+
+    @flist.setter
+    def flist(self, value):
+        self._flist = value
+
+    @property
+    def search_pattern(self):
+        return self._search_pattern
+
+    @search_pattern.getter
+    def search_pattern(self):
+        """Search pattern used to find files to process"""
+        return self._search_pattern
+
+    @search_pattern.setter
+    def search_pattern(self, value):
+        self._search_pattern = value
+
+    @property
     def store_downloads(self):
         return self._store_downloads
 
@@ -263,22 +301,76 @@ class CosmicRayPipeline(object):
         end_time = time.time()
         return (end_time - start_time)/60
 
-    def run_processing(self):
-        """Process the data"""
-        search_pattern = os.path.join(
-            self.base,
-            *self.instr_cfg['search_pattern'].split('/')
-        )
-        flist = glob.glob(search_pattern)
+    def run_labeling_single(self, fname):
+        """Convenience method to facilitate parallelization"""
+        cr_label = labeler.CosmicRayLabel(fname,
+                                   self.instr,
+                                   self.instr_cfg,
+                                   ccd=self.ccd)
+
+        label_params = {
+            'deblend': False,
+            'use_dq': True,
+            'extnums': self.instr_cfg['instr_params']['extnums'],
+            'threshold_l': 2,
+            'threshold_u': 1500,
+            'plot': False
+        }
 
         if self.ccd:
-            processor = process.ProcessCCD(self.instr, flist=flist)
+            cr_label.run_ccd_label(**label_params)
+
+        cr_stats = statshandler.ComputeStats(cr_label)
+        cr_stats.compute_cr_statistics()
+
+        return cr_stats
+
+    def run_labeling_all(self):
+        """Run the labeling analysis and compute the statistics"""
+        start_time = time.time()
+
+        delayed_objects = [
+            dask.delayed(self.run_labeling_single)(f) for f in self.flist
+        ]
+
+        cr_results = list(dask.compute(*delayed_objects,
+                                       scheduler='processes',
+                                       num_workers=os.cpu_count()))
+
+        for obj in cr_results:
+            print(obj.cr_incident_rate)
+
+        end_time = time.time()
+        return (end_time - start_time)/60.
+
+
+    def run_processing(self):
+        """Process the data"""
+        start_time = time.time()
+
+        self.flist = glob.glob(self.search_pattern)
+
+        if self.ccd:
+            processor = process.ProcessCCD(self.instr,
+                                           self.instr_cfg,
+                                           flist=self.flist)
             processor.sort()
             processor.cr_reject()
+            if 'failed' in processor.output.keys():
+                print(processor.output['failed'])
+                failed = set(list(processor.output['failed']))
+                msg = ('{} files failed, '
+                       'removing from processing list..'.format(len(failed)))
+                LOG.warning(msg)
+                # remove the failed files for the list of files to process
+                self.flist = list(set(self.flist).difference(failed))
 
         elif self.ir:
-            processor = process.ProcessIR(flist=flist)
+            processor = process.ProcessIR(flist=self.flist)
             processor.decompose()
+
+        end_time = time.time()
+        return (end_time - start_time) / 60
 
     def run(self):
         """ Run the pipeline according to the passed command line args
@@ -319,6 +411,10 @@ class CosmicRayPipeline(object):
                     process_time = self.run_processing()
                     self.processing_times['processing'] = process_time
 
+
+                if self.analyze:
+                    analysis_time = self.run_labeling_all()
+                    print(analysis_time)
 
                 break
             break

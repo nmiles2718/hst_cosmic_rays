@@ -69,26 +69,61 @@ class ProcessCCD(object):
         List of files to process
 
     """
-    def __init__(self, instr, flist):
+    def __init__(self, instr, instr_cfg, flist):
 
 
         self._instr = instr
+        self._instr_cfg = instr_cfg
         self._flist = flist
         self._num = len(flist)
 
-        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
 
+        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/',
                                   *self._mod_dir.split('/')[:-2])
 
-        self._crrejtab_dir = os.path.join(self._base,
-                                          'crrejtab',
-                                          self.instr.split('_')[0],
+        self._crrejtab = os.path.join(self._base,
+                                      *self._instr_cfg['crrejtab'].split('/'))
+
+        self._data_dir = os.path.join(self._base,
+                                          'data',
+                                      self.instr.split('_')[0],
                                           '')
         self._input = {}
         self._output = defaultdict(list)
         self._i = 0
         self._msg_div = '-' * 79
+
+    @property
+    def base(self):
+        return self._base
+
+    @base.getter
+    def base(self):
+        return self._base
+    
+    @property
+    def crrejtab(self):
+        return self._crrejtab
+
+    @crrejtab.getter
+    def crrejtab(self):
+        """Cosmic ray rejection parameter table"""
+        return self._crrejtab
+
+    @property
+    def instr_cfg(self):
+        return self._instr_cfg
+
+    @instr_cfg.getter
+    def instr_cfg(self):
+        """Configuration object
+
+        Corresponds to the configuration object stored in the
+         :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg` attribute
+
+         """
+        return self._instr_cfg
 
     @property
     def instr(self):
@@ -205,12 +240,9 @@ class ProcessCCD(object):
         -------
 
         """
-        if 'wfc' in self.instr.lower():
-            crrejtab = os.path.join(self._crrejtab_dir,
-                                    '29p1548cj_crr_WFC.fits')
-        else:
-            crrejtab = os.path.join(self._crrejtab_dir,
-                                    'n4e12510j_crr_HRC.fits')
+
+        # crrejtab = os.path.join(self.base,
+        #                         self.instr_cfg['crrejtab'])
 
         output = 'tmp_crj_{}.fits'.format(self._i)
 
@@ -222,7 +254,7 @@ class ProcessCCD(object):
              acsrej.acsrej(input,
                           output=output,
                           verbose=True,
-                          crrejtab=crrejtab,
+                          crrejtab=self.crrejtab,
                           crmask=True,
                           initgues='med',
                           skysub='mode')
@@ -230,11 +262,11 @@ class ProcessCCD(object):
                  raise (FileNotFoundError)
         except Exception as e:
             msg = ('{}\n Failed to '
-                   'process input list {}\n {}'.format(e,
+                   'process input list\n {}\n {}'.format(e,
                                                        '\n'.join(input),
                                                        self._msg_div))
             LOG.error(msg)
-            self.output['failed'].append(input)
+            return input
         else:
             self.output['passed'].append(input)
 
@@ -257,17 +289,16 @@ class ProcessCCD(object):
             self._i += 1
             output = 'tmp_crj_{}.fits'.format(self._i)
 
-        crrejtab = os.path.join(self._crrejtab_dir,
-                                'n9i1435li_crr_UVIS.fits')
+
         for f in input:
             with fits.open(f,mode='update') as hdu:
-                hdu[0].header['CCDTAB'] = os.path.join(self._crrejtab_dir,
+                hdu[0].header['CCDTAB'] = os.path.join(self._data_dir,
                                                        't291659mi_ccd.fits')
         try:
             wf3rej(input,
                    output='tmp_crj_{}.fits'.format(self._i),
                    verbose=True,
-                   crrejtab=crrejtab,
+                   crrejtab=self.crrejtab,
                    crmask=True,
                    initgues='med',
                    skysub='mode')
@@ -277,12 +308,12 @@ class ProcessCCD(object):
 
         except Exception as e:
             msg = ('{}\n Failed to '
-                   'process input list {}\n {}'.format(e,
+                   'process input list\n {}\n {}'.format(e,
                                                        '\n'.join(input),
                                                        self._msg_div))
 
             LOG.error(msg)
-            self.output['failed'].append(input)
+            return input
         else:
             self.output['passed'].append(input)
 
@@ -308,12 +339,10 @@ class ProcessCCD(object):
                 self._i += 1
                 output = 'tmp_crj_{}.fits'.format(self._i)
 
-            crrejtab = os.path.join(self._crrejtab_dir,
-                                    'j3m1403io_crr.fits')
             try:
                 ocrreject.ocrreject(' '.join(input),
                                     output=output,
-                                    crrejtab=crrejtab,
+                                    crrejtab=self.crrejtab,
                                     verbose=True,
                                     crmask='yes',
                                     initgues='med',
@@ -323,11 +352,11 @@ class ProcessCCD(object):
                     raise(FileNotFoundError)
             except Exception as e:
                 msg = ('{}\n Failed to '
-                       'process input list {}\n {}'.format(e,
+                       'process input list\n {}\n {}'.format(e,
                                                            '\n'.join(input),
                                                            self._msg_div))
                 LOG.error(msg)
-                self.output['failed'].append(input)
+                return input
             else:
                 self.output['passed'].append(input)
 
@@ -434,24 +463,37 @@ class ProcessCCD(object):
         msg = ('\n Rejecting cosmic rays... \n{}'.format(self._msg_div,
                                                            self._msg_div))
         LOG.info(msg)
+        results = []
         if 'acs' in self.instr.lower():
             # Parallelized CR rejection
             data = self.format_inputs()
-            a = [dask.delayed(self.ACS)(d) for d in data]
-            dask.compute(*a, scheduler='processes')
+            results = [dask.delayed(self.ACS)(d) for d in data]
+            results = list(dask.compute(*results,
+                                        scheduler='processes',
+                                        num_workers=os.cpu_count()))
 
         elif 'wfc3' in self.instr.lower():
             data = self.format_inputs()
-            a = [dask.delayed(self.WFC3)(d) for d in data]
-            dask.compute(*a, scheduler='processes')
+            results = [dask.delayed(self.WFC3)(d) for d in data]
+            results = dask.compute(*results,
+                                   scheduler='processes',
+                                   num_workers=os.cpu_count())
 
         elif 'stis' in self.instr.lower():
             data = self.format_inputs()
-            a = [dask.delayed(self.STIS)(d) for d in data]
-            dask.compute(*a, scheduler='processes')
-        if 'failed' in self.output.keys():
-            self.output['failed'] = list(itertools.chain.from_iterable(
-                self.output['failed']))
+            results = [dask.delayed(self.STIS)(d) for d in data]
+
+            results = dask.compute(*results,
+                         scheduler='processes',
+                         num_workers=os.cpu_count())
+
+            # Each computation returns None or a list of failed files
+            results = [result for result in results if result]
+
+        if results:
+            for f in results:
+                self.output['failed'] += f
+
         LOG.info('Done!')
         end_time = time.time()
         LOG.info('Duration: {}'.format((end_time - start_time)/60))
