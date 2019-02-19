@@ -12,34 +12,33 @@ LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
 
-class ComputeStats(object):
+class Stats(object):
+    """ Class for computing statistics about each cosmic ray
+
+    Parameters
+    ----------
+    cr_label : :py:class:`~label.labeler.CosmicRayLabel`
+        The resulting :py:class:`~label.labeler.CosmicRayLabel`
+        object after executing the
+        :py:meth:`~label.labeler.CosmicRayLabel.run_ccd_label` method.
+
     """
-    Origin of coordinates (0,0)
-    """
 
-    def __init__(self, CosmicRayLabel):
-        """
+    def __init__(self, cr_label, integration_time):
 
-        Parameters
-        ----------
-        CosmicRayLabel : :py:class:`~label.labeler.CosmicRayLabel`
-            Instance of the `CosmicRayLabel` class
+        self._fname = cr_label.fname
+        self._label = cr_label.label
+        self._sci = cr_label.sci
+        self._integration_time = integration_time
 
-        """
-        self._fname = CosmicRayLabel.fname
-        self._label = CosmicRayLabel.label
-        self._instr_cfg = CosmicRayLabel.instr_cfg
-        self._integration_time = CosmicRayLabel.integration_time
-        self._sci = CosmicRayLabel.sci
-
-        self._cr_incident_rate = None
+        self._incident_cr_rate = None
         self._max_x = self._label.shape[1]
         self._max_y = self._label.shape[0]
         self._label_ids = np.unique(self._label)[1:]
         self._cr_positions = np.asarray(ndimage.find_objects(self._label))
 
         self._centroids = None
-        self._energy_deposition = None
+        self._energy_deposited = None
         self._shapes = []
         self._size_in_sigmas = []
         self._size_in_pixels = []
@@ -47,17 +46,17 @@ class ComputeStats(object):
 
 
     @property
-    def cr_incident_rate(self):
-        return self._cr_incident_rate
+    def incident_cr_rate(self):
+        return self._incident_cr_rate
 
-    @cr_incident_rate.getter
-    def cr_incident_rate(self):
+    @incident_cr_rate.getter
+    def incident_cr_rate(self):
         """Compute cosmic ray incidence rate"""
-        return self._cr_incident_rate
+        return self._incident_cr_rate
 
-    @cr_incident_rate.setter
-    def cr_incident_rate(self, value):
-        self._cr_incident_rate = value
+    @incident_cr_rate.setter
+    def incident_cr_rate(self, value):
+        self._incident_cr_rate = value
 
     @property
     def centroids(self):
@@ -85,17 +84,17 @@ class ComputeStats(object):
         self._cr_affected_pixels = value
 
     @property
-    def energy_deposition(self):
-        return self._energy_deposition
+    def energy_deposited(self):
+        return self._energy_deposited
 
-    @energy_deposition.getter
-    def energy_deposition(self):
+    @energy_deposited.getter
+    def energy_deposited(self):
         """Total energy deposited by cosmic rays"""
-        return self._energy_deposition
+        return self._energy_deposited
 
-    @energy_deposition.setter
-    def energy_deposition(self, value):
-        self._energy_deposition = value
+    @energy_deposited.setter
+    def energy_deposited(self, value):
+        self._energy_deposited = value
 
     @property
     def fname(self):
@@ -188,7 +187,7 @@ class ComputeStats(object):
     def shapes(self, value):
         self._shapes = value
 
-    def compute_total_cr_deposition(self):
+    def compute_cr_energy_deposited(self):
         """Compute the total number of electrons deposited at each label.
 
         Returns
@@ -201,7 +200,7 @@ class ComputeStats(object):
         cr_sum = ndimage.sum(self.sci,
                              labels=self.label,
                              index=self.label_ids)
-        self.energy_deposition = np.asarray(cr_sum)
+        self.energy_deposited = np.asarray(cr_sum)
 
     def compute_first_moment(self, sci=None):
         """Compute the first moment of energy deposited
@@ -308,24 +307,24 @@ class ComputeStats(object):
         LOG.info(msg)
 
         try:
-            self.cr_incident_rate = float(len(self.label_ids)) \
+            self.incident_cr_rate = float(len(self.label_ids)) \
                                / self.integration_time
         except ZeroDivisionError as e:
             msg = ('{}\n {} has an undefined integration time.\n '
                    'Setting cosmic ray rate to NaN'.format(e, self.fname))
             LOG.error(msg)
-            self.cr_incident_rate = np.nan
+            self.incident_cr_rate = np.nan
 
         # Compute the centroids
         self.compute_first_moment()
 
         # Compute the total energy deposited
-        self.compute_total_cr_deposition()
+        self.compute_cr_energy_deposited()
 
         # Create a generator to loop over
         loop_gen = zip(self.label_ids,
                        self.centroids,
-                       self.energy_deposition)
+                       self.energy_deposited)
 
         for label_idx, centroid, energy in loop_gen:
             # Compute the second moments of the energy distribution
@@ -344,6 +343,7 @@ class ComputeStats(object):
             self.size_in_pixels.append(size_pixels)
             self.shapes.append(shapes)
 
+        # Collapse the list of lists into a single flattened list
         self.cr_affected_pixels = [
             a for data in self.cr_affected_pixels for a in data
         ]

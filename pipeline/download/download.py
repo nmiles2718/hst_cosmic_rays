@@ -242,8 +242,7 @@ class Downloader(object):
             'obstype': self.obstype,
             'target_name': self.target_name,
             'instrument_name': self.instr,
-            't_min': start.mjd,
-            't_max': stop.mjd,
+            't_min': [start.mjd, stop.mjd],
             't_exptime': self.t_exptime
         }
         with warnings.catch_warnings():

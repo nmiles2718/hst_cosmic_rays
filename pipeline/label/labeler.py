@@ -1,32 +1,45 @@
 #!/usr/bin/env python
 
+
+# External packge imports
 from astropy.io import fits
-
 from astropy.stats import sigma_clipped_stats
-
-from label.base_label import Label
-
+from label.base import Label
 import numpy as np
-
 from scipy import ndimage
 
 
 class CosmicRayLabel(Label):
     """
     Class for generating the cosmic ray label
-    """
-    def __init__(self, fname, instr, instr_cfg, ccd=None, ir=None):
-        super().__init__(fname)
 
-        self.instr = instr
-        self.instr_cfg = instr_cfg
-        self.ccd = ccd
-        self.ir = ir
+    Parameters
+    ----------
+    fname : str
+        Name of FITS file
+
+    instr : str
+        Instrument currently being processed
+
+    instr_cfg : dict
+        Instrument specific configuration object
+
+
+    """
+    def __init__(self, fname):
+        super().__init__(fname)
 
 
     def run_ccd_label(self, deblend=False, use_dq=True, extnums=[1,2],
                       threshold_l=None, threshold_u=None, plot=False):
         """ Run labeling algorithm on CCD data
+
+        This will populate the following class attributes:
+
+         - :py:attr:`~label.base.Label.dq`
+         - :py:attr:`~label.base.Label.integration_time`
+         - :py:attr:`~label.base.Label.label`
+         - :py:attr:`~label.base.Label.sci`
 
         Parameters
         ----------
@@ -57,13 +70,26 @@ class CosmicRayLabel(Label):
         # Get the SCI array
         self.get_data(extname='sci', extnums=extnums)
 
-        self.get_ccd_label(use_dq = use_dq,
-                           threshold_l=threshold_l,
-                           deblend=deblend,
-                           threshold_u=threshold_u)
+        self.ccd_labeling(use_dq = use_dq,
+                          threshold_l=threshold_l,
+                          deblend=deblend,
+                          threshold_u=threshold_u)
 
         if plot:
             self.plot(show=True)
+
+
+
+
+
+
+    def run_ir_label(self):
+        """ Run labeling algorithm on IR data
+
+        Returns
+        -------
+
+        """
 
 
 

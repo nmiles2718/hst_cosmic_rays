@@ -19,6 +19,7 @@ Contents:
    label
    process
    pipeline
+   statshandler
 
 
 

@@ -182,47 +182,39 @@ class ProcessCCD(object):
         """Number of files to process"""
         return self._num
 
-    def check_for_artifact(self, f):
+    def check_for_artifact(self, f, extname='dq', extnums=[1,2]):
         """ Scan the DQ extension for compression artifacts
 
         In early ACS images when the option for compressing data was available,
         there is a possibility of Reed-Solomon decoding errors being incorrectly
         classified as cosmic rays during the cosmic ray rejection step.
         """
-        dq1 = ('dq', 1)  # Chip 2
-        dq2 = ('dq', 2)  # Chip 1
-        dq = None
+
+        ext_tuples = [(extname, num) for num in extnums]
+        ext_data = []
         with fits.open(f) as hdu:
-            prhdr = hdu[0].header
-            scihdr = hdu[1].header
-            if 'exptime' in prhdr:
-                expt = prhdr['exptime']
-            else:
-                expt = scihdr['exptime']
+            for val in ext_tuples:
+                try:
+                    ext = hdu.index_of(val)
+                except KeyError:
+                    LOG.warning('{} is missing for {}'.format(val, self.fname))
+                else:
+                    ext_data.append(hdu[ext].data)
 
-            try:
-                ext1 = hdu.index_of(dq1)
-                ext1_data = hdu[ext1].data
-            except KeyError as e:
-                LOG.warning('{}\n {} is missing for {}'.format(e, dq1, f))
-                ext1 = None
+                try:
+                    exptime = hdu[0].header['EXPTIME']
+                except KeyError as e:
+                    LOG.warning('{}\n Searching SCI header'.format(e))
+                    exptime = hdu[1].header['EXPTIME']
 
-            try:
-                ext2 = hdu.index_of(dq2)
-                ext2_data = hdu[ext2].data
-            except KeyError as e:
-                LOG.warning('{}\n {} is missing for {}'.format(e, dq2, f))
-                ext2 = None
 
         # If second DQ ext is missing, only work with the first
         # Otherwise combine each DQ ext to make full-frame
-        if not ext2:
-            dq = ext1_data
-        else:
-            dq = concatenate([ext1_data, ext2_data], axis=0)
+
+        dq = concatenate(ext_data, axis=0)
         artifacts = where(dq == 2)[0]
 
-        if artifacts.size > 0 or expt < 0.1:
+        if artifacts.size > 0 or exptime < 0.1:
             return True
         else:
             return False
@@ -384,7 +376,11 @@ class ProcessCCD(object):
 
         # Check for compression artifacts and remove them from the flist
         for f in files_to_process:
-            has_artifact = self.check_for_artifact(f)
+            has_artifact = self.check_for_artifact(
+                f,
+                extname='dq',
+                extnums=self.instr_cfg['instr_params']['extnums']
+            )
             if has_artifact:
                 self.ouput['failed'].append(f)
                 LOG.info('Removing {} from analysis'.format(f))

@@ -21,6 +21,10 @@ import initialize.initialize as initialize
 import label.labeler as labeler
 import process.process as process
 import stat_utils.statshandler as statshandler
+import utils.datahandler as datahandler
+import utils.metadata as metadata
+import utils.sendit as sendit
+
 
 
 __taskname__ = "pipeline"
@@ -116,8 +120,8 @@ class CosmicRayPipeline(object):
         self._flist = None
         self._processing_times = {
             'download': 0,
-            'processing': 0,
-            'analysis_time': 0
+            'cr_rejection': 0,
+            'analysis': 0
         }
         self._cfg_file = os.path.join(self._base,
                                      'CONFIG',
@@ -165,6 +169,12 @@ class CosmicRayPipeline(object):
     def cfg(self):
         return self._cfg
 
+    @cfg.getter
+    def cfg(self):
+        """Configuration object returned by parsing the
+        :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg_file`"""
+        return self._cfg
+
     @property
     def ccd(self):
         return self._ccd
@@ -174,11 +184,7 @@ class CosmicRayPipeline(object):
         """Switch for toggling on the CCD analysis"""
         return self._ccd
 
-    @cfg.getter
-    def cfg(self):
-        """Configuration object returned by parsing the
-        :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg_file`"""
-        return self._cfg
+
 
     @property
     def cfg_file(self):
@@ -303,10 +309,20 @@ class CosmicRayPipeline(object):
 
     def run_labeling_single(self, fname):
         """Convenience method to facilitate parallelization"""
-        cr_label = labeler.CosmicRayLabel(fname,
-                                   self.instr,
-                                   self.instr_cfg,
-                                   ccd=self.ccd)
+
+        file_metadata = metadata.GenerateMetadata(fname,
+                                                  instr_cfg=self.instr_cfg)
+
+        # Get image metadata
+        file_metadata.get_image_data()
+
+        # Get pointing info
+        file_metadata.get_wcs_info()
+
+        # Get HST location info
+        file_metadata.get_observatory_info()
+
+        cr_label = labeler.CosmicRayLabel(fname)
 
         label_params = {
             'deblend': False,
@@ -320,12 +336,25 @@ class CosmicRayPipeline(object):
         if self.ccd:
             cr_label.run_ccd_label(**label_params)
 
-        cr_stats = statshandler.ComputeStats(cr_label)
+        # Compute the integration time
+        integration_time = cr_label.exptime + \
+                           self.instr_cfg['instr_params']['readout_time']
+
+        cr_stats = statshandler.Stats(cr_label, integration_time)
         cr_stats.compute_cr_statistics()
+        cr_stats_dict = {
+            'cr_affected_pixels': cr_stats.cr_affected_pixels,
+            'incident_cr_rate': cr_stats.incident_cr_rate,
+            # Note that we save BOTH versions of CR sizes measurements
+            'sizes': np.asarray([cr_stats.size_in_sigmas,
+                                cr_stats.size_in_pixels]),
+            'shapes': cr_stats.shapes,
+            'energy_deposited': cr_stats.energy_deposited
+        }
 
-        return cr_stats
+        return cr_stats_dict, file_metadata
 
-    def run_labeling_all(self):
+    def run_labeling_all(self, chunk_num):
         """Run the labeling analysis and compute the statistics"""
         start_time = time.time()
 
@@ -333,16 +362,21 @@ class CosmicRayPipeline(object):
             dask.delayed(self.run_labeling_single)(f) for f in self.flist
         ]
 
-        cr_results = list(dask.compute(*delayed_objects,
-                                       scheduler='processes',
-                                       num_workers=os.cpu_count()))
+        results = list(dask.compute(*delayed_objects,
+                                    scheduler='processes',
+                                    num_workers=os.cpu_count()))
 
-        for obj in cr_results:
-            print(obj.cr_incident_rate)
+        cr_stats, file_metdata = zip(*results)
 
+        datawriter = datahandler.DataWriter(cfg=self.cfg,
+                                            chunk_num=chunk_num,
+                                            cr_stats=cr_stats,
+                                            file_metadata=file_metdata,
+                                            instr=self.instr)
+        datawriter.write_results()
         end_time = time.time()
-        return (end_time - start_time)/60.
 
+        return (end_time - start_time)/60., results
 
     def run_processing(self):
         """Process the data"""
@@ -372,6 +406,25 @@ class CosmicRayPipeline(object):
         end_time = time.time()
         return (end_time - start_time) / 60
 
+    def send_email(self, start, stop, results):
+        """
+
+        Returns
+        -------
+
+        """
+        cr_stats, file_metadata = zip(*results)
+        e = sendit.Emailer(cr_stats=cr_stats,
+                           processing_times=self.processing_times,
+                           file_metadata=file_metadata)
+        subj = ('Finished analyzing '
+               '{} darks from {} to {}'.format(self.instr,
+                                               start.datetime.date(),
+                                               stop.datetime.date()))
+        e.subject = subj
+
+        e.SendEmail(gif=False)
+
     def run(self):
         """ Run the pipeline according to the passed command line args
 
@@ -400,6 +453,8 @@ class CosmicRayPipeline(object):
                     LOG.info('Already analyzed {} to {}\n'.format(start.iso,
                                                                   stop.iso))
                     continue
+
+                # Start the analysis
                 LOG.info('Analyzing data from {} to {}'.format(start.iso,
                                                                stop.iso))
                 if self.download:
@@ -409,20 +464,20 @@ class CosmicRayPipeline(object):
 
                 if self.process:
                     process_time = self.run_processing()
-                    self.processing_times['processing'] = process_time
+                    self.processing_times['cr_rejection'] = process_time
 
 
                 if self.analyze:
-                    analysis_time = self.run_labeling_all()
-                    print(analysis_time)
+                    analysis_time, results = self.run_labeling_all(chunk_num=i+1)
+                    self.processing_times['analysis'] = analysis_time
 
+                self.processing_times['total'] = sum(
+                    list(self.processing_times.values())
+                )
+
+                self.send_email(start, stop, results)
                 break
             break
-
-
-
-
-
 
 
 

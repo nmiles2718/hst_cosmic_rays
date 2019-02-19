@@ -11,7 +11,7 @@ pipeline. In short it will perform the following:
 
 """
 
-import os
+from collections import defaultdict
 import logging
 import os
 import warnings
@@ -69,7 +69,7 @@ class Initializer(object):
 
     @base.getter
     def base(self):
-        """"""
+        """Base path of the pipleine repository `~/hst_cosmic_rays/`"""
         return self._base
 
 
@@ -245,30 +245,28 @@ class Initializer(object):
         pipeline and it faile
 
         """
-        flist = self.instr_cfg['hdf5_files']
-        new_flist = []
-        for f in flist:
+        hdf5_files = self.instr_cfg['hdf5_files']
+
+        new_flist = defaultdict(list)
+        for key in hdf5_files.keys():
+            rel_path = hdf5_files[key]
+            full_path = os.path.join(self.base, *rel_path.split('/'))
             i = 0
             while i < 4:
-                fnew = f.replace('.hdf5', '_{}.hdf5'.format(i + 1))
+                fnew = full_path.replace('.hdf5', '_{}.hdf5'.format(i + 1))
                 i += 1
-                new_flist.append(fnew)
-        i = 0
-        for j, f in enumerate(new_flist):
-            if not os.path.isdir(os.path.dirname(f)):
-                os.mkdir(os.path.dirname(f))
+                new_flist[key].append(fnew)
 
-            LOG.info(
-                'File structure: /{}/{}'.format(
-                    self.instr,
-                    self.cfg['subgrp_names'][i]
+        for key in new_flist.keys():
+            for f in new_flist[key]:
+                if not os.path.isdir(os.path.dirname(f)):
+                    os.mkdir(os.path.dirname(f))
+
+                LOG.info(
+                    'File structure: /{}'.format(self.cfg['grp_names'][key])
                 )
-            )
-            with h5py.File(f, 'w') as fobj:
-                grp = fobj.create_group(self.instr)
-                subgrp = grp.create_group(self.cfg['subgrp_names'][i])
-            if (j + 1) % 4 == 0:
-                i += 1
+                with h5py.File(f, 'w') as fobj:
+                    grp = fobj.create_group(self.cfg['grp_names'][key])
 
     def get_processed_ranges(self):
         """ Get the previously processed date ranges
@@ -285,7 +283,7 @@ class Initializer(object):
         -------
 
         """
-        fname = os.path.join(self.base,
+        fname = os.path.join(self.base,'CONFIG',
                              'processed_dates_{}.txt'.format(self.instr))
         try:
             with open(fname, 'r') as fobj:
