@@ -184,8 +184,6 @@ class CosmicRayPipeline(object):
         """Switch for toggling on the CCD analysis"""
         return self._ccd
 
-
-
     @property
     def cfg_file(self):
         return self._cfg_file
@@ -474,8 +472,10 @@ class CosmicRayPipeline(object):
                 self.processing_times['total'] = sum(
                     list(self.processing_times.values())
                 )
+                for key, value in self.processing_times.items():
+                    print(key, value)
 
-                self.send_email(start, stop, results)
+                # self.send_email(start, stop, results)
                 break
             break
 

@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 from scipy import ndimage
+from scipy.sparse import csr_matrix
+
 
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
@@ -226,7 +228,7 @@ class Stats(object):
                                                    index=self.label_ids)
         self.centroids = np.asarray(r_cm)
 
-    def compute_higher_moments(self, energy_deposited, centroid, label_idx):
+    def compute_higher_moments(self, energy_deposited, centroid, label_coords):
         """
 
         Parameters
@@ -237,8 +239,8 @@ class Stats(object):
         centroid : tuple
             (x,y) position of the centroid of the cosmic ray
 
-        label_idx : int
-            Integer label of a given cosmic ray
+        label_coords : tuple
+            tuple of cosmic ray x coordinates and y coordinates
 
         Returns
         -------
@@ -246,9 +248,7 @@ class Stats(object):
         """
         I_rr = [0, 0]  # I_xx, I_yy
         I_xy = 0
-        label_coords = np.where(self.label == label_idx)
-        label_coords = list(zip(label_coords[0], label_coords[1]))
-
+        # coords = list(zip(label_coords[1], label_coords[0]))
         for r_i in label_coords:
             I_rr += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] \
                     * (np.asarray(r_i) - np.asarray(centroid)) ** 2
@@ -256,7 +256,18 @@ class Stats(object):
             I_xy += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] * \
                     (r_i[0] - centroid[0]) * (r_i[1] - centroid[1])
 
-        return I_rr, I_xy, label_coords
+        return I_rr, I_xy
+
+    def compute_M(self):
+        """"""
+        cols = np.arange(self.label.size)
+        return csr_matrix((cols, (self.label.ravel(), cols)),
+                          shape=(self.label.max() + 1, self.label.size))
+
+    def get_indices_sparse(self):
+        """"""
+        M = self.compute_M(self.label)
+        return [np.unravel_index(row.data, self.label.shape) for row in M]
 
     def compute_shape(self, I_rr, I_xy):
         """
@@ -321,15 +332,25 @@ class Stats(object):
         # Compute the total energy deposited
         self.compute_cr_energy_deposited()
 
-        # Create a generator to loop over
-        loop_gen = zip(self.label_ids,
-                       self.centroids,
-                       self.energy_deposited)
+        # Get the cosmic ray coords
+        sparse_m = self.compute_M()
+        cr_coords = [
+            np.unravel_index(row.data, self.label.shape) for row in sparse_m
+        ]
 
-        for label_idx, centroid, energy in loop_gen:
+        # Create a generator to loop over
+        loop_gen = zip(self.centroids,
+                       self.energy_deposited,
+                       cr_coords[1:])
+
+
+        for centroid, energy, coords in loop_gen:
+            label_coords = list(zip(coords[1], coords[0]))
             # Compute the second moments of the energy distribution
-            I_rr, I_xy, label_coords = self.compute_higher_moments(
-                energy_deposited=energy, centroid=centroid, label_idx=label_idx
+            I_rr, I_xy = self.compute_higher_moments(
+                energy_deposited=energy,
+                centroid=centroid,
+                label_coords=label_coords
             )
 
             # Compute the width of the distribution of energy and size in pixels
