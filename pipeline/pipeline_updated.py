@@ -2,29 +2,29 @@
 
 # native packages
 import argparse
+from collections import defaultdict
 import glob
 import logging
 import os
+import shutil
 import sys
 import time
 
 # external packages
 import dask
 import numpy as np
+import pandas as pd
 import yaml
-
-
 
 # local packages
 import download.download as download
-import initialize.initialize as initialize
 import label.labeler as labeler
 import process.process as process
 import stat_utils.statshandler as statshandler
 import utils.datahandler as datahandler
+import utils.initialize as initialize
 import utils.metadata as metadata
 import utils.sendit as sendit
-
 
 
 __taskname__ = "pipeline"
@@ -92,9 +92,7 @@ logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
                     level=logging.DEBUG)
-
 LOG = logging.getLogger('CosmicRayPipeline')
-
 LOG.setLevel(logging.INFO)
 
 
@@ -136,7 +134,6 @@ class CosmicRayPipeline(object):
             self.base,
             *self.instr_cfg['search_pattern'].split('/')
         )
-
 
     @property
     def aws(self):
@@ -361,8 +358,9 @@ class CosmicRayPipeline(object):
         ]
 
         results = list(dask.compute(*delayed_objects,
-                                    scheduler='processes',
-                                    num_workers=os.cpu_count()))
+                                    scheduler='single-threaded',
+                                    num_workers=1))
+        # results = self.run_labeling_single(self.flist[0])
 
         cr_stats, file_metdata = zip(*results)
 
@@ -411,17 +409,78 @@ class CosmicRayPipeline(object):
         -------
 
         """
-        cr_stats, file_metadata = zip(*results)
-        e = sendit.Emailer(cr_stats=cr_stats,
-                           processing_times=self.processing_times,
-                           file_metadata=file_metadata)
+
+        # Compute some averages for each statistics (if applicable)
+        msg_data = defaultdict(list)
+        for cr_stat, file_info in results:
+            msg_data['filename'].append(
+                os.path.basename(file_info.fname)
+            )
+            msg_data['integration_time'].append(file_info.metadata['integration_time'])
+            msg_data['date'].append(file_info.metadata['date'])
+
+            msg_data['avg_shape'].append(np.nanmean(cr_stat['shapes']))
+
+            msg_data['avg_size [sigma]'].append(
+                np.nanmean(cr_stat['sizes'][0]))
+
+            msg_data['avg_size [pix]'].append(np.nanmean(cr_stat['sizes'][1]))
+            msg_data['avg_energy_deposited [e]'].append(
+                np.nanmean(cr_stat['energy_deposited'])
+            )
+            msg_data['CR count'].append(len(cr_stat['energy_deposited']))
+
+        df = pd.DataFrame(msg_data)
+        df = df.set_index(keys=['date'], drop=True)
+        df.sort_index(inplace=True)
+
+
+        e = sendit.Emailer(df=df,
+                           processing_times=self.processing_times)
         subj = ('Finished analyzing '
                '{} darks from {} to {}'.format(self.instr,
                                                start.datetime.date(),
                                                stop.datetime.date()))
         e.subject = subj
+        e.sender = ['nmiles','stsci.edu']
+        e.recipient = ['nmiles', 'stsci.edu']
 
         e.SendEmail(gif=False)
+
+    def _pipeline_cleanup(self, start, stop):
+        """Handle necessary cleanup steps required at the end of the pipeline
+
+        Returns
+        -------
+
+        """
+        LOG.info('Initiating pipeline cleanup...')
+        # Write out the dates of the range that was just processed
+        processed_fname = os.path.join(
+            self.base, 'CONFIG', 'processed_dates_{}.txt'.format(self.instr)
+        )
+        with open(processed_fname,'a+') as fobj:
+            fobj.write('{} {}\n'.format(start.iso, stop.iso))
+
+
+        # Remove any files that were generated as a result of CR processing
+        # for the CCD imagers
+        crjs = glob.glob('./tmp*')
+
+        if crjs is not None:
+            for a in crjs:
+                os.remove(a)
+
+        # Generate the path to the download directory
+        download_dir = os.path.join(
+            self.base, *self.instr_cfg['astroquery']['download_dir'].split('/')
+        )
+        LOG.info(
+            'Removing all files downloaded into:\n{}'.format(download_dir)
+        )
+        # Delete all the files stored in mastDownload
+        shutil.rmtree('{}/mastDownload'.format(download_dir),
+                      ignore_errors=True)
 
     def run(self):
         """ Run the pipeline according to the passed command line args
@@ -466,23 +525,31 @@ class CosmicRayPipeline(object):
 
 
                 if self.analyze:
-                    analysis_time, results = self.run_labeling_all(chunk_num=i+1)
+                    analysis_time, results = self.run_labeling_all(
+                        chunk_num=i + 1
+                    )
                     self.processing_times['analysis'] = analysis_time
 
                 self.processing_times['total'] = sum(
                     list(self.processing_times.values())
                 )
+
                 for key, value in self.processing_times.items():
                     print(key, value)
 
-                # self.send_email(start, stop, results)
-                break
-            break
+                # Clean up the files and write out the range just processed
+                self._pipeline_cleanup(start, stop)
 
+                # Send the final email
+                self.send_email(start, stop, results)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     args = vars(args)
     p = CosmicRayPipeline(**args)
+    # p = CosmicRayPipeline(instr='stis_ccd', ccd=True, download=False,
+    #                       process=True, analyze=True, initialize=True)
     p.run()
+    # cmd = 'python pipeline_updated.py -instr stis_ccd -download -process -analyze -initialize'
+    # os.system(cmd)

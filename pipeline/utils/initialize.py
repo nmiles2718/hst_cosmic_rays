@@ -4,9 +4,9 @@ This module contains a class :py:class:`~initialize.initialize.Initializer`
 that contains a series of methods for performing basic initialization of the
 pipeline. In short it will perform the following:
 
-    - Generate a series of empty HDF5 files for each statistic recorded.
-    - Generate a list of the previously processed date ranges.
-    - Generate a list of date intervals spanning one month periods to be used
+    * Generate a series of empty HDF5 files for each statistic recorded.
+    * Generate a list of the previously processed date ranges.
+    * Generate a list of date intervals spanning one month periods to be used
       in the downloading process.
 
 """
@@ -96,7 +96,7 @@ class Initializer(object):
         """Instrument specific configuration object
 
         Corresponds to one of the `dict` configuration object stored in the
-         :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg` attribute
+        :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg` attribute
 
          """
         return self._instr_cfg

@@ -17,8 +17,6 @@ sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline')
 
 import pipeline_updated
 
-
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -31,7 +29,7 @@ import pipeline_updated
 extensions = [
     'sphinx.ext.autodoc',
     'sphinxarg.ext',
-    'sphinx.ext.imgmath',
+    'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
@@ -205,7 +203,6 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
-
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {

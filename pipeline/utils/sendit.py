@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+This module contains the functionality for setting up an email notification
+system. Once the pipeline has completed analyzing a month of darks, it will
+generate average statistics and send them via email to the user specified by
+:py:attr:`~utils.sendit.Emailer.receipient`.
+"""
+
 from collections import defaultdict
 from email.message import EmailMessage
 from email.headerregistry import Address
@@ -11,9 +18,8 @@ import pandas as pd
 
 class Emailer(object):
 
-    def __init__(self, cr_stats=None, file_metadata=None,
-                 instr=None, processing_times=None):
-        """
+    def __init__(self, df=None, instr=None, processing_times=None):
+        """ Class for generating and sending HTML styled emails
 
 
         Parameters
@@ -29,8 +35,7 @@ class Emailer(object):
 
         """
 
-        self._cr_stats = cr_stats
-        self._file_metadata = file_metadata
+        self._df = df
         self._instr = instr
         self._processing_times = processing_times
 
@@ -41,15 +46,9 @@ class Emailer(object):
 
 
     @property
-    def cr_stats(self):
-        """:py:class:`~stat_utils.statshandler.ComputeStats`
-                    object containing all the statistics to write out"""
-        return self._cr_stats
-
-    @property
-    def file_metadata(self):
-        """A list of :py:class:`~utils.metadata.GenerateMetadata` objects"""
-        return self._file_metadata
+    def df(self):
+        """pd.DataFrame containing a summary of the results"""
+        return self._df
 
     @property
     def instr(self):
@@ -99,39 +98,8 @@ class Emailer(object):
     def recipient(self, value):
         self._recipient = value
 
-
-    def get_message_data(self):
-        msg_data = defaultdict(list)
-
-        for cr_stat, file_info in zip(self.cr_stats, self.file_metadata):
-
-            msg_data['date'].append(file_info.metadata['date'])
-            msg_data['avg_shape'].append(np.nanmean(cr_stat['shapes']))
-
-            msg_data['avg_size [sigma]'].append(np.nanmean(cr_stat['sizes'][0]))
-
-            msg_data['avg_size [pix]'].append(np.nanmean(cr_stat['sizes'][1]))
-
-            msg_data['avg_energy_deposited [e]'].append(
-                np.nanmean(cr_stat['energy_deposited'])
-            )
-            msg_data['CR count'].append(len(cr_stat['energy_deposited']))
-
-        df = pd.DataFrame(msg_data)
-        df = df.set_index(keys=['date'], drop=True)
-        df.sort_index(inplace=True)
-        return df
-
     def get_style(self):
         """ Generate style format for pd.DataFrame to be used in html conversion
-
-        Parameters
-        ----------
-        self
-
-        Returns
-        -------
-
         """
         # Set CSS properties for th elements in dataframe
         th_props = [
@@ -157,64 +125,65 @@ class Emailer(object):
         ]
         return styles
 
-    def highlight_max(self, s):
+    def highlight_max(self, col):
         """ highlight the max value in the series with dark red
 
         Parameters
         ----------
-        s
+        col : pd.Series
+
 
         Returns
         -------
 
         """
-        is_max = s == s.max()
+        is_max = col == col.max()
         return ['background-color: #DC143C' if v else '' for v in is_max]
 
-    def highlight_min(self,s):
+    def highlight_min(self, col):
         """ Highlight the min value in the series with dark blue
 
         Parameters
         ----------
-        s
+        col : pd.Series
 
         Returns
         -------
 
         """
-        is_min = s == s.min()
+        is_min = col == col.min()
         return ['background-color: #1E90FF' if v else '' for v in is_min]
 
-    def low_outliers(self, s):
+    def low_outliers(self, col):
         """ Highlight outliers below the mean with light blue
 
         Parameters
         ----------
-        s : pd.Series with
+        col : pd.Series with
 
         Returns
         -------
 
         """
-        med = s.median()
-        std = s.std()
-        flags = s < med - 1.25 * std
+        med = col.median()
+        std = col.std()
+        flags = col < med - 3 * std
         return ['background-color: #87CEEB' if a else '' for a in flags]
 
-    def high_outliers(self, s):
+    def high_outliers(self, col):
         """ Highlight outliers above the mean with light red
 
         Parameters
         ----------
-        s
+        col : pd.Series
 
         Returns
         -------
 
         """
-        med = s.median()
-        std = s.std()
-        flags = s > med + 1.25 * std
+        med = col.median()
+        std = col.std()
+        flags = col > med + 3 * std
         return ['background-color: #CD5C5CC' if a else '' for a in flags]
 
     def SendEmail(self, gif_file=None, gif=False):
@@ -231,28 +200,27 @@ class Emailer(object):
 
         """
         css = self.get_style()
-        df = self.get_message_data()
 
-        s = (df.style
+        s = (self.df.style
              .apply(self.high_outliers, subset=['avg_shape',
                                                 'avg_size [pix]',
                                                 'avg_size [sigma]',
-                                                'avg_energy_deposited',
+                                                'avg_energy_deposited [e]',
                                                 'CR count'])
              .apply(self.low_outliers, subset=['avg_shape',
                                                'avg_size [pix]',
                                                'avg_size [sigma]',
-                                               'avg_energy_deposited',
+                                               'avg_energy_deposited [e]',
                                                'CR count'])
              .apply(self.highlight_max, subset=['avg_shape',
                                                 'avg_size [pix]',
                                                 'avg_size [sigma]',
-                                                'avg_energy_deposited',
+                                                'avg_energy_deposited [e]',
                                                 'CR count'])
              .apply(self.highlight_min, subset=['avg_shape',
                                                 'avg_size [pix]',
                                                 'avg_size [sigma]',
-                                                'avg_energy_deposited',
+                                                'avg_energy_deposited [e]',
                                                 'CR count'])
 
              .set_properties(**{'text-align': 'center'})
@@ -265,8 +233,8 @@ class Emailer(object):
         html_tb = s.render(index=False)
         msg = EmailMessage()
         msg['Subject'] = self.subject
-        msg['From'] = Address('','nmiles', 'stsci.edu')
-        msg['To'] = Address('', 'nmiles', 'stsci.edu')
+        msg['From'] = Address('', self.sender[0], self.sender[1])
+        msg['To'] = Address('', self.recipient[0], self.recipient[1])
         gif_cid = make_msgid()
         if gif:
             body_str = """

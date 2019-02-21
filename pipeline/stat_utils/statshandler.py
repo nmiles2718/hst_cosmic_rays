@@ -1,3 +1,15 @@
+"""
+For each cosmic ray this module will compute the following statistics:
+
+  * Size in pixels
+  * Size in sigmas (i.e. width of the energy distribution deposited by the cosmic ray)
+  * Shape (a measure of symmetry of the energy distribution deposited cosmic ray)
+  * Incidence rate (i.e. number of cosmic rays per second)
+  * Total energy deposited by each cosmic ray
+  * A list of all the pixels affected by cosmic rays
+
+"""
+
 import logging
 
 import numpy as np
@@ -192,6 +204,11 @@ class Stats(object):
     def compute_cr_energy_deposited(self):
         """Compute the total number of electrons deposited at each label.
 
+        This is simply a sum of all pixel values identified as belonging to a
+        given cosmic ray.
+
+        * :math:`I_0 = \sum_{i} p_i`
+
         Returns
         -------
         cr_sum : numpy.ndarray
@@ -205,14 +222,19 @@ class Stats(object):
         self.energy_deposited = np.asarray(cr_sum)
 
     def compute_first_moment(self, sci=None):
-        """Compute the first moment of energy deposited
+        """Compute the first moment of energy deposited by a given cosmic ray.
 
-        This corresponds to the flux-weighted centroid of the cosmic ray
+        This corresponds to the flux-weighted centroid of the cosmic ray denoted
+        by :math:`(I_x, I_y).`
+
+        * :math:`I_x = \\frac{1}{I_0} \\sum_{i}p_i * x_i`
+        * :math:`I_y = \\frac{1}{I_0} \\sum_{i}p_i * y_i`
 
         Parameters
         ----------
-        sci : numpy.ndarray [py:attr:`CosmicRayLabel.sci`]
-            SCI extension of the FITS image.
+        sci : numpy.ndarray [:py:attr:`~label.base.Label.sci`]
+            The :py:attr:`~label.base.Label.sci` attribute of the
+            :py:class:`~label.labeler.CosmicRayLabel` object.
 
         Returns
         -------
@@ -229,7 +251,13 @@ class Stats(object):
         self.centroids = np.asarray(r_cm)
 
     def compute_higher_moments(self, energy_deposited, centroid, label_coords):
-        """
+        """ Compute all second moments of the distribution
+
+        * :math:`I_{xx} = \\frac{1}{I_0} \\sum_{i}p_i(x_i - I_x)^2`
+
+        * :math:`I_{yy} = \\frac{1}{I_0} \\sum_{i}p_i(y_i - I_y)^2`
+
+        * :math:`I_{xy} = \\frac{1}{I_0} \\sum_{i}p_i(x_i - I_x)*(y_i - I_y)`
 
         Parameters
         ----------
@@ -244,6 +272,12 @@ class Stats(object):
 
         Returns
         -------
+        I_rr : tuple
+            The second moments of the energy distribution in x and y, (:math:`I_{xx}`, :math:`I_{yy}`)
+
+        I_xy : int
+            The cross moment of the energy distribution, :math:`I_{xy}`
+
 
         """
         I_rr = [0, 0]  # I_xx, I_yy
@@ -258,30 +292,37 @@ class Stats(object):
 
         return I_rr, I_xy
 
-    def compute_M(self):
+    def _compute_M(self):
         """"""
         cols = np.arange(self.label.size)
         return csr_matrix((cols, (self.label.ravel(), cols)),
                           shape=(self.label.max() + 1, self.label.size))
 
-    def get_indices_sparse(self):
+    def _get_indices_sparse(self):
         """"""
-        M = self.compute_M(self.label)
+        M = self._compute_M(self.label)
         return [np.unravel_index(row.data, self.label.shape) for row in M]
 
     def compute_shape(self, I_rr, I_xy):
-        """
+        """ Compute the "shape" of the distribution of the energy deposited
+
+        This is effectively a measure of symmetry of the distribution that is
+        defined as follows:
+
+            :math:`shape = \\sqrt{\\frac{(I_{xx} - I_{yy})^2 + 4I^2_{xy}}{(I_{xx} + I_{yy})^2}}`
 
         Parameters
         ----------
         I_rr : tuple
-            Second moment of energy distribution (I_xx, I_yy)
+            Second moment of energy distribution :math:`(I_{xx}, I_{yy})`
 
         I_xy : int
             Cross moment of energy distribution
 
         Returns
         -------
+        shape : int
+            The computed shape
 
         """
         shape = np.sqrt(
@@ -290,17 +331,28 @@ class Stats(object):
         return shape
 
     def compute_size(self, I_rr, label_coords):
-        """ Compute the size of the cosmic ray
+        """ Compute the size of the cosmic ray in two ways
 
-        This will compute the sigma-size based of the cosmic energy distribution
-        and the size in pixels based of the labeled array.
+        #. Compute the width or size of the cosmic energy distribution
+           using the previously computed second moments.
+
+            :math:`size = \\sqrt{\\frac{I_{xx} + I_{yy}}{2}}`
+
+        #. Compute the size of the cosmic ray in terms of the number of
+           pixels that it affects.
 
         Parameters
         ----------
-        I_rr
+        I_rr : tuple
+            Second moment of energy distribution :math:`(I_{xx}, I_{yy})`
 
         Returns
         -------
+        size_sigmas : float
+            Width of the cosmic ray energy distribution
+
+        size_pixels : float
+            Total number of pixels affected by the given cosmic ray
 
         """
         size_sigmas = np.sqrt(I_rr.sum() / 2)
@@ -333,7 +385,7 @@ class Stats(object):
         self.compute_cr_energy_deposited()
 
         # Get the cosmic ray coords
-        sparse_m = self.compute_M()
+        sparse_m = self._compute_M()
         cr_coords = [
             np.unravel_index(row.data, self.label.shape) for row in sparse_m
         ]
@@ -345,7 +397,7 @@ class Stats(object):
 
 
         for centroid, energy, coords in loop_gen:
-            label_coords = list(zip(coords[1], coords[0]))
+            label_coords = list(zip(coords[0], coords[1]))
             # Compute the second moments of the energy distribution
             I_rr, I_xy = self.compute_higher_moments(
                 energy_deposited=energy,
@@ -368,3 +420,7 @@ class Stats(object):
         self.cr_affected_pixels = [
             a for data in self.cr_affected_pixels for a in data
         ]
+
+
+def debug():
+    fname = '/Users/nmiles/hst_cosmic_rays/data/STIS/CCD/mastDownload/HST/o3st05eaq/o3st05eaq_flt.fits'

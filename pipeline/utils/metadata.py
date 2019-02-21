@@ -1,7 +1,16 @@
 #!/usr/bin/env python
+"""
+This module contains the :py:class:`~utils.metadata.GenerateMetadata`
+that is used to extract the following information from each observation:
+
+  * Date of the observation (YYYY-MM-DD HH:MM:SS)
+  * Latitude, longitude, and altitude of HST through the course of the observation
+  * WCS information for determining the pointing of HST during the observation
+  * The total integration time of the observation (i.e. total exposure time plus additional factor to account for readout)
+
+"""
 
 import logging
-
 
 from astropy.io import fits
 from astropy.time import Time
@@ -11,7 +20,6 @@ from calcos import orbit
 from calcos.timeline import gmst, DEGtoRAD, rectToSph
 import numpy as np
 import os
-
 
 
 logging.basicConfig(format='%(levelname)-4s '
@@ -44,7 +52,6 @@ class GenerateMetadata(object):
         self._metadata = {}
 
 
-
     @property
     def fname(self):
         """Name of FITS file"""
@@ -72,7 +79,6 @@ class GenerateMetadata(object):
     @metadata.setter
     def metadata(self, value):
         self._metadata = value
-
 
     def _engineering_file(self):
         """ Generate path to telemetry file
@@ -221,13 +227,3 @@ class GenerateMetadata(object):
             self.metadata['latitude'] = np.nan
             self.metadata['longitude'] = np.nan
             self.metadata['time_intervals'] = np.nan
-
-
-
-
-
-
-
-
-
-
