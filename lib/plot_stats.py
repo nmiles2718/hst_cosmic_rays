@@ -285,7 +285,7 @@ class PlotData(object):
         for line in all_lines:
              line.set(linestyle='-', alpha=0.3, color='w')
 
-    def plot_hst_loc(self, i = 5, df = None, key='start'):
+    def plot_hst_loc(self, i = 5, df = None, key='start', save=False):
 
         self.fig = plt.figure(figsize=(9, 7))
         # Get the model for the SAA
@@ -321,7 +321,7 @@ class PlotData(object):
                          marker='o',
                          s=10,
                          latlon=True,
-                         c=rate,
+                         c=rate, alpha=0.5,
                          norm = norm,
                          cmap='Reds')
 
@@ -330,7 +330,10 @@ class PlotData(object):
         cbar.set_label('cosmic rays/s/cm^2', fontweight='bold')
         cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
 
-        self.fig.savefig('lat_lon_{}.png'.format(key), format='png', dpi=300)
+        if save:
+            self.fig.savefig('lat_lon_{}.png'.format(key),
+                             format='png',
+                             dpi=300)
         plt.show()
 
     def get_full_path(self, obsnames):
