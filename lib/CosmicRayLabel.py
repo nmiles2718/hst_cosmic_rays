@@ -174,14 +174,14 @@ class CosmicRayLabel(object):
         for sci_data in self.sci:
 
             # Generate some stats to use for the source detection
-            mean, median, std = sigma_clipped_stats(sci_data, sigma_lower=3,
+            mean, median, std = sigma_clipped_stats(sci_data[sci_data > 0], sigma_lower=3,
                                                     sigma_upper=3)
             print('mean: {}, median: {}, std: {}'.format(mean, median, std))
 
-            self.dq = np.where(sci_data > np.absolute(median) + 3*std, 1, 0)
+            self.dq = np.where(sci_data > np.absolute(median) + 5*std, 1, 0)
             self.label.append(self.get_label(wfpc2=True,
                                              bit_comp=False,
-                                             threshold_l=2, threshold_u=500))
+                                             threshold_l=2, threshold_u=600))
 
     def generate_label(self, use_dq=True, threshold_l=None, threshold_u=None):
         if use_dq:

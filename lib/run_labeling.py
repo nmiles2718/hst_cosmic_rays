@@ -829,7 +829,7 @@ def analyze_data(flist, instr, start, subgrp_names, i, IR=False):
     # results = analyze_file(flist[0])
     else:
         # Process all images at once
-        delayed = [dask.delayed(analyze_file)(f) for f in flist]
+        delayed = [dask.delayed(analyze_file)(f,instr=instr) for f in flist]
         results = list(dask.compute(*delayed, scheduler='processes'))
 
 

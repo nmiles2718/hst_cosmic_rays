@@ -43,7 +43,7 @@ class FindData(object):
         self._collection = 'HST'
         self._product_type = ['image','spectrum'] # DOES NOT WORK FOR STIS, MUST BE SPECTRUM
         self._obstype = 'cal'
-        self._target_name = 'DARK'
+        self._target_name = 'DARK*'
 
         # Uncomment for STIS debugging
         # self._stop = Time('2000-01-01', format='iso')
@@ -111,7 +111,7 @@ class FindData(object):
                     obstype=self._obstype,
                     target_name=self._target_name,
                     instrument_name=self._instr,
-                    t_min = [start.mjd, stop.mjd],
+                    t_min = [start.mjd, stop.mjd-1],
                     t_exptime = self.t_exptime
                 )
             except Exception as e:
