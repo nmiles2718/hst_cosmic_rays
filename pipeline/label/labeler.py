@@ -278,7 +278,7 @@ class Label(object):
                                labelleft=False)
         return fig, ax1, ax2
 
-    def plot(self, show=True):
+    def plot(self, show=True, save=True):
         """ Plot the label
 
         Parameters
@@ -316,6 +316,14 @@ class Label(object):
         else:
             ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
             ax2.imshow(self.label, cmap=cmap, origin='lower')
+
+        ax1.set_xlim(850, 1000)
+        ax1.set_ylim(100, 300)
+
+        ax1.set_title('SCI Extension')
+        ax2.set_title('Cosmic Ray Segmentation Map')
+        if save:
+            fig.savefig('example_plot.png', format='png', dpi=300)
 
         if show:
             plt.show()

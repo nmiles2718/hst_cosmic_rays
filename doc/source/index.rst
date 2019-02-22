@@ -87,6 +87,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   examples
    download
    label
    process

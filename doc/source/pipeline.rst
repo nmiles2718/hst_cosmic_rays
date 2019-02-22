@@ -9,3 +9,4 @@ pipeline
 
 .. automodapi:: pipeline_updated
     :no-inheritance-diagram:
+    :skip: defaultdict
