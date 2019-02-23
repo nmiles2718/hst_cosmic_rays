@@ -238,7 +238,7 @@ class Initializer(object):
         else:
             self.dates = array(date_ranges)
 
-    def initialize_HDF5(self):
+    def initialize_HDF5(self, chunks=4):
         """ Create the required hdf5 files that we will write to
 
         Each statistics stored in the HDF5 files will vary in size image to
@@ -257,7 +257,7 @@ class Initializer(object):
             rel_path = hdf5_files[key]
             full_path = os.path.join(self.base, *rel_path.split('/'))
             i = 0
-            while i < 4:
+            while i < chunks:
                 fnew = full_path.replace('.hdf5', '_{}.hdf5'.format(i + 1))
                 i += 1
                 new_flist[key].append(fnew)

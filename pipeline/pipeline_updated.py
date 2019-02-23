@@ -63,6 +63,11 @@ parser.add_argument('-ir',
                     action='store_true',
                     default=False)
 
+parser.add_argument('-chunks',
+                    help='Number of chunks to break the entire dataset into',
+                    type=int,
+                    default=4)
+
 
 parser.add_argument('-analyze',
                     help='Run the analysis and extract cosmic ray statistics',
@@ -103,7 +108,7 @@ LOG.setLevel(logging.INFO)
 
 class CosmicRayPipeline(object):
     def __init__(self, aws=None, analyze=None, download=None, ccd=None,
-                 ir=None, instr=None, initialize=None,
+                 chunks=None, ir=None, instr=None, initialize=None,
                  process=None, store_downloads=None, use_dq=None):
 
         # Initialize Args
@@ -111,6 +116,7 @@ class CosmicRayPipeline(object):
         self._analyze = analyze
         self._download = download
         self._ccd = ccd
+        self._chunks = chunks
         self._ir = ir
         self._instr = instr.upper()
         self._initialize = initialize
@@ -177,6 +183,14 @@ class CosmicRayPipeline(object):
         """Configuration object returned by parsing the
         :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg_file`"""
         return self._cfg
+
+    @property
+    def chunks(self):
+        return self._chunks
+
+    @chunks.getter
+    def chunks(self):
+        return self._chunks
 
     @property
     def ccd(self):
@@ -511,13 +525,13 @@ class CosmicRayPipeline(object):
         initializer_obj.get_processed_ranges()
 
         if self.initialize:
-            initializer_obj.initialize_HDF5()
+            initializer_obj.initialize_HDF5(chunks=self.chunks)
 
         # Initialize the downloader
         downloader = download.Downloader(self.instr, self.instr_cfg)
 
-        # Divide up the dates into 4 chunks
-        date_chunks = np.array_split(initializer_obj.dates, 4)
+        # Divide up the dates into chunks
+        date_chunks = np.array_split(initializer_obj.dates, self.chunks)
         for i, chunk in enumerate(date_chunks):
             for (start, stop) in chunk:
                 results = None
