@@ -50,11 +50,15 @@ class Initializer(object):
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
         self._dates = None
         self._inactive_range = {
-            'ACS': [
+            'ACS_WFC': [
                 Time('2007-01-27', format='iso'),
                 Time('2009-05-01', format='iso')
             ],
-            'STIS': [
+            'ACS_HRC':[
+                Time('2007-01-27', format='iso'),
+                Time.now()
+            ],
+            'STIS_CCD': [
                 Time('2004-08-03', format='iso'),
                 Time('2009-05-01', format='iso')
             ]
@@ -203,7 +207,7 @@ class Initializer(object):
         For instruments that experienced failures, intervals that fall in a
         period of inactivity will be automatically removed.
         """
-
+        self.initialize_dates()
         pd_range = date_range(start=self.start_date.iso,
                                    end=self.stop_date.iso,
                                    freq='1MS')
@@ -217,13 +221,14 @@ class Initializer(object):
                               key=lambda x: x[0])
 
         # Check if the instrument had any failures
-        instr = self.instr.split('/')[0]
-        if instr in self.inactive_range.keys():
-            start_failure = self.inactive_range[instr][0]
-            stop_failure = self.inactive_range[instr][1]
+        # instr = self.instr.split('/')[0]
+        if self.instr in self.inactive_range.keys():
+            start_failure = self.inactive_range[self.instr][0]
+            stop_failure = self.inactive_range[self.instr][1]
             keep = []
             # Remove dates falling in the period of inactivity
             for range in date_ranges:
+
                 if range[0] >= start_failure and range[1] <= stop_failure:
                     continue
                 keep.append(range)

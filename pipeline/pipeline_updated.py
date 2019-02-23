@@ -69,6 +69,11 @@ parser.add_argument('-analyze',
                     action='store_true',
                     default=True)
 
+parser.add_argument('-use_dq',
+                    help='Use the DQ arrays to perform labeling',
+                    action='store_true',
+                    default=True)
+
 parser.add_argument('-instr',
                     default='stis_ccd',
                     help='HST instrument to process (acs_wfc, '
@@ -99,7 +104,7 @@ LOG.setLevel(logging.INFO)
 class CosmicRayPipeline(object):
     def __init__(self, aws=None, analyze=None, download=None, ccd=None,
                  ir=None, instr=None, initialize=None,
-                 process=None, store_downloads=None):
+                 process=None, store_downloads=None, use_dq=None):
 
         # Initialize Args
         self._aws = aws
@@ -111,6 +116,7 @@ class CosmicRayPipeline(object):
         self._initialize = initialize
         self._process = process
         self._store_downloads = store_downloads
+        self._use_dq = use_dq
 
         # Necessary evil to dynamically build absolute paths
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
@@ -294,6 +300,15 @@ class CosmicRayPipeline(object):
         """Switch for saving the downloaded files"""
         return self._store_downloads
 
+    @property
+    def use_dq(self):
+        return self._use_dq
+
+    @use_dq.getter
+    def use_dq(self):
+        """Switch for specifying what to use in the labeling analysis"""
+        return self._use_dq
+
     def run_downloader(self, range, downloader):
         """Download the data"""
         start_time = time.time()
@@ -321,7 +336,7 @@ class CosmicRayPipeline(object):
 
         label_params = {
             'deblend': False,
-            'use_dq': True,
+            'use_dq': self.use_dq,
             'extnums': self.instr_cfg['instr_params']['extnums'],
             'threshold_l': 2,
             'threshold_u': 1500,
@@ -380,7 +395,8 @@ class CosmicRayPipeline(object):
 
         self.flist = glob.glob(self.search_pattern)
 
-        if self.ccd:
+        # Process only if there are files to process
+        if self.ccd and self.flist:
             processor = process.ProcessCCD(self.instr,
                                            self.instr_cfg,
                                            flist=self.flist)
@@ -395,7 +411,7 @@ class CosmicRayPipeline(object):
                 # remove the failed files for the list of files to process
                 self.flist = list(set(self.flist).difference(failed))
 
-        elif self.ir:
+        elif self.ir and self.flist:
             processor = process.ProcessIR(flist=self.flist)
             processor.decompose()
 
@@ -434,7 +450,6 @@ class CosmicRayPipeline(object):
         df = df.set_index(keys=['date'], drop=True)
         df.sort_index(inplace=True)
 
-
         e = sendit.Emailer(df=df,
                            processing_times=self.processing_times)
         subj = ('Finished analyzing '
@@ -445,7 +460,7 @@ class CosmicRayPipeline(object):
         e.sender = ['nmiles','stsci.edu']
         e.recipient = ['nmiles', 'stsci.edu']
 
-        e.SendEmail(gif=False)
+        # e.SendEmail(gif=False)
 
     def _pipeline_cleanup(self, start, stop):
         """Handle necessary cleanup steps required at the end of the pipeline
@@ -505,6 +520,7 @@ class CosmicRayPipeline(object):
         date_chunks = np.array_split(initializer_obj.dates, 4)
         for i, chunk in enumerate(date_chunks):
             for (start, stop) in chunk:
+                results = None
                 if '{} {}'.format(start.iso, stop.iso) in \
                         initializer_obj.previously_analyzed:
                     LOG.info('Already analyzed {} to {}\n'.format(start.iso,
@@ -524,7 +540,7 @@ class CosmicRayPipeline(object):
                     self.processing_times['cr_rejection'] = process_time
 
 
-                if self.analyze:
+                if self.analyze and self.flist:
                     analysis_time, results = self.run_labeling_all(
                         chunk_num=i + 1
                     )
@@ -540,8 +556,9 @@ class CosmicRayPipeline(object):
                 # Clean up the files and write out the range just processed
                 self._pipeline_cleanup(start, stop)
 
-                # Send the final email
-                self.send_email(start, stop, results)
+                # Send the final email if there were results computed
+                if results:
+                    self.send_email(start, stop, results)
 
 
 if __name__ == '__main__':
