@@ -32,7 +32,6 @@ each read.
 
 from collections import defaultdict
 import glob
-import itertools
 import logging
 import os
 import time
@@ -45,6 +44,7 @@ from numpy import array_split
 from numpy import concatenate
 from numpy import where
 import numpy.random as random
+import yaml
 
 from acstools import acsrej
 from stistools import ocrreject
@@ -69,18 +69,29 @@ class ProcessCCD(object):
         List of files to process
 
     """
-    def __init__(self, instr, instr_cfg, flist):
+    def __init__(self, instr, flist, instr_cfg=None):
 
+        # Set up base path
+        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
+        self._base = os.path.join('/',
+                                  *self._mod_dir.split('/')[:-2])
 
         self._instr = instr
-        self._instr_cfg = instr_cfg
+        if instr_cfg is None:
+            cfg_file = os.path.join(self._base,
+                                    'CONFIG',
+                                    'pipeline_config.yaml')
+            with open(cfg_file, 'r') as fobj:
+                cfg = yaml.load(fobj)
+
+            self._instr_cfg = cfg[instr]
+        else:
+            self._instr_cfg = instr_cfg
         self._flist = flist
         self._num = len(flist)
 
 
-        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
-        self._base = os.path.join('/',
-                                  *self._mod_dir.split('/')[:-2])
+
 
         self._crrejtab = os.path.join(self._base,
                                       *self._instr_cfg['crrejtab'].split('/'))

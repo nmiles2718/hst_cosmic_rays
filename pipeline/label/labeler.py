@@ -100,6 +100,8 @@ class Label(object):
         ext_tuples = [(extname, num) for num in extnums]
         ext_data = []
         with fits.open(self.fname) as hdu:
+            units = hdu[1].header['BUNIT']
+            gain = hdu[0].header['ATODGAIN']
             for val in ext_tuples:
                 try:
                     ext = hdu.index_of(val)
@@ -127,10 +129,13 @@ class Label(object):
             else:
                 self.exptime += flashdur
 
-        if extname == 'sci':
+        if extname == 'sci' and ext_data:
+            if units == 'COUNTS':
+                # If the data has units of DN, convert to electrons
+                ext_data = [datum * gain for datum in ext_data]
             self.sci = np.concatenate(ext_data, axis=0)
 
-        elif extname == 'dq':
+        elif extname == 'dq' and ext_data:
             self.dq = np.concatenate(ext_data, axis=0)
 
 

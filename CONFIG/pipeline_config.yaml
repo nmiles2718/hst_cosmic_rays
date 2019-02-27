@@ -159,9 +159,9 @@ WFPC2:
       - 'C0M'
       - 'SHM'
     download_dir: /data/WFPC2/
-    instr_params:
-      extnums: [1,2,3,4]
-      readout_time: 30
+  instr_params:
+    extnums: [1,2,3,4]
+    readout_time: 30
 
 grp_names:
   cr_affected_pixels: cr_affected_pixels

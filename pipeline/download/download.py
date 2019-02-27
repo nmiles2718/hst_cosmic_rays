@@ -6,7 +6,7 @@ import warnings
 
 from astropy.time import Time
 from astroquery.mast import Observations
-
+import yaml
 
 
 
@@ -26,14 +26,25 @@ LOG.setLevel(logging.INFO)
 
 class Downloader(object):
 
-    def __init__(self, instr, instr_cfg):
+    def __init__(self, instr, instr_cfg=None):
 
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
 
         self._base = os.path.join('/',
                                   *self._mod_dir.split('/')[:-2])
 
-        self._instr_cfg = instr_cfg
+        if instr_cfg is None:
+            cfg_file = os.path.join(self._base,
+                                    'CONFIG',
+                                    'pipeline_config.yaml')
+
+            with open(cfg_file, 'r') as fobj:
+                cfg = yaml.load(fobj)
+
+            self._instr_cfg = cfg[instr]
+        else:
+            self._instr_cfg = instr_cfg
+
 
         self._dates = None
 

@@ -4,12 +4,14 @@ This module contains two classes for reading and writing the data generated
 by the pipeline.
 """
 
-
+import glob
 import logging
 import os
+
 from astropy.time import Time
 import h5py
 from numpy import float32, ndarray
+import yaml
 
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
@@ -166,9 +168,10 @@ class DataWriter(object):
         for key in self.cr_stats[0].keys():
             self.write_statistic(key)
 
+#TODO: finish data reader. Need to figure out an efficient way to do this
 class DataReader(object):
 
-    def __init__(self, instr):
+    def __init__(self, instr, statistic, cfg=None):
         """
 
         Parameters
@@ -177,10 +180,80 @@ class DataReader(object):
         """
 
         self._instr = instr
+        self._statistic = statistic
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
+
+        self._cfg_file = os.path.join(self._base,
+                                      'CONFIG',
+                                      'pipeline_config.yaml')
+
+        if cfg is None:
+            # Load the CONFIG file
+            with open(self._cfg_file, 'r') as fobj:
+                self._cfg = yaml.load(fobj)
+
+        self._instr_cfg = self.cfg[self._instr]
+
         self._msg_div = '-' * 79
+
+    @property
+    def base(self):
+        return self._base
+
+    @base.getter
+    def base(self):
+        """Base path of the pipleine repository `~/hst_cosmic_rays/`"""
+        return self._base
+
+    @property
+    def cfg(self):
+        return self._cfg
+
+    @cfg.getter
+    def cfg(self):
+        """Configuration object returned by parsing the
+        :py:attr:`~pipeline_updated.CosmicRayPipeline.cfg_file`"""
+        return self._cfg
+
+    @property
+    def instr(self):
+        return self._instr
+
+    @instr.getter
+    def instr(self):
+        """One of the valid instrument names"""
+        return self._instr
+
+    @property
+    def instr_cfg(self):
+        return self._instr_cfg
+
+    @instr_cfg.getter
+    def instr_cfg(self):
+        """Instrument specific configuration"""
+        return self._instr_cfg
+
+    @property
+    def statistic(self):
+        return self._statistic
+
+    @statistic.getter
+    def statistic(self):
+        """Statistic to be read in"""
+        return self._statistic
+
+
+    def find_hdf5(self):
+        rel_path = self.instr_cfg['hdf5_files'][self.statistic]
+        full_path = os.path.join(self.base, *rel_path.split('/'))
+        hdf5_files = glob.glob(full_path.replace('.hdf5', '*'))
+        print(hdf5_files)
+
+def main():
+    d = DataReader(instr='STIS_CCD', statistic='incident_cr_rate')
+    d.find_hdf5()
 
 
 if __name__ == '__main__':
-    pass
+    main()

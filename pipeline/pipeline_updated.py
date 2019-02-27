@@ -51,12 +51,12 @@ parser.add_argument('-download',
 parser.add_argument('-process',
                     help='Process the raw data',
                     action='store_true',
-                    default=True)
+                    default=False)
 
 parser.add_argument('-ccd',
                     help='Switch for process CCD data',
                     action='store_true',
-                    default=True)
+                    default=False)
 
 parser.add_argument('-ir',
                     help='Switch for process IR data',
@@ -72,12 +72,12 @@ parser.add_argument('-chunks',
 parser.add_argument('-analyze',
                     help='Run the analysis and extract cosmic ray statistics',
                     action='store_true',
-                    default=True)
+                    default=False)
 
 parser.add_argument('-use_dq',
                     help='Use the DQ arrays to perform labeling',
                     action='store_true',
-                    default=True)
+                    default=False)
 
 parser.add_argument('-instr',
                     default='stis_ccd',
@@ -335,6 +335,7 @@ class CosmicRayPipeline(object):
         """Convenience method to facilitate parallelization"""
 
         file_metadata = metadata.GenerateMetadata(fname,
+                                                  instr=self.instr,
                                                   instr_cfg=self.instr_cfg)
 
         # Get image metadata
@@ -387,9 +388,8 @@ class CosmicRayPipeline(object):
         ]
 
         results = list(dask.compute(*delayed_objects,
-                                    scheduler='single-threaded',
-                                    num_workers=1))
-        # results = self.run_labeling_single(self.flist[0])
+                                    scheduler='processes',
+                                    num_workers=os.cpu_count()))
 
         cr_stats, file_metdata = zip(*results)
 
@@ -407,12 +407,10 @@ class CosmicRayPipeline(object):
         """Process the data"""
         start_time = time.time()
 
-        self.flist = glob.glob(self.search_pattern)
-
         # Process only if there are files to process
         if self.ccd and self.flist:
-            processor = process.ProcessCCD(self.instr,
-                                           self.instr_cfg,
+            processor = process.ProcessCCD(instr=self.instr,
+                                           instr_cfg=self.instr_cfg,
                                            flist=self.flist)
             processor.sort()
             processor.cr_reject()
@@ -474,9 +472,10 @@ class CosmicRayPipeline(object):
         e.sender = ['nmiles','stsci.edu']
         e.recipient = ['nmiles', 'stsci.edu']
 
-        # e.SendEmail(gif=False)
+        e.SendEmail(gif=False)
 
-    def _pipeline_cleanup(self, start, stop):
+
+    def _pipeline_cleanup(self, start, stop, failed):
         """Handle necessary cleanup steps required at the end of the pipeline
 
         Returns
@@ -491,6 +490,12 @@ class CosmicRayPipeline(object):
         with open(processed_fname,'a+') as fobj:
             fobj.write('{} {}\n'.format(start.iso, stop.iso))
 
+        if failed:
+            failed_fname = os.path.join(
+                self.base, 'CONFIG','failed_dates_{}.txt'.format(self.instr)
+            )
+            with open(failed_fname, 'a+') as fobj:
+                fobj.write('{} {}\n'.format(start.iso, stop.iso))
 
         # Remove any files that were generated as a result of CR processing
         # for the CCD imagers
@@ -528,12 +533,14 @@ class CosmicRayPipeline(object):
             initializer_obj.initialize_HDF5(chunks=self.chunks)
 
         # Initialize the downloader
-        downloader = download.Downloader(self.instr, self.instr_cfg)
+        downloader = download.Downloader(instr=self.instr,
+                                         instr_cfg=self.instr_cfg)
 
         # Divide up the dates into chunks
         date_chunks = np.array_split(initializer_obj.dates, self.chunks)
         for i, chunk in enumerate(date_chunks):
             for (start, stop) in chunk:
+                failed = False
                 results = None
                 if '{} {}'.format(start.iso, stop.iso) in \
                         initializer_obj.previously_analyzed:
@@ -549,6 +556,8 @@ class CosmicRayPipeline(object):
                                                         downloader=downloader)
                     self.processing_times['download'] = download_time
 
+                self.flist = glob.glob(self.search_pattern)
+
                 if self.process:
                     process_time = self.run_processing()
                     self.processing_times['cr_rejection'] = process_time
@@ -559,18 +568,18 @@ class CosmicRayPipeline(object):
                         chunk_num=i + 1
                     )
                     self.processing_times['analysis'] = analysis_time
+                else:
+                    failed=True
+
 
                 self.processing_times['total'] = sum(
                     list(self.processing_times.values())
                 )
 
-                for key, value in self.processing_times.items():
-                    print(key, value)
-
                 # Clean up the files and write out the range just processed
-                self._pipeline_cleanup(start, stop)
+                self._pipeline_cleanup(start, stop, failed)
 
-                # Send the final email if there were results computed
+                # Send the final email iff there were results computed
                 if results:
                     self.send_email(start, stop, results)
 
@@ -579,8 +588,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args = vars(args)
     p = CosmicRayPipeline(**args)
-    # p = CosmicRayPipeline(instr='stis_ccd', ccd=True, download=False,
-    #                       process=True, analyze=True, initialize=True)
+    # p = CosmicRayPipeline(instr='wfpc2', ccd=True, download=False,
+    #                       process=False, analyze=True, initialize=True, chunks=4)
     p.run()
     # cmd = 'python pipeline_updated.py -instr stis_ccd -download -process -analyze -initialize'
     # os.system(cmd)

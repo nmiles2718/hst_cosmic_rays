@@ -20,6 +20,7 @@ from calcos import orbit
 from calcos.timeline import gmst, DEGtoRAD, rectToSph
 import numpy as np
 import os
+import yaml
 
 
 logging.basicConfig(format='%(levelname)-4s '
@@ -44,9 +45,24 @@ class GenerateMetadata(object):
         Instrument specific configuration object
 
     """
-    def __init__(self, fname, instr_cfg=None):
+    def __init__(self, fname, instr, instr_cfg=None):
         self._fname = fname # file name will always be the FLT
-        self._instr_cfg = instr_cfg
+
+        self._mod_dir = os.path.dirname(os.path.abspath(__file__))
+
+        self._base = os.path.join('/',
+                                  *self._mod_dir.split('/')[:-2])
+
+        if instr_cfg is None:
+            cfg_file = os.path.join(self._base,
+                                    'CONFIG',
+                                    'pipeline_config.yaml')
+
+            with open(cfg_file, 'r') as fobj:
+                cfg = yaml.load(fobj)
+            self._instr_cfg = cfg[instr]
+        else:
+            self._instr_cfg = instr_cfg
         self._telemetry_file = None
         self._date = None
         self._metadata = {}
@@ -87,10 +103,13 @@ class GenerateMetadata(object):
         -------
 
         """
+        input_suffix = \
+            self.instr_cfg['astroquery']['SubGroupDescription'][0].lower()
         telemetry_suffix = \
             self.instr_cfg['astroquery']['SubGroupDescription'][1].lower()
 
-        self.telemetry_file = self.fname.replace('flt', telemetry_suffix)
+        self.telemetry_file = self.fname.replace(input_suffix,
+                                                 telemetry_suffix)
 
 
     def get_wcs_info(self):
