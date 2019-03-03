@@ -76,6 +76,9 @@ def compile_global_stats(results_dir='./../data/*/*cr_sizes*hdf5'):
 
     flist = glob.glob(results_dir)
     output = defaultdict(list)
+    flist = [f for f in flist if 'nicmos' not in f]
+    print(flist)
+    flist.append('./../data/STIS/stis_cr_sizes.hdf5')
     results = [dask.delayed(tally_stats)(f) for f in flist]
     results = list(dask.compute(*results, scheduler='processes'))
 
@@ -94,7 +97,9 @@ def compile_global_stats(results_dir='./../data/*/*cr_sizes*hdf5'):
 
     df = pd.DataFrame(output, index=['cr_count', 'img_count', 'total_exptime'])
     print(df)
-
+    print('Total CR count: {}'.format(df.loc['cr_count', :].sum()))
+    print('Total number of images analyzed: {}'.format(df.loc['img_count', :].sum()))
+    print('Cumulative exposure time: {}'.format(df.loc['total_exptime', :].sum()))
 
 if __name__ == '__main__':
     compile_global_stats()

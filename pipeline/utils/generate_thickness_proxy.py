@@ -4,6 +4,8 @@ import argparse
 from astropy.io import fits
 import h5py
 from collections import Counter
+from collections import namedtuple
+import glob
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 import numpy as np
@@ -20,55 +22,61 @@ typical_symmetry = 0.4143
 sigma_symmetry = 0.0472
 sym_thresh = 3
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-instr',
                     default=None,
                     help='HST instrument to process (acs_wfc, '
                          'wfc3_uvis, stis_ccd, wfpc2/wfc)')
 
-def get_data(fname, instr):
+def get_data(flist, instr, stats, cfg):
     start_time = time.time()
     c = Counter()
     file_counter = Counter()
-    # with open('./../data/bad_files.txt','r') as fobj:
-    #     bad_files = fobj.readlines()
-    #     bad_files = [f.strip('\n').replace('raw.fits','blv_tmp.fits')
-    #                  for f in bad_files]
 
     instr_name = instr.split('_')[0].lower()
-    fname = fname.replace('_pixes.hdf5','_pixels_master.hdf5')
-    print(fname)
+    fname_size = cfg[instr]['hdf5_files'][2].replace('.hdf5','_{}.hdf5')
+    fname_shape = cfg[instr]['hdf5_files'][3].replace('.hdf5','_{}.hdf5')
     i = 0
-    with h5py.File(fname,mode='r') as f:
-        grp = f['/{}'.format(instr)]
-        subgrp = grp['cr_affected_pixels']
-        size_file =  h5py.File('./../data/ACS/{}_sizes_master.hdf5'.format(instr_name),'r')
-        shape_file = h5py.File('./../data/ACS/{}_shapes_master.hdf5'.format(instr_name),'r')
-        for dset in subgrp.keys():
-            # if dset in bad_files:
-            #     print('skipping {}'.format(dset))
-            #     file_counter['bad'] += 1
-            # else:
-            size_grp = size_file['/{}'.format(instr.upper())]
-            avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
-            shape_grp = shape_file['/{}'.format(instr.upper())]
-            avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
-            print(dset, avg_size, avg_symmetry)
-            if np.absolute(avg_symmetry - typical_symmetry) <= sym_thresh*sigma_symmetry \
-            and np.absolute(avg_size - typical_size) <= size_thresh*sigma_size:
+    for fname in flist:   
+        print(fname)
+        fnum = fname.split('_')[-1].split('.')[0]
+        with h5py.File(fname,mode='r') as f:
+            grp = f['/{}'.format(instr)]
+            subgrp = grp['cr_affected_pixels']
+            size_file =  h5py.File(fname_size.format(fnum),'r')
+            shape_file = h5py.File(fname_shape.format(fnum),'r')
+            for dset in subgrp.keys():
+                # if dset in bad_files:
+                #     print('skipping {}'.format(dset))
+                #     file_counter['bad'] += 1
+                # else:
+                size_grp = size_file['/{}'.format(instr.upper())]
                 try:
-                    coords = subgrp[dset][:]
-                except Exception as e:
-                    file_counter['bad']+=1
-                else:
-                    file_counter['good']+=1
-                    for coord in coords:
-                        c['{},{}'.format(coord[0],coord[1])]+=1
-                        i +=1
+                    avg_size = np.nanmean(size_grp['sizes'][dset][:][1])
+                except KeyError:
+                    continue
+                shape_grp = shape_file['/{}'.format(instr.upper())]
+                try:
+                    avg_symmetry = np.nanmean(shape_grp['shapes'][dset][:][1])
+                except KeyError:
+                    continue
+                print(dset, avg_size, avg_symmetry)
+                if np.absolute(avg_symmetry - stats.shape_mean) <= sym_thresh*stats.shape_std \
+                and np.absolute(avg_size - stats.size_mean) <= size_thresh*stats.size_std:
+                    try:
+                        coords = subgrp[dset][:]
+                    except Exception as e:
+                        file_counter['bad']+=1
+                    else:
+                        file_counter['good']+=1
+                        for coord in coords:
+                            c['{},{}'.format(coord[0],coord[1])]+=1
+                            i +=1
+            size_file.close()
+            shape_file.close()
 
-    #
-    size_file.close()
-    shape_file.close()
     end_time = time.time()
     duration = end_time - start_time
     if duration > 3600:
@@ -83,13 +91,30 @@ def get_data(fname, instr):
     return c, i, duration, units, file_counter
 
 def main(instr):
+    stats = namedtuple('stats',['size_mean','size_std', 'shape_mean','shape_std'])
+    
+    _CFG = {
+            'ACS_WFC': {'stat': stats(size_mean=0.513, size_std=0.0625, shape_mean=0.41, shape_std=0.0625),
+                        'detector_size':[4096, 4096]},
+            'ACS_HRC': {'stat':stats(size_mean=0.513, size_std = 0.0625, shape_mean=0.41, shape_std=0.0625),
+                        'detector_size':[1024, 1024]},
+            'STIS_CCD': {'stat':stats(size_mean=0.513, size_std = 0.0625, shape_mean=0.41, shape_std=0.0625),
+                         'detector_size':[1024,1024]},
+            'WFC3_UVIS': {'stat':stats(size_mean=0.513, size_std=0.03125, shape_mean=0.41, shape_std=0.03125),
+                          'detector_size':[4102, 4096]}                        
+          }
+   
+
     print('Starting')
     with open('./../CONFIG/pipeline_config.yaml', 'r') as fobj:
         cfg = yaml.load(fobj)
-    fname = cfg[instr]['hdf5_files'][0]
+    search_pattern = cfg[instr]['hdf5_files'][0]
+    search_pattern = search_pattern.replace('.hdf5','_?.hdf5')
+    flist = glob.glob(search_pattern)
     c, num_datapoints, duration, units, file_counter = \
-        get_data(fname, instr=instr)
-    counter_array = np.zeros([1024, 1024])
+        get_data(flist, instr=instr, cfg=cfg, stats=_CFG[instr]['stat'])
+    # Make a blank map for CR incidence
+    counter_array = np.zeros(_CFG[instr]['detector_size'])
     hdr = fits.Header()
 
     for key, val in c.items():

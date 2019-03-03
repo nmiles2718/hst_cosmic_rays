@@ -77,8 +77,14 @@ class PlotData(object):
                         val = Time(val, format='iso')
                     elif at_key == 'latitude' or at_key == 'longitude' \
                         or at_key == 'altitude':
-                        data_out['start_{}'.format(at_key)].append(val[0])
-                        data_out['end_{}'.format(at_key)].append(val[-1])
+                        try:
+                            data_out['start_{}'.format(at_key)].append(val[0])
+                        except IndexError as e:
+                            data_out['start_{}'.format(at_key)].append(val)
+                        try:
+                            data_out['end_{}'.format(at_key)].append(val[-1])
+                        except IndexError as e:
+                            data_out['end_{}'.format(at_key)].append(val)
                         continue
                     data_out['{}'.format(at_key)].append(val)
         data_out['mjd'] = [val.mjd for val in data_out['date']]
