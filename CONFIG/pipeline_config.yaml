@@ -172,7 +172,7 @@ WFPC2:
   instr_params:
     extnums: [1,2,3,4]
     readout_time: 30
-    gain_keyword: 'ATODGN*'
+    gain_keyword: 'ATODGAIN'
     detector_size: 5.76
 
 grp_names:

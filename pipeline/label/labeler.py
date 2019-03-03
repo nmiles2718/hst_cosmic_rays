@@ -424,10 +424,11 @@ class CosmicRayLabel(Label):
         -------
 
         """
-        # Get the DQ array
-        self.get_data(extname='dq', extnums=extnums)
+        # Get the DQ array only if we use it for label
+        if use_dq:
+            self.get_data(extname='dq', extnums=extnums)
 
-        # Get the SCI array
+        # Always get the SCI array
         self.get_data(extname='sci', extnums=extnums)
 
         self.ccd_labeling(use_dq = use_dq,
@@ -454,13 +455,13 @@ class CosmicRayLabel(Label):
 
 
 
-# def main():
-#    l = CosmicRayLabel(fname='/Users/nmiles/hst_cosmic_rays/data/'
-#                             'STIS/CCD/mastDownload/HST/o3st06ekq'
-#                             '/o3st06ekq_flt.fits')
-#    l.run_ccd_label(deblend=False, use_dq=True, threshold_l=3, threshold_u=1000)
-#
-#
-#
-# if __name__ == '__main__':
-#     main()
+def main():
+   l = CosmicRayLabel(fname='/Users/nmiles/hst_cosmic_rays/data/WFPC2/'
+                            'mastDownload/HST/u21y0a05t/u21y0a05t_c0m.fits',
+                      gain_keyword='ATODGN*')
+   l.run_ccd_label(deblend=False, use_dq=False, threshold_l=3, threshold_u=1000)
+
+
+
+if __name__ == '__main__':
+    main()
