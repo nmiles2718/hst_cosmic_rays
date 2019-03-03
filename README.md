@@ -2,6 +2,7 @@
 This repository contains the HSTcosmicrays package that is used in the analysis
 of every identifiable cosmic ray in any of the calibration darks taken by the 
 following imagers on HST:
+
 **CCD Imagers**
 - ACS/WFC
 - ACS/HRC
