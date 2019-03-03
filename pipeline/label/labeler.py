@@ -4,7 +4,7 @@ This module contains all the functionality required to perform a
 connected-component labeling analysis. It is broken into two classes, one base
 class for arbtirary label objects and one specific to cosmic rays
 """
-
+from collections import Iterable
 import logging
 
 from astropy.io import fits
@@ -34,10 +34,11 @@ class Label(object):
         Name of FITS file
 
     """
-    def __init__(self, fname):
+    def __init__(self, fname, gain_keyword=None):
 
 
         self._fname = fname
+        self._gain_keyword = gain_keyword
         self._label = None
         self._dq = None
         self._sci = None
@@ -47,6 +48,19 @@ class Label(object):
     def fname(self):
         """Name of FITS file"""
         return self._fname
+
+    @property
+    def gain_keyword(self):
+        return self._gain_keyword
+
+    @gain_keyword.getter
+    def gain_keyword(self):
+        """Header keyword for obtaining CCD gain information"""
+        return self._gain_keyword
+
+    @gain_keyword.setter
+    def gain_keyword(self, value):
+        self._gain_keyword = value
 
     @property
     def label(self):
@@ -101,7 +115,21 @@ class Label(object):
         ext_data = []
         with fits.open(self.fname) as hdu:
             units = hdu[1].header['BUNIT']
-            gain = hdu[0].header['ATODGAIN']
+            if self.gain_keyword is not None:
+                # For CCD's with multiple readout amplifiers the line below
+                # returns an astropy.header.Header object with all the matching
+                # keywords. Hence, we must compute the average CCD gain if
+                # there are multiple readout amplifiers
+                gain_values = hdu[0].header[self.gain_keyword]
+                if isinstance(gain_values, Iterable):
+                    filtered_gains = list(
+                        filter(lambda g: g != 0, gain_values.values())
+                    )
+                    # Compute the average of all nonzero gains
+                    avg_gain = sum(filtered_gains)/ len(filtered_gains)
+                else:
+                    avg_gain = gain_values
+
             for val in ext_tuples:
                 try:
                     ext = hdu.index_of(val)
@@ -130,9 +158,15 @@ class Label(object):
                 self.exptime += flashdur
 
         if extname == 'sci' and ext_data:
-            if units == 'COUNTS':
+            if units == 'COUNTS' and self.gain_keyword is not None:
+                msg = (
+                    'Converting image from {}(DN) to ELECTRONS \n'
+                    'Average gain computed from header: {}'.format(units,
+                                                                   avg_gain)
+                )
+                LOG.info(msg)
                 # If the data has units of DN, convert to electrons
-                ext_data = [datum * gain for datum in ext_data]
+                ext_data = [datum * avg_gain for datum in ext_data]
             self.sci = np.concatenate(ext_data, axis=0)
 
         elif extname == 'dq' and ext_data:
@@ -352,8 +386,8 @@ class CosmicRayLabel(Label):
 
 
     """
-    def __init__(self, fname):
-        super().__init__(fname)
+    def __init__(self, fname, gain_keyword=None):
+        super().__init__(fname, gain_keyword)
 
 
     def run_ccd_label(self, deblend=False, use_dq=True, extnums=[1,2],

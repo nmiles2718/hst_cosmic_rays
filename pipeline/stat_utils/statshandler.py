@@ -11,10 +11,12 @@ For each cosmic ray this module will compute the following statistics:
 """
 
 import logging
+import os
 
 import numpy as np
 from scipy import ndimage
 from scipy.sparse import csr_matrix
+import yaml
 
 
 logging.basicConfig(format='%(levelname)-4s '
@@ -38,12 +40,22 @@ class Stats(object):
 
     """
 
-    def __init__(self, cr_label, integration_time):
+    def __init__(self, cr_label, integration_time=None, detector_size=None):
 
         self._fname = cr_label.fname
         self._label = cr_label.label
         self._sci = cr_label.sci
-        self._integration_time = integration_time
+        if integration_time is None:
+            # If no integration time is passed assume 1.0 second
+            self._integration_time = 1.0
+        else:
+            self._integration_time = integration_time
+
+        if detector_size is None:
+            # If no size is passed, assume 1 cm^2
+            self._detector_size = 1.0
+        else:
+            self._detector_size = detector_size
 
         self._incident_cr_rate = None
         self._max_x = self._label.shape[1]
@@ -65,7 +77,7 @@ class Stats(object):
 
     @incident_cr_rate.getter
     def incident_cr_rate(self):
-        """Compute cosmic ray incidence rate"""
+        """Computed cosmic ray incidence rate (CR/s/cm^2"""
         return self._incident_cr_rate
 
     @incident_cr_rate.setter
@@ -98,6 +110,19 @@ class Stats(object):
         self._cr_affected_pixels = value
 
     @property
+    def detector_size(self):
+        return self._detector_size
+
+    @detector_size.getter
+    def detector_size(self):
+        """Size of the detector in cm^2"""
+        return self._detector_size
+
+    @detector_size.setter
+    def detector_size(self, value):
+        self._detector_size = value
+
+    @property
     def energy_deposited(self):
         return self._energy_deposited
 
@@ -127,14 +152,6 @@ class Stats(object):
     def label(self):
         """Generated label"""
         return self._label
-
-    @property
-    def instr_cfg(self):
-        return self._instr_cfg
-
-    @instr_cfg.getter
-    def instr_cfg(self):
-        return self._instr_cfg
 
     @property
     def integration_time(self):
@@ -300,7 +317,7 @@ class Stats(object):
 
     def _get_indices_sparse(self):
         """"""
-        M = self._compute_M(self.label)
+        M = self._compute_M()
         return [np.unravel_index(row.data, self.label.shape) for row in M]
 
     def compute_shape(self, I_rr, I_xy):
@@ -371,7 +388,7 @@ class Stats(object):
 
         try:
             self.incident_cr_rate = float(len(self.label_ids)) \
-                               / self.integration_time
+                               / self.integration_time / self.detector_size
         except ZeroDivisionError as e:
             msg = ('{}\n {} has an undefined integration time.\n '
                    'Setting cosmic ray rate to NaN'.format(e, self.fname))

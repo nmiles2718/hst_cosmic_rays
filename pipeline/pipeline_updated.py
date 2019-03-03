@@ -347,7 +347,10 @@ class CosmicRayPipeline(object):
         # Get HST location info
         file_metadata.get_observatory_info()
 
-        cr_label = labeler.CosmicRayLabel(fname)
+        cr_label = labeler.CosmicRayLabel(
+            fname,
+            gain_keyword=self.instr_cfg['instr_params']['gain_keyword']
+        )
 
         label_params = {
             'deblend': False,
@@ -364,8 +367,13 @@ class CosmicRayPipeline(object):
         # Compute the integration time
         integration_time = cr_label.exptime + \
                            self.instr_cfg['instr_params']['readout_time']
+        detector_size = self.instr_cfg['instr_params']['detector_size']
 
-        cr_stats = statshandler.Stats(cr_label, integration_time)
+        cr_stats = statshandler.Stats(
+            cr_label,
+            integration_time=integration_time,
+            detector_size=detector_size
+        )
         cr_stats.compute_cr_statistics()
         cr_stats_dict = {
             'cr_affected_pixels': cr_stats.cr_affected_pixels,
@@ -457,6 +465,7 @@ class CosmicRayPipeline(object):
                 np.nanmean(cr_stat['energy_deposited'])
             )
             msg_data['CR count'].append(len(cr_stat['energy_deposited']))
+            msg_data['CR rate [CR/s/cm^2]'].append(cr_stat['incident_cr_rate'])
 
         df = pd.DataFrame(msg_data)
         df = df.set_index(keys=['date'], drop=True)
@@ -577,7 +586,7 @@ class CosmicRayPipeline(object):
                 )
 
                 # Clean up the files and write out the range just processed
-                self._pipeline_cleanup(start, stop, failed)
+                # self._pipeline_cleanup(start, stop, failed)
 
                 # Send the final email iff there were results computed
                 if results:
