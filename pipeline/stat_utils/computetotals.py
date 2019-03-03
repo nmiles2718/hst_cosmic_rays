@@ -10,12 +10,35 @@ import pandas as pd
 
 
 
-def tally_stats(fname):
-    Stat = namedtuple('Stat', ['cr_count',
-                                  'img_count',
-                                  'total_exptime'])
+def tally_stats(hdf5_file):
+    """Tally the statistics in the given HDF5
 
-    with h5py.File(fname,mode='r') as f:
+    For the supplied HDF5 file, this function will compute the:
+
+    * Total number of cosmic rays analyzed
+    * Total number of images analyzed
+    * Total exposure time of all the images analyzed
+
+    Parameters
+    ----------
+    hdf5_file : str
+        Full path to the HDF5 file contains in the `results` directory
+
+    Returns
+    -------
+    result : namedtuple
+        A namedtuple containing the final tally for each of the parameters
+        listed above.
+
+    instr : str
+        Instrument name
+
+    """
+    Stat = namedtuple('Stat', ['cr_count',
+                               'img_count',
+                               'total_exptime'])
+
+    with h5py.File(hdf5_file,mode='r') as f:
         instr = list(f.keys())[0]
         print(instr)
         grp = f['/{}/sizes'.format(instr)]
@@ -33,13 +56,25 @@ def tally_stats(fname):
     result = Stat(cr_count=num_cr,
                   img_count=num_images,
                   total_exptime=total_exptime)
-    print(result)
 
     return instr, result
 
 
-def compile_global_stats(data_dir='./../data/*/*cr_sizes_?.hdf5'):
-    flist = glob.glob(data_dir)
+def compile_global_stats(results_dir='./../data/*/*cr_sizes*hdf5'):
+    """Parse all files in the results directory and tally the statistics
+
+
+    Parameters
+    ----------
+    results_dir : str
+        Path to the results directory for each instrument
+
+    Returns
+    -------
+
+    """
+
+    flist = glob.glob(results_dir)
     output = defaultdict(list)
     flist = [f for f in flist if 'nicmos' not in f]
     print(flist)
