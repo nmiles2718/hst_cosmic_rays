@@ -241,14 +241,16 @@ class ProcessCCD(object):
 
         Returns
         -------
-
+        tuple : list, bool
+            The tuple contains the input list and a boolean flag. The flag will
+            be True if the processing was successful and False if not.
         """
 
         # crrejtab = os.path.join(self.base,
         #                         self.instr_cfg['crrejtab'])
 
         output = 'tmp_crj_{}.fits'.format(self._i)
-
+        failed = True
         # if the file exist increment _i by one before processing.
         while os.path.isfile(output):
             self._i+= random.randint(0, 500)
@@ -269,9 +271,11 @@ class ProcessCCD(object):
                                                        '\n'.join(input),
                                                        self._msg_div))
             LOG.error(msg)
-            return input
+            return input, failed
         else:
-            self.output['passed'].append(input)
+            failed = False
+            return input, failed
+            # self.output['passed'].append(input)
 
     def WFC3(self, input):
         """ Run WFC3 cosmic ray rejection
@@ -283,11 +287,14 @@ class ProcessCCD(object):
 
         Returns
         -------
-
+        tuple : list, bool
+            The tuple contains the input list and a boolean flag. The flag will
+            be True if the processing was successful and False if not.
         """
         output = 'tmp_crj_{}.fits'.format(self._i)
         # if the file exist increment _i by one before processing.
 
+        failed = True
         while os.path.isfile(output):
             self._i += 1
             output = 'tmp_crj_{}.fits'.format(self._i)
@@ -316,24 +323,29 @@ class ProcessCCD(object):
                                                        self._msg_div))
 
             LOG.error(msg)
-            return input
+            return input, failed
         else:
-            self.output['passed'].append(input)
+            failed = False
+            return input, failed
+            # self.output['passed'].append(input)
 
     def STIS(self, input):
         """ Run STIS cosmic ray rejection
 
         Parameters
         ----------
-        input : flist
+        input : list
             List of files to process with `ocrreject`
 
         Returns
         -------
-
+        tuple
+            The tuple contains the input list and a boolean flag. The flag will
+            be True if the processing was successful and False if not.
         """
+        failed = True
         if len(input) < 2:
-            self.output['failed'].append(input)
+            return input, failed
         else:
             output = 'tmp_crj_{}.fits'.format(self._i)
 
@@ -359,9 +371,11 @@ class ProcessCCD(object):
                                                            '\n'.join(input),
                                                            self._msg_div))
                 LOG.error(msg)
-                return input
+                return input, failed
             else:
-                self.output['passed'].append(input)
+                failed = False
+                return input, failed
+                # self.output['passed'].append(input)
 
     def sort(self):
         """ Sort the input files by exposure time and aperture
@@ -494,12 +508,20 @@ class ProcessCCD(object):
                          scheduler='processes',
                          num_workers=os.cpu_count())
 
-            # Each computation returns None or a list of failed files
-            results = [result for result in results if result]
+        # Each computation returns a tuple (input, failed). Use this to sort
+        # which files were processed successful and which were not
 
-        if results:
-            for f in results:
-                self.output['failed'] += f
+        passed = [result[0] for result in results if not result[1]]
+        failed = [result[0] for result in results if result[1]]
+
+        # success = [result for result in results if result is not None]
+        # failed = [result for result in results if result is None]
+
+        for flist in passed:
+            self.output['passed'] += flist
+
+        for flist in failed:
+            self.output['failed'] += flist
 
         LOG.info('Done!')
         end_time = time.time()
@@ -641,9 +663,10 @@ class ProcessIR(object):
 #
 #
 #
-# if __name__ == "__main__":
-#     # For debugging purposes
-#     flist = glob.glob('./../crrejtab/STIS/mastDownload/HST/*/*flt.fits')
-#     p = ProcessCCD('stis_ccd',flist)
-#     p.sort()
-#     p.cr_reject()
+if __name__ == "__main__":
+    # For debugging purposes
+    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/STIS/CCD/mastDownload'
+                      '/HST/*/*flt.fits')
+    p = ProcessCCD('STIS_CCD',flist)
+    p.sort()
+    p.cr_reject()

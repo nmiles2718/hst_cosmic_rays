@@ -461,8 +461,10 @@ class CosmicRayPipeline(object):
                 np.nanmean(cr_stat['sizes'][0]))
 
             msg_data['avg_size [pix]'].append(np.nanmean(cr_stat['sizes'][1]))
+            # Energy deposition follows Landau Distribution, median is a closer
+            # estimate of the peak value
             msg_data['avg_energy_deposited [e]'].append(
-                np.nanmean(cr_stat['energy_deposited'])
+                np.nanmedian(cr_stat['energy_deposited'])
             )
             msg_data['CR count'].append(len(cr_stat['energy_deposited']))
             msg_data['CR rate [CR/s/cm^2]'].append(cr_stat['incident_cr_rate'])
@@ -586,7 +588,7 @@ class CosmicRayPipeline(object):
                 )
 
                 # Clean up the files and write out the range just processed
-                # self._pipeline_cleanup(start, stop, failed)
+                self._pipeline_cleanup(start, stop, failed)
 
                 # Send the final email iff there were results computed
                 if results:

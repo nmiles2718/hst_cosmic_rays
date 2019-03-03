@@ -267,7 +267,8 @@ class Stats(object):
                                                    index=self.label_ids)
         self.centroids = np.asarray(r_cm)
 
-    def compute_higher_moments(self, energy_deposited, centroid, label_coords):
+    def compute_higher_moments(self, energy_deposited, centroid,
+                               grid_coords, idx):
         """ Compute all second moments of the distribution
 
         * :math:`I_{xx} = \\frac{1}{I_0} \\sum_{i}p_i(x_i - I_x)^2`
@@ -295,28 +296,83 @@ class Stats(object):
         I_xy : int
             The cross moment of the energy distribution, :math:`I_{xy}`
 
-
+        label_coords : list
+            List of tuple's containing the positions of each pixel hit by the
+            cosmic ray
         """
         I_rr = [0, 0]  # I_xx, I_yy
         I_xy = 0
+        label_coords = []
         # coords = list(zip(label_coords[1], label_coords[0]))
-        for r_i in label_coords:
-            I_rr += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] \
-                    * (np.asarray(r_i) - np.asarray(centroid)) ** 2
+        for r_i in grid_coords:
+            if self.label[r_i[0]][r_i[1]] == idx:
+                I_rr += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] \
+                        * (np.asarray(r_i) - np.asarray(centroid)) ** 2
 
-            I_xy += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] * \
-                    (r_i[0] - centroid[0]) * (r_i[1] - centroid[1])
+                I_xy += (1 / energy_deposited) * self.sci[r_i[0]][r_i[1]] * \
+                        (r_i[0] - centroid[0]) * (r_i[1] - centroid[1])
+                label_coords.append(r_i)
 
-        return I_rr, I_xy
+        return I_rr, I_xy, label_coords
+
+    def _mk_grid(self, slice_tuple):
+        """Build a meshgrid from a tuple of python slice objects
+
+        Parameters
+        ----------
+        slice_tuple : tuple
+            A tuple of slice objects
+
+        Returns
+        -------
+        positions : tuple
+            (row, col) coordinates of the cosmic ray affected pixels
+        """
+
+        y_slice = slice_tuple[0]
+        x_slice = slice_tuple[1]
+
+
+        top_corner = int(x_slice.stop) == self._max_x and \
+                     int(y_slice.stop) == self._max_y
+
+        top_edge = int(y_slice.stop) == self._max_y
+
+        right_edge = int(x_slice.stop) == self._max_x
+
+        conditions = [top_corner, top_edge, right_edge]
+        y_coords = np.linspace(y_slice.start, y_slice.stop,
+                               int(y_slice.stop - y_slice.start) + 1,
+                               )
+
+        x_coords = np.linspace(x_slice.start, x_slice.stop,
+                               int(x_slice.stop - x_slice.start) + 1)
+
+        xx, yy = np.meshgrid(x_coords, y_coords)
+        all_positions = np.vstack([yy.ravel(), xx.ravel()])
+        grid_coords = list(zip(map(int, all_positions[0]),
+                               map(int, all_positions[1])))
+        positions = []
+        if any(conditions):
+            # If any of the conditions are met we need to remove the
+            # coordinates that fall off the detector
+            for r in grid_coords:
+                if r[0] >= self._max_y or r[1] >= self._max_x:
+                    continue
+                positions.append(r)
+        else:
+            positions = grid_coords
+
+        return positions
 
     def _compute_M(self):
-        """"""
+        """Alternative for computing CR locations"""
         cols = np.arange(self.label.size)
         return csr_matrix((cols, (self.label.ravel(), cols)),
                           shape=(self.label.max() + 1, self.label.size))
 
     def _get_indices_sparse(self):
-        """"""
+        """Alternative for computing CR locations"""
         M = self._compute_M()
         return [np.unravel_index(row.data, self.label.shape) for row in M]
 
@@ -401,29 +457,26 @@ class Stats(object):
         # Compute the total energy deposited
         self.compute_cr_energy_deposited()
 
-        # Get the cosmic ray coords
-        sparse_m = self._compute_M()
-        cr_coords = [
-            np.unravel_index(row.data, self.label.shape) for row in sparse_m
-        ]
 
-        # Create a generator to loop over
         loop_gen = zip(self.centroids,
                        self.energy_deposited,
-                       cr_coords[1:])
+                       self._cr_positions,
+                       self.label_ids)
 
 
-        for centroid, energy, coords in loop_gen:
-            label_coords = list(zip(coords[0], coords[1]))
+        for centroid, energy, coords, idx in loop_gen:
             # Compute the second moments of the energy distribution
-            I_rr, I_xy = self.compute_higher_moments(
-                energy_deposited=energy,
-                centroid=centroid,
-                label_coords=label_coords
+            grid_coords = self._mk_grid(coords)
+            I_rr, I_xy, label_coords = self.compute_higher_moments(
+                energy_deposited=energy, centroid=centroid,
+                grid_coords=grid_coords, idx=idx
             )
 
             # Compute the width of the distribution of energy and size in pixels
-            size_sigmas, size_pixels = self.compute_size(I_rr, label_coords)
+            # noinspection PyTypeChecker
+            size_sigmas, size_pixels = self.compute_size(
+                I_rr, label_coords=label_coords
+            )
 
             # Compute the symmetry of the distribution
             shapes = self.compute_shape(I_rr, I_xy)
