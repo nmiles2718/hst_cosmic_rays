@@ -15,7 +15,7 @@
 import sys
 sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline')
 
-import pipeline_updated
+import pipeline
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

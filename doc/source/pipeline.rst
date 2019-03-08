@@ -3,10 +3,10 @@ pipeline
 ********
 
 .. argparse::
-   :module: pipeline_updated
+   :module: pipeline
    :func: parser
-   :prog: python pipeline_updated.py
+   :prog: python pipeline.py
 
-.. automodapi:: pipeline_updated
+.. automodapi:: pipeline
     :no-inheritance-diagram:
     :skip: defaultdict

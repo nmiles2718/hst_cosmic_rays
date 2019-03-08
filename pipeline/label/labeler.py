@@ -317,13 +317,23 @@ class Label(object):
                                labelleft=False)
         return fig, ax1, ax2
 
-    def plot(self, show=True, save=True):
+    def plot(self, xlim=None, ylim=None, fout=None, save=False):
         """ Plot the label
 
         Parameters
         ----------
-        show : bool
-            If True, show a plot of the data.
+        xlim : tuple
+            Limits for the x-axis
+
+        ylim : tuple
+            Limits for the y-axis
+
+        fout : str
+            Filename to save the image to (e.g. example_mask.png)
+
+        save : bool
+            If True, save the generated plot to the plots directory
+
 
         Returns
         -------
@@ -343,29 +353,27 @@ class Label(object):
         rgb[0] = (0,0,0)
         cmap = colors.ListedColormap(rgb)
 
-        if self.sci is None:
-            self.get_data(ext='sci')
-
         norm = ImageNormalize(self.sci,
                               stretch=LinearStretch(),
                               interval=ZScaleInterval())
-        if isinstance(self.sci, list):
-            ax1.imshow(self.sci[0], norm=norm, cmap='gray', origin='lower')
-            ax2.imshow(self.label[0], cmap=cmap, origin='lower')
-        else:
-            ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
-            ax2.imshow(self.label, cmap=cmap, origin='lower')
 
-        ax1.set_xlim(850, 1000)
-        ax1.set_ylim(100, 300)
+        ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
+        ax2.imshow(self.label, cmap=cmap, origin='lower')
+
+
+        if xlim is not None:
+            ax1.set_xlim(xlim)
+        if ylim is not None:
+            ax1.set_ylim(ylim)
 
         ax1.set_title('SCI Extension')
         ax2.set_title('Cosmic Ray Segmentation Map')
         if save:
-            fig.savefig('example_plot.png', format='png', dpi=300)
+            fig.savefig(fout,
+                        format='png',
+                        dpi=300, bbox_inches='tight')
 
-        if show:
-            plt.show()
+        plt.show()
 
 
 
@@ -437,12 +445,7 @@ class CosmicRayLabel(Label):
                           threshold_u=threshold_u)
 
         if plot:
-            self.plot(show=True)
-
-
-
-
-
+            self.plot()
 
     def run_ir_label(self):
         """ Run labeling algorithm on IR data
@@ -451,8 +454,7 @@ class CosmicRayLabel(Label):
         -------
 
         """
-
-
+        pass
 
 
 def main():
@@ -460,7 +462,6 @@ def main():
                             'mastDownload/HST/u21y0a05t/u21y0a05t_c0m.fits',
                       gain_keyword='ATODGN*')
    l.run_ccd_label(deblend=False, use_dq=False, threshold_l=3, threshold_u=1000)
-
 
 
 if __name__ == '__main__':

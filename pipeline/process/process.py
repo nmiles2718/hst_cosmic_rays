@@ -34,6 +34,8 @@ from collections import defaultdict
 import glob
 import logging
 import os
+import urllib.request as request
+import urllib.error as error
 import time
 
 # # non native imports
@@ -193,6 +195,35 @@ class ProcessCCD(object):
         """Number of files to process"""
         return self._num
 
+    def _download_reffile(self, ref_file):
+        """Convenience method for download CCDTABs"""
+
+        crds_url = ('https://hst-crds.stsci.edu/'
+                    'unchecked_get/references/hst/{}'.format(ref_file))
+        fout = os.path.join(self._base,
+                            'data',
+                            self.instr.split('_')[0],
+                            ref_file)
+
+        if os.path.isfile(fout):
+            LOG.info('CCDTAB exists, skipping download..')
+            return fout
+        LOG.info(fout)
+        try:
+            fout, httpmsg = request.urlretrieve(url=crds_url,filename=fout)
+
+        except error.URLError as e:
+            LOG.error(e)
+            fout = 'N/A'
+        else:
+            msg = (
+                'Successfully downloaded {} from https://hst-crds.stsci.edu/\n'
+                'Path: {}'.format(ref_file, fout)
+            )
+            LOG.info(msg)
+        finally:
+            return fout
+
     def check_for_artifact(self, f, extname='dq', extnums=[1,2]):
         """ Scan the DQ extension for compression artifacts
 
@@ -203,7 +234,7 @@ class ProcessCCD(object):
 
         ext_tuples = [(extname, num) for num in extnums]
         ext_data = []
-        with fits.open(f) as hdu:
+        with fits.open(f, mode='update') as hdu:
             for val in ext_tuples:
                 try:
                     ext = hdu.index_of(val)
@@ -231,7 +262,7 @@ class ProcessCCD(object):
             return False
 
 
-    def ACS(self, input):
+    def ACS(self, input, i):
         """ Run ACS cosmic ray rejection
 
         Parameters
@@ -246,21 +277,16 @@ class ProcessCCD(object):
             be True if the processing was successful and False if not.
         """
 
-        # crrejtab = os.path.join(self.base,
-        #                         self.instr_cfg['crrejtab'])
 
-        output = 'tmp_crj_{}.fits'.format(self._i)
+        output = 'tmp_crj_{}.fits'.format(i)
         failed = True
-        # if the file exist increment _i by one before processing.
-        while os.path.isfile(output):
-            self._i+= random.randint(0, 500)
-            output = 'tmp_crj_{}.fits'.format(self._i)
         try:
              acsrej.acsrej(input,
                           output=output,
                           verbose=True,
                           crrejtab=self.crrejtab,
                           crmask=True,
+                          crsigmas='5,4,3',
                           initgues='med',
                           skysub='mode')
              if not os.path.isfile(output):
@@ -277,7 +303,7 @@ class ProcessCCD(object):
             return input, failed
             # self.output['passed'].append(input)
 
-    def WFC3(self, input):
+    def WFC3(self, input, i):
         """ Run WFC3 cosmic ray rejection
 
         Parameters
@@ -291,15 +317,10 @@ class ProcessCCD(object):
             The tuple contains the input list and a boolean flag. The flag will
             be True if the processing was successful and False if not.
         """
-        output = 'tmp_crj_{}.fits'.format(self._i)
+        output = 'tmp_crj_{}.fits'.format(i)
         # if the file exist increment _i by one before processing.
 
         failed = True
-        while os.path.isfile(output):
-            self._i += 1
-            output = 'tmp_crj_{}.fits'.format(self._i)
-
-
         for f in input:
             with fits.open(f,mode='update') as hdu:
                 hdu[0].header['CCDTAB'] = os.path.join(self._data_dir,
@@ -329,7 +350,7 @@ class ProcessCCD(object):
             return input, failed
             # self.output['passed'].append(input)
 
-    def STIS(self, input):
+    def STIS(self, input, i):
         """ Run STIS cosmic ray rejection
 
         Parameters
@@ -347,12 +368,7 @@ class ProcessCCD(object):
         if len(input) < 2:
             return input, failed
         else:
-            output = 'tmp_crj_{}.fits'.format(self._i)
-
-            # if the file exist increment _i by one before processing.
-            while os.path.isfile(output):
-                self._i += 1
-                output = 'tmp_crj_{}.fits'.format(self._i)
+            output = 'tmp_crj_{}.fits'.format(i)
 
             try:
                 ocrreject.ocrreject(' '.join(input),
@@ -485,24 +501,34 @@ class ProcessCCD(object):
                                                            self._msg_div))
         LOG.info(msg)
         results = []
+        data = self.format_inputs()
+        randints = [random.randint(0, 1500) for i in range(len(data))]
+        pairs = zip(data, randints)
         if 'acs' in self.instr.lower():
-            # Parallelized CR rejection
-            data = self.format_inputs()
-            results = [dask.delayed(self.ACS)(d) for d in data]
+            # For the ACS images we need to download the correct CCDTAB
+            for dataset in data:
+                for f in dataset:
+                    with fits.open(f, mode='update') as hdu:
+                        jref_ccdtab = hdu[0].header['CCDTAB']
+                        jref_ccdtab = jref_ccdtab.split('$')[-1]
+                        local_ccdtab = self._download_reffile(jref_ccdtab)
+                        hdu[0].header['CCDTAB'] = local_ccdtab
+
+
+            results = [dask.delayed(self.ACS)(d, i) for d, i in pairs]
             results = list(dask.compute(*results,
                                         scheduler='processes',
                                         num_workers=os.cpu_count()))
 
         elif 'wfc3' in self.instr.lower():
-            data = self.format_inputs()
-            results = [dask.delayed(self.WFC3)(d) for d in data]
+            # WFC3 only has one CCDTAB, so we've downlodaed it locally already
+            results = [dask.delayed(self.WFC3)(d, i) for d, i in pairs]
             results = dask.compute(*results,
                                    scheduler='processes',
                                    num_workers=os.cpu_count())
 
         elif 'stis' in self.instr.lower():
-            data = self.format_inputs()
-            results = [dask.delayed(self.STIS)(d) for d in data]
+            results = [dask.delayed(self.STIS)(d, i) for d, i  in pairs]
 
             results = dask.compute(*results,
                          scheduler='processes',
@@ -665,8 +691,7 @@ class ProcessIR(object):
 #
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/STIS/CCD/mastDownload'
-                      '/HST/*/*flt.fits')
-    p = ProcessCCD('STIS_CCD',flist)
+    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
+    p = ProcessCCD('ACS_WFC',flist)
     p.sort()
     p.cr_reject()

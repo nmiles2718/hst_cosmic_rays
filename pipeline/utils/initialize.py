@@ -299,13 +299,7 @@ class Initializer(object):
             self.previously_analyzed = []
         else:
             self.previously_analyzed = dates
-
-            LOG.info('Found {} previously '
-                     'processed date ranges'.format(self.previously_analyzed)
-                 )
-
-
-
-
-if __name__ == '__main__':
-    main()
+            LOG.info(
+                'Found {} previously processed'
+                ' date ranges'.format(len(self.previously_analyzed))
+            )

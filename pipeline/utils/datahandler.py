@@ -4,13 +4,19 @@ This module contains two classes for reading and writing the data generated
 by the pipeline.
 """
 
+from collections import defaultdict, Iterable
 import glob
 import logging
 import os
 
 from astropy.time import Time
+import dask.array as da
 import h5py
-from numpy import float32, ndarray
+import numpy as np
+import pandas as pd
+import sunpy
+import sunpy.timeseries
+import sunpy.data.sample
 import yaml
 
 logging.basicConfig(format='%(levelname)-4s '
@@ -55,6 +61,7 @@ class DataWriter(object):
 
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
+
         self._msg_div = '-'*79
 
     @property
@@ -143,15 +150,15 @@ class DataWriter(object):
                 dset_name = os.path.basename(file_info.fname)
                 dset = grp.create_dataset(name=dset_name,
                                           data=stats[statistic],
-                                          dtype=float32)
+                                          dtype=np.float32)
 
                 for (key, val) in file_info.metadata.items():
                     # Check the datatype and save it accordingly
-                    if isinstance(val, ndarray):
+                    if isinstance(val, np.ndarray):
                         dset.attrs.create(name=key,
                                           data=val,
                                           shape=val.shape,
-                                          dtype=float32)
+                                          dtype=np.float32)
 
                     elif isinstance(val, Time):
                         dset.attrs[key] = val.iso
@@ -179,7 +186,7 @@ class DataReader(object):
         instr
         """
 
-        self._instr = instr
+        self._instr = instr.upper()
         self._statistic = statistic
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
         self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
@@ -187,6 +194,14 @@ class DataReader(object):
         self._cfg_file = os.path.join(self._base,
                                       'CONFIG',
                                       'pipeline_config.yaml')
+        self._hdf5_files = None
+        self._energy_deposited = None
+        self._incident_cr_rate = None
+        self._size_sigmas = None
+        self._size_pixels = None
+        self._shape = None
+        self._pixels_affected = None
+        self._metadata = None
 
         if cfg is None:
             # Load the CONFIG file
@@ -205,6 +220,14 @@ class DataReader(object):
     def base(self):
         """Base path of the pipleine repository `~/hst_cosmic_rays/`"""
         return self._base
+
+    @property
+    def cfg(self):
+        return self._cfg
+
+    @property
+    def data(self):
+        return
 
     @property
     def cfg(self):
@@ -235,20 +258,132 @@ class DataReader(object):
         return self._instr_cfg
 
     @property
-    def statistic(self):
-        return self._statistic
+    def hdf5_files(self):
+        return self._hdf5_files
 
-    @statistic.getter
+    @hdf5_files.setter
+    def hdf5_files(self, value):
+        self._hdf5_files = value
+
+    @property
     def statistic(self):
         """Statistic to be read in"""
         return self._statistic
 
-
     def find_hdf5(self):
+        """ Find the HDF5 files for the given py:attr:`statistic`
+
+        Returns
+        -------
+
+        """
         rel_path = self.instr_cfg['hdf5_files'][self.statistic]
         full_path = os.path.join(self.base, *rel_path.split('/'))
         hdf5_files = glob.glob(full_path.replace('.hdf5', '*'))
-        print(hdf5_files)
+        msg = (
+            'Found the following data files\n {} \n{}'.format(
+                '\n'.join(hdf5_files), self._msg_div)
+        )
+        LOG.info(msg)
+        self.hdf5_files = hdf5_files
+
+    def read_cr_stat(self, fill_value=-999, units=None):
+        tmp = []
+        for f in self.hdf5_files:
+            fobj = h5py.File(f, mode='r')
+            grp = fobj[self.statistic]
+            for name in grp.keys():
+                dset = grp[name]
+                if not units:
+                    tmp.append(da.from_array(dset, chunks=(15000)))
+                elif units == 'sigmas':
+                    tmp.append(da.from_array(dset[:][0], chunks=(15000)))
+                else:
+                    tmp.append(da.from_array(dset[:][1], chunks=(15000)))
+        x = da.concatenate(tmp, axis=0)
+        # Remove an NaN's and replace them with the fill value
+        data = da.ma.fix_invalid(x, fill_value=fill_value)
+        LOG.info('Final array {}'.format(x.shape))
+
+        # Set the proper attribute based on the statistic
+        if self.statistic == 'energy_deposited':
+            self._energy_deposited = data
+        elif self.statistic == 'sizes':
+            if units == 'pixels':
+                self._size_pixels = data
+            elif units == 'sigmas':
+                self._size_sigmas = data
+            else:
+                LOG.info(
+                    'Please provide the '
+                    'units for cosmic ray {}'.format(self.statistic)
+                )
+        elif self.statistic == 'shapes':
+            self._shape = data
+
+
+
+
+    def read_cr_rate(self):
+        data = defaultdict(list)
+        metadata = defaultdict(list)
+        for f in self.hdf5_files:
+            fobj = h5py.File(f, mode='r')
+            grp = fobj[self.statistic]
+            for name in grp.keys():
+                data['obsname'].append(name)
+
+                # Get the data for the current dataset
+                dset = grp[name]
+
+                # Record the data for the given statistic
+                if isinstance(dset.value, Iterable):
+                    data[self.statistic] += list(dset.value)
+                else:
+                    data[self.statistic].append(dset.value)
+                # Get the attributes stored with the data
+                attrs = dset.attrs
+                for key in attrs.keys():
+                    val = attrs[key]
+                    if key == 'date':
+                        val = Time(val, format='iso')
+                        data[key].append(val)
+                    elif key in ['altitude','latitude','longitude']:
+                        try:
+                            data['{}_start'.format(key)].append(val[0])
+                            data['{}_end'.format(key)].append(val[-1])
+                        except IndexError:
+                            data[key].append(val)
+                    else:
+                        data[key].append(val)
+        data['mjd'] = [val.mjd for val in data['date']]
+        date_index = pd.DatetimeIndex([val.iso for val in data['date']])
+        self.data_df = pd.DataFrame(data, index = date_index)
+        self.data_df.sort_index(inplace=True)
+
+    def plot_solar_cycle(self, variable=None, ax = None, smoothed=False):
+        """ Retrieve solar cycle information
+
+        Parameters
+        ----------
+        variable
+        ax
+        smoothed
+
+        Returns
+        -------
+
+        """
+        noaa = sunpy.timeseries.TimeSeries(sunpy.data.sample.NOAAINDICES_TIMESERIES,
+                                           source='NOAAIndices')
+
+
+        if variable is None and ax is not None:
+            noaa.peek(type='sunspot RI', ax=ax)
+        elif ax is not None:
+            noaa.peek(type=variable, ax=ax)
+        return noaa
+
 
 def main():
     d = DataReader(instr='STIS_CCD', statistic='incident_cr_rate')
