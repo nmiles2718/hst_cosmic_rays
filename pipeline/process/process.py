@@ -239,7 +239,7 @@ class ProcessCCD(object):
                 try:
                     ext = hdu.index_of(val)
                 except KeyError:
-                    LOG.warning('{} is missing for {}'.format(val, self.fname))
+                    LOG.warning('{} is missing for {}'.format(val, f))
                 else:
                     ext_data.append(hdu[ext].data)
 
