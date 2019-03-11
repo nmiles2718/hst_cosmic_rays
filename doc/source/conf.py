@@ -211,5 +211,7 @@ intersphinx_mapping = {
     'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
     'skimage': ('http://scikit-image.org/docs/0.11.x/', None),
     'matplotlib': ('http://matplotlib.org/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None)
+    'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'dask': ('https://docs.dask.org/en/latest/', None)
 }
