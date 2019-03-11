@@ -423,7 +423,7 @@ class ProcessCCD(object):
                 extnums=self.instr_cfg['instr_params']['extnums']
             )
             if has_artifact:
-                self.ouput['failed'].append(f)
+                self.output['failed'].append(f)
                 LOG.info('Removing {} from analysis'.format(f))
                 self.flist.remove(f)
 
@@ -504,7 +504,12 @@ class ProcessCCD(object):
         data = self.format_inputs()
         randints = [random.randint(0, 1500) for i in range(len(data))]
         pairs = zip(data, randints)
+        pipeline_dir = os.getcwd()
         if 'acs' in self.instr.lower():
+            # The full path to the CCDTAB is too long for a FITS header keyword
+            # Instead, we change to the data directory and run the analysis there
+            # Once we are finished, we change back.
+            os.chdir(self._data_dir)
             # For the ACS images we need to download the correct CCDTAB
             for dataset in data:
                 for f in dataset:
@@ -512,7 +517,7 @@ class ProcessCCD(object):
                         jref_ccdtab = hdu[0].header['CCDTAB']
                         jref_ccdtab = jref_ccdtab.split('$')[-1]
                         local_ccdtab = self._download_reffile(jref_ccdtab)
-                        hdu[0].header['CCDTAB'] = local_ccdtab
+                        hdu[0].header['CCDTAB'] = jref_ccdtab
 
 
             results = [dask.delayed(self.ACS)(d, i) for d, i in pairs]
@@ -533,7 +538,7 @@ class ProcessCCD(object):
             results = dask.compute(*results,
                          scheduler='processes',
                          num_workers=os.cpu_count())
-
+        os.chdir(pipeline_dir)
         # Each computation returns a tuple (input, failed). Use this to sort
         # which files were processed successful and which were not
 
@@ -691,7 +696,7 @@ class ProcessIR(object):
 #
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
+    flist = glob.glob('/ifs/missions/projects/plcosmic/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
     p = ProcessCCD('ACS_WFC',flist)
     p.sort()
     p.cr_reject()

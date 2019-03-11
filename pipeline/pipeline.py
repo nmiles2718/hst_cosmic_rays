@@ -510,7 +510,8 @@ class CosmicRayPipeline(object):
 
         # Remove any files that were generated as a result of CR processing
         # for the CCD imagers
-        crjs = glob.glob('./tmp*')
+        generated_data = os.path.join(self.base,'data',self.instr.split('_')[0],'tmp*')
+        crjs = glob.glob(generated_data)
 
         if crjs is not None:
             for a in crjs:
