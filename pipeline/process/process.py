@@ -505,6 +505,10 @@ class ProcessCCD(object):
         randints = [random.randint(0, 1500) for i in range(len(data))]
         pairs = zip(data, randints)
         pipeline_dir = os.getcwd()
+
+        # TODO: add a cleaner implementation for downloading CCDTAB
+        # TODO: pass data to download_refile(), parse all CCDTAB filenames and
+        # TODO: only download the unique files in the list.
         if 'acs' in self.instr.lower():
             # The full path to the CCDTAB is too long for a FITS header keyword
             # Instead, we change to the data directory and run the analysis there
@@ -526,6 +530,16 @@ class ProcessCCD(object):
                                         num_workers=os.cpu_count()))
 
         elif 'wfc3' in self.instr.lower():
+            os.chdir(self._data_dir)
+            # For the ACS images we need to download the correct CCDTAB
+            for dataset in data:
+                for f in dataset:
+                    with fits.open(f, mode='update') as hdu:
+                        jref_ccdtab = hdu[0].header['CCDTAB']
+                        jref_ccdtab = jref_ccdtab.split('$')[-1]
+                        local_ccdtab = self._download_reffile(jref_ccdtab)
+                        hdu[0].header['CCDTAB'] = jref_ccdtab
+
             # WFC3 only has one CCDTAB, so we've downlodaed it locally already
             results = [dask.delayed(self.WFC3)(d, i) for d, i in pairs]
             results = dask.compute(*results,

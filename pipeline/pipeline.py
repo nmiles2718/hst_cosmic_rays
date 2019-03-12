@@ -326,7 +326,7 @@ class CosmicRayPipeline(object):
     def run_downloader(self, range, downloader):
         """Download the data"""
         start_time = time.time()
-        downloader.query(range=range, aws=False)
+        downloader.query(range=range, aws=self.aws)
         downloader.download(range[0].datetime.date().isoformat())
         end_time = time.time()
         return (end_time - start_time)/60
@@ -483,7 +483,10 @@ class CosmicRayPipeline(object):
         e.sender = ['nmiles','stsci.edu']
         e.recipient = ['nmiles', 'stsci.edu']
 
-        e.SendEmail(gif=False)
+        if self.aws:
+            e.SendEmailAWS()
+        else:
+            e.SendEmail(gif=False)
 
 
     def _pipeline_cleanup(self, start, stop, failed):

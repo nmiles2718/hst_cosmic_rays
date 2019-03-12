@@ -11,10 +11,23 @@ from collections import defaultdict
 from email.message import EmailMessage
 from email.headerregistry import Address
 from email.utils import make_msgid
+import logging
 import smtplib
 
+import boto3
+from botocore.exceptions import ClientError
 import numpy as np
 import pandas as pd
+
+
+logging.basicConfig(format='%(levelname)-4s '
+                           '[%(module)s.%(funcName)s:%(lineno)d]'
+                           ' %(message)s',
+                    level=logging.DEBUG)
+
+LOG = logging.getLogger('sendit')
+
+LOG.setLevel(logging.INFO)
 
 class Emailer(object):
 
@@ -297,6 +310,141 @@ class Emailer(object):
 
         with smtplib.SMTP('smtp.stsci.edu') as s:
             s.send_message(msg)
+
+    def SendEmailAWS(self):
+        """Send out an html markup email with an embedded gif and table
+
+           Parameters
+           ----------
+           toSubj: email subject line
+           data_for_email: data to render into an html table
+           gif_file:
+
+           Returns
+           -------
+
+           """
+        css = self.get_style()
+
+        s = (self.df.style
+             .apply(self.high_outliers, subset=['avg_shape',
+                                                'avg_size [pix]',
+                                                'avg_size [sigma]',
+                                                'avg_energy_deposited [e]',
+                                                'CR count'])
+             .apply(self.low_outliers, subset=['avg_shape',
+                                               'avg_size [pix]',
+                                               'avg_size [sigma]',
+                                               'avg_energy_deposited [e]',
+                                               'CR count'])
+             .apply(self.highlight_max, subset=['avg_shape',
+                                                'avg_size [pix]',
+                                                'avg_size [sigma]',
+                                                'avg_energy_deposited [e]',
+                                                'CR count'])
+             .apply(self.highlight_min, subset=['avg_shape',
+                                                'avg_size [pix]',
+                                                'avg_size [sigma]',
+                                                'avg_energy_deposited [e]',
+                                                'CR count'])
+
+             .set_properties(**{'text-align': 'center'})
+             .format({'avg_shape': '{:.2f}',
+                      'avg_size [pix]': '{:.2f}',
+                      'avg_size [sigma]': '{:.2f}',
+                      'avg_energy_deposited': '{:.2f}'})
+             .set_table_styles(css)
+             )
+        html_tb = s.render(index=False)
+        # This address must be verified with Amazon SES.
+        SENDER = "natemiles92@gmail.com"
+
+        # Replace recipient@example.com with a "To" address. If your account
+        # is still in the sandbox, this address must be verified.
+        RECIPIENT = "nmiles@stsci.edu"
+
+        # Specify a configuration set. If you do not want to use a configuration
+        # set, comment the following variable, and the
+        # ConfigurationSetName=CONFIGURATION_SET argument below.
+        # CONFIGURATION_SET = "ConfigSet"
+
+        # If necessary, replace us-west-2 with the AWS Region you're using for Amazon SES.
+        AWS_REGION = "us-east-1"
+
+        # The subject line for the email.
+        SUBJECT = self.subject
+
+        # The email body for recipients with non-HTML email clients.
+        BODY_TEXT = "{}".format(self.df.to_string(index=True,
+                                             header=True,
+                                             justify='center'))
+
+        # The HTML body of the email.
+        BODY_HTML = """
+                    <html>
+                        <head></head>
+                        <body>
+                        <h2>Processing Times</h2>
+                            <ul>
+                                <li>Downloading data: {:.3f} minutes </li>
+                                <li>CR rejection: {:.3f} minutes</li>
+                                <li>Labeling analysis: {:.3f} minutes </li>
+                                <li>Total time: {:.3f} minutes </li>
+                            </ul>
+                        <h2> Cosmic Ray Statistics </h2>
+                        <p><b> All cosmic ray statistics reported are averages for 
+                                the entire image</b></p>
+                                {}
+                        </body>
+                    </html>
+                    """.format(self.processing_times['download_time'],
+                               self.processing_times['rejection_time'],
+                               self.processing_times['analysis_time'],
+                               self.processing_times['total'],
+                               html_tb)
+
+        # The character encoding for the email.
+        CHARSET = "UTF-8"
+
+        # Create a new SES resource and specify a region.
+        client = boto3.client('ses', region_name=AWS_REGION)
+        # Try to send the email.
+        try:
+            # Provide the contents of the email.
+            response = client.send_email(
+                Destination={
+                    'ToAddresses': [
+                        RECIPIENT,
+                    ],
+                },
+                Message={
+                    'Body': {
+                        'Html': {
+                            'Charset': CHARSET,
+                            'Data': BODY_HTML,
+                        },
+                        'Text': {
+                            'Charset': CHARSET,
+                            'Data': BODY_TEXT,
+                        },
+                    },
+                    'Subject': {
+                        'Charset': CHARSET,
+                        'Data': SUBJECT,
+                    },
+                },
+                Source=SENDER,
+                # If you are not using a configuration set, comment or delete the
+                # following line
+                # ConfigurationSetName=CONFIGURATION_SET,
+            )
+        # Display an error if something goes wrong.
+        except ClientError as e:
+            LOG.info(e.response['Error']['Message'])
+        else:
+            LOG.info(
+                "Email sent! Message ID: {}".format(response['MessageId'])
+            )
 
 
 
