@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 # Create an environment for the pipeline
-bash conda create --name aws_env --file ~/hst_cosmic_rays/CONFIG/aws_env.txt
+conda env create -f ~/hst_cosmic_rays/pipeline/aws_env_linux.yml

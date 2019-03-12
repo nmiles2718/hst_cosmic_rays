@@ -397,9 +397,9 @@ class Emailer(object):
                                 {}
                         </body>
                     </html>
-                    """.format(self.processing_times['download_time'],
-                               self.processing_times['rejection_time'],
-                               self.processing_times['analysis_time'],
+                    """.format(self.processing_times['download'],
+                               self.processing_times['cr_rejection'],
+                               self.processing_times['analysis'],
                                self.processing_times['total'],
                                html_tb)
 

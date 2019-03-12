@@ -321,13 +321,10 @@ class ProcessCCD(object):
         # if the file exist increment _i by one before processing.
 
         failed = True
-        for f in input:
-            with fits.open(f,mode='update') as hdu:
-                hdu[0].header['CCDTAB'] = os.path.join(self._data_dir,
-                                                       't291659mi_ccd.fits')
+
         try:
             wf3rej(input,
-                   output='tmp_crj_{}.fits'.format(self._i),
+                   output=output,
                    verbose=True,
                    crrejtab=self.crrejtab,
                    crmask=True,
@@ -502,7 +499,7 @@ class ProcessCCD(object):
         LOG.info(msg)
         results = []
         data = self.format_inputs()
-        randints = [random.randint(0, 1500) for i in range(len(data))]
+        randints = [random.randint(0, 2500) for i in range(len(data))]
         pairs = zip(data, randints)
         pipeline_dir = os.getcwd()
 
