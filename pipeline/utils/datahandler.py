@@ -393,10 +393,8 @@ class DataReader(object):
                 dset = grp[name]
 
                 # Record the data for the given statistic
-                if isinstance(dset.value, Iterable):
-                    data[self.statistic] += list(dset.value)
-                else:
-                    data[self.statistic].append(dset.value)
+                data[self.statistic].append(dset.value)
+
                 # Get the attributes stored with the data
                 attrs = dset.attrs
                 for key in attrs.keys():
@@ -409,11 +407,20 @@ class DataReader(object):
                             data['{}_start'.format(key)].append(val[0])
                             data['{}_end'.format(key)].append(val[-1])
                         except IndexError:
-                            data[key].append(val)
+                            # If for some reason the IndexError is raised, save
+                            # the value in both the start and end times.
+                            # Otherwise we will get a ValueError when creating
+                            # the pd.DataFrame
+                            data['{}_start'.format(key)].append(val)
+                            data['{}_end'.format(key)].append(val)
                     else:
                         data[key].append(val)
+
         data['mjd'] = [val.mjd for val in data['date']]
         date_index = pd.DatetimeIndex([val.iso for val in data['date']])
+        LOG.info(len(date_index))
+        for key in data.keys():
+            LOG.info('key: {} shape: {}'.format(key, len(data[key])))
         self.data_df = pd.DataFrame(data, index = date_index)
         self.data_df.sort_index(inplace=True)
 

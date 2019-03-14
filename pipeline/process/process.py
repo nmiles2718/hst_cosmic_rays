@@ -286,7 +286,7 @@ class ProcessCCD(object):
                           verbose=True,
                           crrejtab=self.crrejtab,
                           crmask=True,
-                          crsigmas='5,4,3',
+                          crsigmas='8,6,4',
                           initgues='med',
                           skysub='mode')
              if not os.path.isfile(output):
@@ -327,6 +327,7 @@ class ProcessCCD(object):
                    output=output,
                    verbose=True,
                    crrejtab=self.crrejtab,
+                   crsigmas='8,6,4',
                    crmask=True,
                    initgues='med',
                    skysub='mode')
@@ -372,6 +373,7 @@ class ProcessCCD(object):
                                     output=output,
                                     crrejtab=self.crrejtab,
                                     verbose=True,
+                                    crsigmas='6,5,4',
                                     crmask='yes',
                                     initgues='med',
                                     skysub='mode'
@@ -707,7 +709,7 @@ class ProcessIR(object):
 #
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('/ifs/missions/projects/plcosmic/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
+    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
     p = ProcessCCD('ACS_WFC',flist)
     p.sort()
     p.cr_reject()
