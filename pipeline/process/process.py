@@ -327,7 +327,7 @@ class ProcessCCD(object):
                    output=output,
                    verbose=True,
                    crrejtab=self.crrejtab,
-                   crsigmas='8,6,4',
+                   crsigmas='6,5,4',
                    crmask=True,
                    initgues='med',
                    skysub='mode')
@@ -464,10 +464,10 @@ class ProcessCCD(object):
 
         # Now we check to make sure each list of files is less than the limit
         for key, val in self.input.items():
-            if len(val) > 40:
+            if len(val) > 30:
                 LOG.info('{} exceeds input limit, ' \
                       'splitting to smaller groups'.format(key))
-                split = array_split(val, 4)
+                split = array_split(val, 3)
                 # Convert tuple to list for checking later
                 self.input[key] = tuple(split)
 
@@ -505,6 +505,7 @@ class ProcessCCD(object):
         pairs = zip(data, randints)
         pipeline_dir = os.getcwd()
 
+        os.chdir(self._data_dir)
         # TODO: add a cleaner implementation for downloading CCDTAB
         # TODO: pass data to download_refile(), parse all CCDTAB filenames and
         # TODO: only download the unique files in the list.
@@ -512,7 +513,7 @@ class ProcessCCD(object):
             # The full path to the CCDTAB is too long for a FITS header keyword
             # Instead, we change to the data directory and run the analysis there
             # Once we are finished, we change back.
-            os.chdir(self._data_dir)
+
             # For the ACS images we need to download the correct CCDTAB
             for dataset in data:
                 for f in dataset:
@@ -529,7 +530,6 @@ class ProcessCCD(object):
                                         num_workers=os.cpu_count()))
 
         elif 'wfc3' in self.instr.lower():
-            os.chdir(self._data_dir)
             # For the ACS images we need to download the correct CCDTAB
             for dataset in data:
                 for f in dataset:
