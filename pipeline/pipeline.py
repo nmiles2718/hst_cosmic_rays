@@ -598,7 +598,6 @@ class CosmicRayPipeline(object):
                 if results:
                     self.send_email(start, stop, results)
 
-
 if __name__ == '__main__':
     args = parser.parse_args()
     args = vars(args)
