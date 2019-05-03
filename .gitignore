@@ -7,6 +7,7 @@
 /crrejtab/WFC3/IR_TEST_DATA/*
 /pipeline/*fits
 /pipeline/*tra
+/pipeline/utils/*png
 /plots/*png
 /plots/*gif
 /doc/build/

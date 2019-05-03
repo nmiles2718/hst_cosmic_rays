@@ -327,7 +327,7 @@ class ProcessCCD(object):
                    output=output,
                    verbose=True,
                    crrejtab=self.crrejtab,
-                   crsigmas='8,6,4',
+                   crsigmas='6,5,4',
                    crmask=True,
                    initgues='med',
                    skysub='mode')
@@ -464,10 +464,10 @@ class ProcessCCD(object):
 
         # Now we check to make sure each list of files is less than the limit
         for key, val in self.input.items():
-            if len(val) > 40:
+            if len(val) > 30:
                 LOG.info('{} exceeds input limit, ' \
                       'splitting to smaller groups'.format(key))
-                split = array_split(val, 4)
+                split = array_split(val, 3)
                 # Convert tuple to list for checking later
                 self.input[key] = tuple(split)
 
@@ -528,7 +528,6 @@ class ProcessCCD(object):
                                         num_workers=os.cpu_count()))
 
         elif 'wfc3' in self.instr.lower():
-            os.chdir(self._data_dir)
             # For the ACS images we need to download the correct CCDTAB
             for dataset in data:
                 for f in dataset:

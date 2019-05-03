@@ -24,7 +24,7 @@ import plot_stats as ps
 from PIL import Image
 
 from sunpy.timeseries import TimeSeries
-from scipy.ndimage import median_filter
+from scipy.ndimage import median_filter, gaussian_filter
 
 
 
@@ -89,7 +89,7 @@ def exptime_comparison(instrument_data):
 
 
 def ccd_substrate_model():
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 10))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4, 8))
     ax.set_facecolor('white')
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
@@ -171,7 +171,7 @@ def ccd_substrate_model():
                 bbox_inches='tight',
                 transparent=False,
                 frameon=False)
-    plt.show()
+    # plt.show()
     # rc(useTex=False)
 
 
@@ -200,7 +200,8 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
         data = hdu[0].data
 
     # mean, median, std = sigma_clipped_stats(data, sigma=3.0)
-    smoothed = median_filter(data, size=5)
+    # smoothed = median_filter(data, size=3)
+    smoothed = gaussian_filter(data, sigma=2)
     # norm = ImageNormalize(data,
     #                       stretch=LinearStretch(),
     #                       vmin=np.min(data), vmax=np.max(data))
@@ -210,45 +211,48 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
     hrc = (130,200)
     norm = ImageNormalize(data,
                           stretch=LinearStretch(),
-                          vmin=hrc[0], vmax=hrc[1])
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(11,6))
-    im1 = ax1.imshow(smoothed, norm=norm, cmap='gray', origin='lower')
+                          vmin=wfc[0], vmax=wfc[1])
+    fig1, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(5,4))
+    fig2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5,4))
+    im1 = ax1.imshow(smoothed, norm=norm, cmap='plasma', origin='lower')
 
     # Add a colorbar to show the image scaling
     divider1 = make_axes_locatable(ax1)
     cax1 = divider1.append_axes('bottom', size='5%', pad=0.1)
-    cbar1 = fig.colorbar(im1, cax=cax1, orientation='horizontal')
+    cbar1 = fig1.colorbar(im1, cax=cax1, orientation='horizontal')
     cbar1.ax.set_xticklabels(cbar1.ax.get_xticklabels(), rotation=45)
     cbar1.set_label('Cosmic Ray Strikes')
     if not astrofits:
         norm1 = ImageNormalize(comp_data,
                                stretch=LinearStretch(),
                                interval=ZScaleInterval())
-        im2 = ax2.imshow(comp_data, norm=norm1, cmap='gray')
+        im2 = ax2.imshow(comp_data, norm=norm1, cmap='plasma')
     else:
         norm1 = ImageNormalize(comp_data,
                                stretch=LinearStretch(),
-                               vmin=12.49, vmax=16)
-        im2 = ax2.imshow(comp_data, cmap='gray', norm=norm1, origin='lower')
+                               vmin=12.5, vmax=16)
+        im2 = ax2.imshow(comp_data, cmap='plasma', norm=norm1)#, origin='lower')
     # Add a colorbar to show the image scaling
     divider2 = make_axes_locatable(ax2)
     cax2 = divider2.append_axes('bottom', size='5%', pad=0.1)
-    cbar2 = fig.colorbar(im2, cax=cax2, orientation='horizontal')
+    cbar2 = fig2.colorbar(im2, cax=cax2, orientation='horizontal')
     cbar2.ax.set_xticklabels(cbar2.ax.get_xticklabels(), rotation=45)
     cbar2.set_label(r'Thickness $[\mu m]$')
     ax1.grid(False)
     ax2.grid(False)
-    ax1.set_title('Cosmic Ray Incidence Heat Map')
-    ax2.set_title('Fringing Thickness Map')
+    ax1.set_title('WFC Cosmic Ray Incidence Heat Map')
+    ax2.set_title('WFC Fringing Thickness Map')
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
     ax2.get_xaxis().set_visible(False)
     ax2.get_yaxis().set_visible(False)
-    fig.suptitle(instr,
-                 x=0.5, y=0.95,
-                 horizontalalignment='center',
-                 size=16, weight='bold')
-    fig.savefig(fout, format='png', dpi=350)
+    # fig.suptitle(instr,
+    #              x=0.5, y=0.9,
+    #              horizontalalignment='center',
+    #              size=16, weight='bold')
+    fig1.savefig('cr_heat_map_WFC.png',
+                 transparent=True, format='png', dpi=350, bbox_inches='tight')
+    fig2.savefig('thickness_heat_map_WFC.png', transparent=True,format='png', dpi=350, bbox_inches='tight')
     plt.show()
 
 def read_solar_data():

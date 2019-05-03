@@ -19,7 +19,7 @@ import yaml
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 
 LOG = logging.getLogger('datahandler')
 
@@ -426,13 +426,3 @@ class DataReader(object):
             LOG.info('key: {} shape: {}'.format(key, len(data[key])))
         self.data_df = pd.DataFrame(data, index = date_index)
         self.data_df.sort_index(inplace=True)
-
-
-
-def main():
-    d = DataReader(instr='STIS_CCD', statistic='incident_cr_rate')
-    d.find_hdf5()
-
-
-if __name__ == '__main__':
-    main()

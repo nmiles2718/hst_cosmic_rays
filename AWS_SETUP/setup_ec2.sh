@@ -4,7 +4,7 @@
 ec2_ip=$1  # first arg is IP address of instance
 aws_dir=~/.aws/
 git_credentials=~/.ssh/
-aws_ssh_key=$aws_dir.aws_ssh/cosmic_rays_ssh_useast1.pem
+aws_ssh_key=$aws_dir.aws_ssh/cosmic_ray_stsci_useast1.pem
 
 # Copy files credentials to AWS
 scp -ri "$aws_ssh_key" $aws_dir ec2-user@$ec2_ip:~
