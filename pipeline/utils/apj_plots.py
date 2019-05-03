@@ -53,7 +53,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
                        figsize=(10,8),
                        sharex=False)
     smooth_type = 'rolling'
-    window='90D'
+    window='120D'
     min_periods=80
 
     stis_plot_params = {
@@ -150,8 +150,6 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     fout = os.path.join(APJ_PLOT_DIR,'cr_rate_vs_time.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     plt.show()
-
-
 
 
 def ccd_substrate_model():
