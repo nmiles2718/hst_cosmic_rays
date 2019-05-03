@@ -150,7 +150,7 @@ WFC3_UVIS:
   instr_params:
     extnums: [1,2]
     readout_time: 50.0
-    gain_keyword: 'ATODGAIN'
+    gain_keyword: 'ATODGN*'
     detector_size: 37.804
 
 WFPC2:

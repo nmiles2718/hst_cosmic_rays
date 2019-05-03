@@ -145,22 +145,25 @@ class DataWriter(object):
             grp = f[statistic]
             for file_info, stats in zip(self.file_metadata, self.cr_stats):
                 dset_name = os.path.basename(file_info.fname)
-                dset = grp.create_dataset(name=dset_name,
-                                          data=stats[statistic],
-                                          dtype=np.float32)
+                try:
+                    dset = grp.create_dataset(name=dset_name,
+                                              data=stats[statistic],
+                                              dtype=np.float32)
+                except Exception as e:
+                    LOG.info(e)
+                else:
+                    for (key, val) in file_info.metadata.items():
+                        # Check the datatype and save it accordingly
+                        if isinstance(val, np.ndarray):
+                            dset.attrs.create(name=key,
+                                              data=val,
+                                              shape=val.shape,
+                                              dtype=np.float32)
 
-                for (key, val) in file_info.metadata.items():
-                    # Check the datatype and save it accordingly
-                    if isinstance(val, np.ndarray):
-                        dset.attrs.create(name=key,
-                                          data=val,
-                                          shape=val.shape,
-                                          dtype=np.float32)
-
-                    elif isinstance(val, Time):
-                        dset.attrs[key] = val.iso
-                    else:
-                        dset.attrs[key] = val
+                        elif isinstance(val, Time):
+                            dset.attrs[key] = val.iso
+                        else:
+                            dset.attrs[key] = val
 
     def write_results(self):
         """Write out all the results for the analyzed dataset

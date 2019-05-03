@@ -504,7 +504,7 @@ class ProcessCCD(object):
         randints = [random.randint(0, 2500) for i in range(len(data))]
         pairs = zip(data, randints)
         pipeline_dir = os.getcwd()
-
+        os.chdir(self._data_dir)
         # TODO: add a cleaner implementation for downloading CCDTAB
         # TODO: pass data to download_refile(), parse all CCDTAB filenames and
         # TODO: only download the unique files in the list.
@@ -512,7 +512,6 @@ class ProcessCCD(object):
             # The full path to the CCDTAB is too long for a FITS header keyword
             # Instead, we change to the data directory and run the analysis there
             # Once we are finished, we change back.
-            os.chdir(self._data_dir)
             # For the ACS images we need to download the correct CCDTAB
             for dataset in data:
                 for f in dataset:
@@ -709,7 +708,7 @@ class ProcessIR(object):
 #
 if __name__ == "__main__":
     # For debugging purposes
-    flist = glob.glob('/Users/nmiles/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
+    flist = glob.glob('/ifs/missions/projects/plcosmic/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')
     p = ProcessCCD('ACS_WFC',flist)
     p.sort()
     p.cr_reject()
