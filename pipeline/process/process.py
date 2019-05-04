@@ -286,7 +286,7 @@ class ProcessCCD(object):
                           verbose=True,
                           crrejtab=self.crrejtab,
                           crmask=True,
-                          crsigmas='8,6,4',
+                          crsigmas='6,5,4',
                           initgues='med',
                           skysub='mode')
              if not os.path.isfile(output):
@@ -374,10 +374,10 @@ class ProcessCCD(object):
                                     crrejtab=self.crrejtab,
                                     verbose=True,
                                     crsigmas='6,5,4',
+                                    crthresh=0.5554999709129333,
                                     crmask='yes',
                                     initgues='med',
-                                    skysub='mode'
-                                    )
+                                    skysub='mode')
                 if not os.path.isfile(output):
                     raise(FileNotFoundError)
             except Exception as e:
