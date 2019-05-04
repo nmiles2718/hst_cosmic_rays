@@ -133,6 +133,7 @@ class CosmicRayPipeline(object):
             'cr_rejection': 0,
             'analysis': 0
         }
+
         self._cfg_file = os.path.join(self._base,
                                      'CONFIG',
                                      'pipeline_config.yaml')
@@ -141,7 +142,10 @@ class CosmicRayPipeline(object):
         with open(self._cfg_file, 'r') as fobj:
             self._cfg = yaml.load(fobj)
         self._instr_cfg = self.cfg[self._instr]
-
+        self._failed_observations = os.path.join(
+            self.base,
+            *self._instr_cfg['failed'].split('/')
+        )
         self._search_pattern = os.path.join(
             self.base,
             *self.instr_cfg['search_pattern'].split('/')
@@ -220,6 +224,14 @@ class CosmicRayPipeline(object):
     def download(self):
         """Switch for toggling on the download step of the pipeline"""
         return self._download
+
+    @property
+    def failed_observation(self):
+        return self._failed_observations
+
+    @failed_observation.setter
+    def failed_observation(self, value):
+        pass
 
     @property
     def instr(self):
@@ -411,7 +423,7 @@ class CosmicRayPipeline(object):
 
         return (end_time - start_time)/60., results
 
-    def run_processing(self):
+    def run_processing(self, start, stop):
         """Process the data"""
         start_time = time.time()
 
@@ -423,8 +435,17 @@ class CosmicRayPipeline(object):
             processor.sort()
             processor.cr_reject()
             if 'failed' in processor.output.keys():
-                print(processor.output['failed'])
                 failed = set(list(processor.output['failed']))
+                # Write out the failed files
+                fout = '{}_{}_{}.txt'.format(
+                    self.failed_observation.split('.')[0],
+                    start.iso,
+                    stop.iso,
+                )
+                with open(fout, 'a+') as fobj:
+                    for f in processor.output['failed']:
+                        fobj.write('{}\n'.format(f))
+
                 msg = ('{} files failed, '
                        'removing from processing list..'.format(len(failed)))
                 LOG.warning(msg)
@@ -574,7 +595,7 @@ class CosmicRayPipeline(object):
                 self.flist = glob.glob(self.search_pattern)
 
                 if self.process:
-                    process_time = self.run_processing()
+                    process_time = self.run_processing(start, stop)
                     self.processing_times['cr_rejection'] = process_time
 
 
@@ -602,7 +623,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args = vars(args)
     p = CosmicRayPipeline(**args)
-    # p = CosmicRayPipeline(instr='wfpc2', ccd=True, download=False,
+    # p = CosmicRayPipeline(instr='stis_ccd', ccd=True, download=False,
     #                       process=False, analyze=True, initialize=True, chunks=4)
     p.run()
     # cmd = 'python pipeline_updated.py -instr stis_ccd -download -process -analyze -initialize'

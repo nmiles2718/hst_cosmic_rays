@@ -235,6 +235,8 @@ class ProcessCCD(object):
         ext_tuples = [(extname, num) for num in extnums]
         ext_data = []
         with fits.open(f, mode='update') as hdu:
+            prhdr = hdu[0].header
+            scihdr = hdu[1].header
             for val in ext_tuples:
                 try:
                     ext = hdu.index_of(val)
@@ -243,12 +245,20 @@ class ProcessCCD(object):
                 else:
                     ext_data.append(hdu[ext].data)
 
-                try:
-                    exptime = hdu[0].header['EXPTIME']
-                except KeyError as e:
-                    LOG.warning('{}\n Searching SCI header'.format(e))
-                    exptime = hdu[1].header['EXPTIME']
+            # Grab the exposure time to ensure we don't get mislabeled darks
+            try:
+                exptime = prhdr['EXPTIME']
+            except KeyError as e:
+                LOG.warning('{}\n Searching SCI header'.format(e))
+                exptime = scihdr['EXPTIME']
 
+            # Check the quality comments of the images
+            if len(prhdr['qualcom*']):
+                for key in prhdr['qualcom*']:
+                    if len(prhdr[key]) > 30:
+                        return True
+                if 'ok' in prhdr['QUALITY'].lower():
+                    return False
 
         # If second DQ ext is missing, only work with the first
         # Otherwise combine each DQ ext to make full-frame

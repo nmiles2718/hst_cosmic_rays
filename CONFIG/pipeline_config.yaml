@@ -6,6 +6,7 @@ ACS_WFC:
     sizes: '/results/ACS/acs_wfc_cr_sizes.hdf5'
     shapes: '/results/ACS/acs_wfc_cr_shapes.hdf5'
     energy_deposited: '/results/ACS/acs_wfc_cr_energy_deposited.hdf5'
+  failed: '/results/acs_wfc_failed_observations.txt'
   astroquery:
     date_range: '2002-03-01'
     SubGroupDescription:
@@ -18,7 +19,6 @@ ACS_WFC:
     readout_time: 50.0
     gain_keyword: 'ATODGN*'
     detector_size: 37.748
-
 ACS_HRC:
   search_pattern: '/data/ACS/HRC/mastDownload/HST/*/*flt.fits'
   hdf5_files:
@@ -27,6 +27,7 @@ ACS_HRC:
     sizes: '/results/ACS/acs_hrc_cr_sizes.hdf5'
     shapes: '/results/ACS/acs_hrc_cr_shapes.hdf5'
     energy_deposited: '/results/ACS/acs_hrc_cr_energy_deposited.hdf5'
+  failed: '/results/acs_hrc_failed_observations.txt'
   astroquery:
     date_range:
       - '2002-03-01'
@@ -41,7 +42,6 @@ ACS_HRC:
     readout_time: 15.0
     gain_keyword: 'ATODGN*'
     detector_size: 4.624
-
 NICMOS_NIC1:
   search_pattern: '/data/NICMOS/NIC1/mastDownload/HST/*/*ima.fits'
   hdf5_files:
@@ -50,6 +50,7 @@ NICMOS_NIC1:
     sizes: '/results/NICMOS/nicmos_nic1_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic1_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic1_cr_energy_deposited.hdf5'
+  failed: '/results/nicmos_nic1_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -58,7 +59,6 @@ NICMOS_NIC1:
       - 'IMA'
       - 'SPT'
     download_dir: '/data/NICMOS/NIC1/'
-
 NICMOS_NIC2:
   search_pattern: '/data/NICMOS/NIC2/mastDownload/HST/*/*ima.fits'
   hdf5_files:
@@ -67,6 +67,7 @@ NICMOS_NIC2:
     sizes: '/results/NICMOS/nicmos_nic2_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic2_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic2_cr_energy_deposited.hdf5'
+  failed: '/results/nicmos_nic2_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -84,6 +85,7 @@ NICMOS_NIC3:
     sizes: '/results/NICMOS/nicmos_nic3_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic3_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic3_cr_energy_deposited.hdf5'
+  failed: '/results/nicmos_nic3_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -101,6 +103,7 @@ STIS_CCD:
     sizes: '/results/STIS/stis_ccd_cr_sizes.hdf5'
     shapes: '/results/STIS/stis_ccd_cr_shapes.hdf5'
     energy_deposited: '/results/STIS/stis_ccd_cr_energy_deposited.hdf5'
+  failed: '/results/stis_ccd_failed_observations.txt'
   astroquery:
     date_range: '1997-02-01'
     SubGroupDescription:
@@ -121,6 +124,7 @@ WFC3_IR:
     incident_cr_rate: '/results/WFC3/wfc3_ir_cr_rate.hdf5'
     sizes: ' /results/WFC3/wfc3_ir_cr_shapes.hdf5'
     energy_deposited: '/results/WFC3/wfc3_ir_cr_energy_deposited.hdf5'
+  failed: '/results/wfc3_ir_failed_observations.txt'
   astroquery:
     date_range: '2009-05-01'
     SubGroupDescription:
@@ -140,6 +144,7 @@ WFC3_UVIS:
     sizes: '/results/WFC3/wfc3_uvis_cr_sizes.hdf5'
     shapes: '/results/WFC3/wfc3_uvis_cr_shapes.hdf5'
     energy_deposited: '/results/WFC3/wfc3_uvis_cr_energy_deposited.hdf5'
+  failed: '/results/wfc3_uvis_failed_observations.txt'
   astroquery:
     date_range: '2009-05-01'
     SubGroupDescription:
@@ -161,6 +166,7 @@ WFPC2:
     sizes: '/results/WFPC2/wfpc2_cr_sizes.hdf5'
     shapes: '/results/WFPC2/wfpc2_cr_shapes.hdf5'
     energy_deposited: '/results/WFPC2/wfpc2_cr_energy_deposited.hdf5'
+  failed: '/results/wfpc2_failed_observations.txt'
   astroquery:
     date_range:
       - '1994-01-01'
