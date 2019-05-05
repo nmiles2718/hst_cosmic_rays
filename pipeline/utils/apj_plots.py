@@ -3,7 +3,7 @@
 from datetime import timedelta
 import glob
 import os
-from astropy.stats import sigma_clipped_stats
+from astropy.stats import sigma_clipped_stats, LombScargle
 from astropy.io import fits
 from astropy.time import Time
 from astropy.visualization import LinearStretch, ZScaleInterval,\
@@ -13,7 +13,7 @@ from astropy.visualization import LinearStretch, ZScaleInterval,\
 from matplotlib import rc
 from matplotlib import ticker
 import matplotlib as mpl
-mpl.use('qt5agg')
+mpl.use('Qt4Agg')
 # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
 #rc('font',**{'family':'serif','serif':['Palatino']})
@@ -88,7 +88,40 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
     fig.text(0.05, 0.63, 'Normalized Bin Count', rotation='vertical', fontproperties=t.get_font_properties())
     fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_hist.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
-    plt.show()    
+    plt.show()
+
+
+
+def periodogram(hrc, stis, wfc, wfpc2, uvis):
+    fig = plt.figure(figsize=(10,8))
+    gs0 = gridspec.GridSpec(ncols=1, nrows=2, figure=fig)
+    gs00 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,
+                                            wspace=0.5, subplot_spec=gs0[0])
+    gs10 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,
+                                            wspace=0.5, subplot_spec=gs0[1])
+    ax1 = fig.add_subplot(gs00[0,1:3])
+    ax2 = fig.add_subplot(gs00[0,3:5])
+    ax3 = fig.add_subplot(gs10[0,:2])
+    ax4 = fig.add_subplot(gs10[0,2:4])
+    ax5 = fig.add_subplot(gs10[0,4:6])
+    axes = [ax1, ax2, ax3, ax4, ax5]
+    #fig, axes = plt.subplots(nrows=, ncols=1, figsize=(6,6))
+    CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                          '#f781bf', '#a65628', '#984ea3',
+                          '#999999', '#e41a1c', '#dede00']
+    labels = ['STIS/CCD','ACS/HRC', 'ACS/WFC', 'WFPC2', 'WFC3/UVIS']
+    datasets = [stis, hrc, wfc, wfpc2, uvis]
+    for i, (ax, label, dset) in enumerate(zip(axes, labels, datasets)):
+        flags = dset.integration_time.gt(200)
+        df = dset[['mjd','incident_cr_rate']][flags]
+        smoothed = df.rolling(window='20D', min_periods=15).mean()
+        smoothed_no_nan = smoothed.dropna()
+        freq, power = LombScargle(
+            smoothed_no_nan['mjd'], smoothed_no_nan['incident_cr_rate']
+        ).autopower()
+        ax.plot(freq, power, color=CB_color_cycle[i])
+        ax.set_xlim(0, 0.04)
+    plt.show()
 
 
 def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
