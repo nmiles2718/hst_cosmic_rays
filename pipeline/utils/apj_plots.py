@@ -3,6 +3,7 @@
 from datetime import timedelta
 import glob
 import os
+from astropy.stats import sigma_clipped_stats
 from astropy.io import fits
 from astropy.time import Time
 from astropy.visualization import LinearStretch, ZScaleInterval,\
@@ -18,9 +19,10 @@ mpl.use('qt5agg')
 #rc('font',**{'family':'serif','serif':['Palatino']})
 # rc('text', usetex=True)
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 plt.style.use('ggplot')
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+import numpy as np
 
 import sunpy.net
 from sunpy.timeseries import TimeSeries
@@ -47,11 +49,53 @@ def get_solar_min_and_max(noaa_data):
     return solar_cycle
 
 
+def rate_hist(hrc, stis, wfc, wfpc2, uvis):
+    fig = plt.figure(figsize=(10,8))
+    gs0 = gridspec.GridSpec(ncols=1, nrows=2, figure=fig)
+    gs00 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,wspace=0.5, subplot_spec=gs0[0])
+    gs10 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,wspace=0.5, subplot_spec=gs0[1])
+    ax1 = fig.add_subplot(gs00[0,1:3]) 
+    ax2 = fig.add_subplot(gs00[0,3:5])  
+    ax3 = fig.add_subplot(gs10[0,:2])
+    ax4 = fig.add_subplot(gs10[0,2:4])
+    ax5 = fig.add_subplot(gs10[0,4:6])      
+    axes = [ax1, ax2, ax3, ax4, ax5]
+    #fig, axes = plt.subplots(nrows=, ncols=1, figsize=(6,6))
+    CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                          '#f781bf', '#a65628', '#984ea3',
+                          '#999999', '#e41a1c', '#dede00']
+    labels = ['STIS/CCD','ACS/HRC', 'ACS/WFC', 'WFPC2', 'WFC3/UVIS']
+    datasets = [stis, hrc, wfc, wfpc2, uvis]
+    for i, (ax, label, dset) in enumerate(zip(axes, labels, datasets)):
+        flags = dset.incident_cr_rate.gt(0.2) 
+        cr_rate = dset['incident_cr_rate'][flags]
+        mean, median, std = sigma_clipped_stats(cr_rate, sigma=3, maxiters=5)
+        median = cr_rate.quantile(0.5)
+        lower_20 = cr_rate.quantile(0.1)
+        upper_80 = cr_rate.quantile(0.9)
+        hist, edges = np.histogram(cr_rate, bins=30, range=(0, 3))
+        ax.step(edges[1:], hist/np.max(hist), label=label, color=CB_color_cycle[i])
+        ax.set_xticks([0,0.5, 1.0, 1.5, 2, 2.5, 3])
+        ax.axvline(median, c='k', ls='-', lw=0.75)
+        ax.axvspan(lower_20, upper_80, color='gray', alpha=0.3)
+        ax.axvline(lower_20, c='k', ls='--', lw=0.75)
+        ax.axvline(upper_80, c='k', ls='--', lw=0.75)
+        ax.legend(loc='best')
+        ax.text(1.8, 0.62,'$N_{samp}$='+'{:,}'.format(hist.sum()))
+        t = ax.text(0,0,'', fontsize=14)
+        #ax.set_xlabel('Cosmic ray rate [$CR/s/cm^2$]')
+    fig.text(0.38, 0.02, 'Cosmic Ray Rate [$CR/s/cm^2$]', fontproperties=t.get_font_properties())
+    fig.text(0.05, 0.63, 'Normalized Bin Count', rotation='vertical', fontproperties=t.get_font_properties())
+    fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_hist.png')
+    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
+    plt.show()    
+
+
 def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     v= visualize.Visualizer()
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1,
                        figsize=(10,8),
-                       sharex=False)
+                       sharex=True)
     smooth_type = 'rolling'
     window='120D'
     min_periods=80
@@ -61,6 +105,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'legend_label': 'STIS/CCD',
         'ax': ax1,
         'i':0,
+        'thick':13.5,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
@@ -69,6 +114,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'df': hrc,
         'legend_label': 'ACS/HRC',
         'ax': ax1,
+        'thick':14,
         'i':1,
         'smooth_type': smooth_type,
         'window': window,
@@ -78,6 +124,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'df': wfc,
         'legend_label': 'ACS/WFC',
         'ax': ax1,
+        'thick':14.5,
         'i':2,
         'smooth_type': smooth_type,
         'window': window,
@@ -88,6 +135,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'legend_label': 'WFPC2',
         'ax': ax1,
         'i':3,
+        'thick':10,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
@@ -97,11 +145,12 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'legend_label': 'WFC3/UVIS',
         'ax': ax1,
         'i':4,
+        'thick':16,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
     }
-    fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
+    #fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
     # datasets = [stis_plot_params, wfpc2_plot_params, wfc_plot_params]
     datasets = [stis_plot_params, wfpc2_plot_params, hrc_plot_params,
                 wfc_plot_params, uvis_plot_params]
@@ -112,6 +161,11 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
 
     solar_df = read_solar_data()
     solar_cycle = get_solar_min_and_max(solar_df)
+   
+   #solar_cycle ={'maximum_cycle23':Time('2000-04-01', format='iso'),
+   #              'maximum_cycle24':Time('2014-02-01', format='iso'),
+   #              'minimum_cycle23':Time('1996-05-01', format='iso'),
+   #              'minimum_cycle24': Time('2008-12-01', format='iso')}
     ax2.plot(solar_df.index.values, 
             solar_df['sunspot RI'], 
             label='Monthly Mean',
@@ -122,8 +176,9 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
              label='Smoothed',
              c='#D81B60')
 
-    
-
+    for tick in ax1.get_xticklabels():
+        tick.set_visible(True)
+    ax1.xaxis.set_tick_params(which='both', labelbottom=True)
     ax1_legend = ax1.legend(loc='best',
                             ncol=3,
                             labelspacing=0.2,
@@ -142,11 +197,13 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
 
     ax2_legend = ax2.legend(loc='best')
     date_min = Time('1991-12-01', format='iso')
-    date_max = Time('2019-04-01', format='iso')
+    date_max = Time('2020-01-01', format='iso')
     ax1.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
-
+    ax2.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
     ax2.set_ylabel('$R_I$', fontsize=14)
     ax2.set_xlabel('Date', fontsize=14)
+    #ax1.set_ylim(0.75, 1.3)    
+
     fout = os.path.join(APJ_PLOT_DIR,'cr_rate_vs_time.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     plt.show()
