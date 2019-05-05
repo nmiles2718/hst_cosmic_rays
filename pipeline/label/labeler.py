@@ -8,9 +8,8 @@ from collections import Iterable
 import logging
 
 from astropy.io import fits
-from astropy.stats import sigma_clipped_stats
+from astropy.stats import sigma_clipped_stats, median_absolute_deviation
 from astropy.visualization import ImageNormalize, LinearStretch, ZScaleInterval
-
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
@@ -174,7 +173,7 @@ class Label(object):
 
 
     def ccd_labeling(self, use_dq=True, dq_flag=8192, do_bitwise_comp=True,
-                      deblend=False, threshold_l=2, threshold_u = 1000,
+                      deblend=False, threshold_l=2, threshold_u = 5000,
                       structure_element=np.ones((3, 3))):
         """ Run a label analysis on the DQ or SCI arrays of CCD dark frames
 
@@ -228,11 +227,17 @@ class Label(object):
             mean, median, std = sigma_clipped_stats(self.sci,
                                                     sigma_lower=3,
                                                     sigma_upper=3)
-            LOG.info('mean: {}, median: {}, std: {}'.format(mean, median, std))
+            std_mad = median_absolute_deviation(self.sci)
+            # LOG.info('mean: {}, median: {}, std: {}'.format(mean, median, std))
+            LOG.info('mean: {:.3f}, median: {:.3f}, std: {:.3f}'.format(
+                mean, median, std_mad)
+            )
+
 
             # Create an array of 1's and 0's using the SCI data
-            array_to_label = np.where(self.sci > np.absolute(median) + 3 * std,
-                                      1, 0)
+            array_to_label = np.where(
+                self.sci > np.absolute(median) + 10 * std_mad, 1, 0
+            )
 
         if do_bitwise_comp and use_dq:
             # Look for CR and remove bad pixels

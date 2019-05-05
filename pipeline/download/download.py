@@ -66,7 +66,7 @@ class Downloader(object):
         self._filtered_table = None
         self._instr = instr.replace('_', '/') # put into format for astroquery
         self._msg_div = '-' * 79
-        self._obstype = 'cal'
+        self._obstype = 'calibration'
         self._product_type = ['image', 'spectrum'] # SPECTRUM is for STIS
         self._products = {}
         self._project = 'HST'
@@ -250,7 +250,7 @@ class Downloader(object):
         query_params = {
             'project': self.project,
             'dataproduct_type': self.product_type,
-            'obstype': self.obstype,
+            'intentType': self.obstype,
             'target_name': self.target_name,
             'instrument_name': self.instr,
             't_min': [start.mjd, stop.mjd],

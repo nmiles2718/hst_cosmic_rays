@@ -439,8 +439,8 @@ class CosmicRayPipeline(object):
                 # Write out the failed files
                 fout = '{}_{}_{}.txt'.format(
                     self.failed_observation.split('.')[0],
-                    start.iso,
-                    stop.iso,
+                    start.to_datetime().date(),
+                    stop.to_datetime().date(),
                 )
                 with open(fout, 'a+') as fobj:
                     for f in processor.output['failed']:
