@@ -252,6 +252,17 @@ class ProcessCCD(object):
                 LOG.warning('{}\n Searching SCI header'.format(e))
                 exptime = scihdr['EXPTIME']
 
+            # Remove subarray frames from processing list
+            try:
+                is_subarray = prhdr['subarray']
+            except KeyError:
+                pass
+            else:
+                if is_subarray:
+                    return True
+                else:
+                    return False
+
             # Check the quality comments of the images
             if len(prhdr['qualcom*']):
                 for key in prhdr['qualcom*']:
