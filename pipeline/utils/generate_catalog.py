@@ -3,6 +3,7 @@
 import argparse
 from collections import defaultdict
 import glob
+import sys
 
 
 from astropy.time import Time
@@ -54,84 +55,102 @@ def main(instr):
     size = dh.DataReader(instr=instr.upper(), statistic='sizes')
     energy = dh.DataReader(instr=instr.upper(), statistic='energy_deposited')
 
-
     for r in [rates, size, energy]:
         r.find_hdf5()
-
+    if 'STIS' in instr.upper():
+        for r in [rates, size, energy]:
+            for i,f in enumerate(r.hdf5_files):
+                r.hdf5_files[i] = f.replace('STIS','STIS_crrejtab_CRSIGMAS')
+    
+    print(rates.hdf5_files)
+    print(size.hdf5_files)
+    print(energy.hdf5_files)
+    #sys.exit()
     area = rates.instr_cfg['instr_params']['detector_size']
 
     flist_tuple = zip(rates.hdf5_files, size.hdf5_files, energy.hdf5_files)
     for (f1, f2, f3) in flist_tuple:
         fobj1 = h5py.File(f1, mode='r')
         grp1 = fobj1['/incident_cr_rate']
-
+        
         fobj2 = h5py.File(f2, mode='r')
         grp2 = fobj2['sizes']
-
+        
         fobj3 = h5py.File(f3, mode='r')
         grp3 = fobj3['energy_deposited']
+        for key in grp1.keys():
 
-    for key in grp1.keys():
-        output_data['obs_id'].append(key)
+            rate_dset = grp1[key]
+            missing = False
+            try:
+                size_dset = grp2[key]
+            except Exception as e:
+                print(e)
+                missing=True
+        
+            try:
+                energy_dset = grp3[key]
+            except Exception as e:
+                print(e)
+                missing=True
+        
+            if missing:
+                print(missing)
+                continue
+        
+            output_data['obs_id'].append(key)
+            # get the meta data for the dataset
+            metadata = rate_dset.attrs
+            start_date = Time(metadata['date'], format='iso')
+            end_date = Time(metadata['expend'], format='iso')
+            output_data['date_start'].append(start_date)
+            output_data['mjd_start'].append(start_date.mjd)
 
-        rate_dset = grp1[key]
+            output_data['date_end'].append(end_date)
+            output_data['mjd_end'].append(end_date.mjd)
 
-        # get the meta data for the dataset
-        metadata = rate_dset.attrs
-        start_date = Time(metadata['date'], format='iso')
-        end_date = Time(metadata['expend'], format='iso')
-        output_data['date_start'].append(start_date)
-        output_data['mjd_start'].append(start_date.mjd)
-
-        output_data['date_end'].append(end_date)
-        output_data['mjd_end'].append(end_date.mjd)
-
-        output_data['integration_time'].append(metadata['integration_time'])
-
-
-        altitude = metadata['altitude']
-        try:
-            output_data['altitude_start'].append(altitude[0])
-            output_data['altitude_end'].append(altitude[-1])
-        except IndexError:
-            output_data['altitude_start'].append(altitude)
-            output_data['altitude_end'].append(altitude)
-
-
-        latitude = metadata['latitude']
-        try:
-            output_data['latitude_start'].append(latitude[0])
-            output_data['latitude_end'].append(latitude[-1])
-        except IndexError:
-            output_data['latitude_start'].append(latitude)
-            output_data['latitude_end'].append(latitude)
-
-        longitude = metadata['longitude']
-        try:
-            output_data['longitude_start'].append(longitude[0])
-            output_data['longitude_end'].append(longitude[-1])
-        except IndexError:
-            output_data['longitude_start'].append(longitude)
-            output_data['longitude_end'].append(longitude)
+            output_data['integration_time'].append(metadata['integration_time'])
 
 
-        size_dset = grp2[key]
-        energy_dset = grp3[key]
+            altitude = metadata['altitude']
+            try:
+                output_data['altitude_start'].append(altitude[0])
+                output_data['altitude_end'].append(altitude[-1])
+            except IndexError:
+                output_data['altitude_start'].append(altitude)
+                output_data['altitude_end'].append(altitude)
 
-        output_data['incident_cr_rate'].append(rate_dset[()])
 
-        output_data['cumulative_energy'].append(energy_dset.value.sum())
-        output_data['cumulative_energy_per_area'].append(
-            energy_dset.value.sum()/area
-        )
-        output_data['cumulative_energy_per_area_per_time'].append(
-            energy_dset.value.sum()/area/metadata['integration_time']
-        )
+            latitude = metadata['latitude']
+            try:
+                output_data['latitude_start'].append(latitude[0])
+                output_data['latitude_end'].append(latitude[-1])
+            except IndexError:
+                output_data['latitude_start'].append(latitude)
+                output_data['latitude_end'].append(latitude)
 
-        output_data['mean_size_pixels'].append(np.nanmean(size_dset[:][1]))
-        output_data['median_size_pixels'].append(np.nanmedian(size_dset[:][1]))
+            longitude = metadata['longitude']
+            try:
+                output_data['longitude_start'].append(longitude[0])
+                output_data['longitude_end'].append(longitude[-1])
+            except IndexError:
+                output_data['longitude_start'].append(longitude)
+                output_data['longitude_end'].append(longitude)
 
-    print('Number of datasets: []')
+            output_data['incident_cr_rate'].append(rate_dset[()])
+
+            output_data['cumulative_energy'].append(energy_dset.value.sum())
+            output_data['cumulative_energy_per_area'].append(
+                energy_dset.value.sum()/area
+            )
+            output_data['cumulative_energy_per_area_per_time'].append(
+                energy_dset.value.sum()/area/metadata['integration_time']
+            )
+
+            output_data['mean_size_pixels'].append(np.nanmean(size_dset[:][1]))
+            output_data['median_size_pixels'].append(np.nanmedian(size_dset[:][1]))
+
+    print('Number of datasets: {}'.format(len(output_data['date_start'])))
     date_index = pd.DatetimeIndex(
         [val.iso for val in output_data['date_start']]
     )

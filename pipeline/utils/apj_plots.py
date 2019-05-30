@@ -13,7 +13,7 @@ from astropy.visualization import LinearStretch, ZScaleInterval,\
 from matplotlib import rc
 from matplotlib import ticker
 import matplotlib as mpl
-mpl.use('Qt4Agg')
+#mpl.use('Qt4Agg')
 # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
 #rc('font',**{'family':'serif','serif':['Palatino']})
@@ -119,8 +119,9 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         freq, power = LombScargle(
             smoothed_no_nan['mjd'], smoothed_no_nan['incident_cr_rate']
         ).autopower()
-        ax.plot(freq, power, color=CB_color_cycle[i])
+        ax.plot(freq, power, color=CB_color_cycle[i], label=label)
         ax.set_xlim(0, 0.04)
+        ax.legend(loc='best')
     plt.show()
 
 
@@ -130,15 +131,15 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
                        figsize=(10,8),
                        sharex=True)
     smooth_type = 'rolling'
-    window='120D'
-    min_periods=80
+    window='150D'
+    min_periods=100
 
     stis_plot_params = {
         'df': stis,
         'legend_label': 'STIS/CCD',
         'ax': ax1,
         'i':0,
-        'thick':13.5,
+    #    'thick':13.5,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
@@ -147,7 +148,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'df': hrc,
         'legend_label': 'ACS/HRC',
         'ax': ax1,
-        'thick':14,
+     #   'thick':14,
         'i':1,
         'smooth_type': smooth_type,
         'window': window,
@@ -157,7 +158,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'df': wfc,
         'legend_label': 'ACS/WFC',
         'ax': ax1,
-        'thick':14.5,
+      #  'thick':14.5,
         'i':2,
         'smooth_type': smooth_type,
         'window': window,
@@ -168,7 +169,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'legend_label': 'WFPC2',
         'ax': ax1,
         'i':3,
-        'thick':10,
+       # 'thick':10,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
@@ -178,7 +179,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'legend_label': 'WFC3/UVIS',
         'ax': ax1,
         'i':4,
-        'thick':16,
+        #'thick':16,
         'smooth_type': smooth_type,
         'window': window,
         'min_periods': min_periods
@@ -188,7 +189,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     datasets = [stis_plot_params, wfpc2_plot_params, hrc_plot_params,
                 wfc_plot_params, uvis_plot_params]
     for dset in datasets:
-        fig, ax1 = v.plot_cr_rate_vs_time(**dset)
+        fig, ax1 = v.plot_cr_rate_vs_time(**dset, min_exptime=70)
 
 
 

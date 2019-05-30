@@ -305,7 +305,7 @@ class Visualizer(object):
         return frequency, power, ax
 
 
-    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,
+    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,min_exptime=200,
                              smooth_type='rolling', window='20D', min_periods=20):
         """Plot the observed cosmic ray rate as a function of time.
 
@@ -350,11 +350,11 @@ class Visualizer(object):
         ax : `matplotlib.axes.Axes`
         """
         # Get the long exposures with reliable statistics
-        flags = (df.integration_time.gt(600)) & (df.incident_cr_rate.gt(0.5))
+        flags = df.integration_time.gt(min_exptime)
+        LOG.info('Total number of observations with exptime > {}: {}'.format(min_exptime,
+                                                                             flags.sum()))
         df1 = df[flags][['incident_cr_rate','mjd']]
 
-        print(df1.head())
-        print(df1.info())
    
 
         # Smooth the cosmic ray rate
@@ -386,7 +386,7 @@ class Visualizer(object):
                          for val in avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['mjd']],
                         avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate'],
                         label=legend_label,
-                        s=2,
+                        s=10,
                         color=CB_color_cycle[i])
 
         # ax.set_xlabel('Date')
