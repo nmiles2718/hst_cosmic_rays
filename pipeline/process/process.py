@@ -348,7 +348,7 @@ class ProcessCCD(object):
                    output=output,
                    verbose=True,
                    crrejtab=self.crrejtab,
-                   crsigmas='6,5,4',
+                   crsigmas='8,6,4',
                    crmask=True,
                    initgues='med',
                    skysub='mode')

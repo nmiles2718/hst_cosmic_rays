@@ -18,6 +18,7 @@ import dask.array as da
 # from matplotlib import rc
 # rc('text', usetex=True)
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 plt.style.use('ggplot')
 from mpl_toolkits.basemap import Basemap
@@ -106,7 +107,7 @@ class Visualizer(object):
 
         mask = (df['longitude_{}'.format(key)] > saa_eastern[0]) &\
                (df['longitude_{}'.format(key)] < saa_western[0]) &\
-               (df['latitude_{}'.format(key)] < saa_northern[1])
+               (df['latitude_{}'.format(key)] > saa_northern[1])
         cut = df[mask]
 
         return cut
@@ -305,8 +306,8 @@ class Visualizer(object):
         return frequency, power, ax
 
 
-    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,min_exptime=200,
-                             smooth_type='rolling', window='20D', min_periods=20):
+    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,min_exptime=200,offset=0,
+                             smooth_type='rolling', window='20D', normalize=True,min_periods=20):
         """Plot the observed cosmic ray rate as a function of time.
 
         Parameters
@@ -353,19 +354,32 @@ class Visualizer(object):
         flags = df.integration_time.gt(min_exptime)
         LOG.info('Total number of observations with exptime > {}: {}'.format(min_exptime,
                                                                              flags.sum()))
-        df1 = df[flags][['incident_cr_rate','mjd']]
+        exptime_cut = df[flags]
+        #df = self._perform_SAA_cut(df, key='start')
+        mean, med, std = sigma_clipped_stats(exptime_cut['incident_cr_rate'], sigma=5)
+        mean, median, std = sigma_clipped_stats(exptime_cut['incident_cr_rate'],
+                                                sigma_lower=5,
+                                                sigma_upper=5)
+        LOG.info('{} mean: {} median: {} std: {}'.format(legend_label, mean, median, std))        
 
-   
+        sigma_mask = (exptime_cut['incident_cr_rate'] > mean - 3*std) & (exptime_cut['incident_cr_rate'] < mean + 5*std)
+        sigma_cut = exptime_cut[sigma_mask]
+
+        df1 = sigma_cut.loc[:, ['incident_cr_rate','mjd']]
+        if normalize:
+            LOG.info('Normalizing the date by the median value')
+            df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/mean 
+
 
         # Smooth the cosmic ray rate
         if smooth_type == 'rolling':
             LOG.info('Smoothing the data using a '
-                     'rolling median over a {} window'.format(window))
+                     'rolling mean over a {} window'.format(window))
             df1 = df1.rolling(window=window, min_periods=min_periods).mean()
         elif smooth_type == 'resample':
-            LOG.info('Resampling the data using a rolling median over'
+            LOG.info('Resampling the data using a rolling mean over'
                      'a {} window'.format(window))
-            df1 = df1.resample(rule=window).median()
+            df1 = df1.resample(rule=window).mean()
 
 
         avg_no_nan = df1.dropna()
@@ -384,7 +398,7 @@ class Visualizer(object):
         # Make the scatter plot
         ax.scatter([Time(val, format='mjd').to_datetime()
                          for val in avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['mjd']],
-                        avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate'],
+                        avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate']+offset,
                         label=legend_label,
                         s=10,
                         color=CB_color_cycle[i])
@@ -396,7 +410,7 @@ class Visualizer(object):
         return fig, ax
 
 
-    def draw_map(self, map=None, scale=0.2):
+    def draw_map(self, map=None, scale=0.9):
 
         if map is None:
             pass
@@ -409,11 +423,11 @@ class Visualizer(object):
         # lats and longs are returned as a dictionary
         lats = self.map.drawparallels(np.linspace(-90, 90, 13),
                                       labels=[True, False, False, False],
-                                      fontsize=8)
+                                      fontsize=10)
 
         lons = self.map.drawmeridians(np.linspace(-180, 180, 13),
                                       labels=[False, False, False, True],
-                                      fontsize=8)
+                                      fontsize=10)
 
         # keys contain the plt.Line2D instances
         lat_lines = chain(*(tup[1][0] for tup in lats.items()))
@@ -424,15 +438,19 @@ class Visualizer(object):
              line.set(linestyle='-', alpha=0.3, color='w')
 
 
-    def plot_hst_loc(self, i = 5, df = None, title='',
-                     fout='', key='start', save=False):
+    def plot_hst_loc(self, i = 5, df = None, title='',thresh=5,
+                     fout='',min_exptime=800, key='start', save=False):
 
-        self.fig = plt.figure(figsize=(6, 4))
+        self.fig = plt.figure(figsize=(8, 6))
         # Get the model for the SAA
         self.map = Basemap(projection='cyl')
-
+        df = df[df.integration_time.gt(min_exptime)]
+        df.sort_values(by='incident_cr_rate', inplace=True)
         self.draw_map()
-
+        cbar_bounds = [0,20,40,60,80,100,120,140,160]
+        sci_cmap = plt.cm.gray
+        custom_norm = colors.BoundaryNorm(boundaries=cbar_bounds,
+                                          ncolors=sci_cmap.N)
         # Generate an SAA contour
         saa = [list(t) for t in zip(*costools.saamodel.saaModel(i))]
         # Ensure the polygon representing the SAA is a closed curve by adding
@@ -449,7 +467,7 @@ class Visualizer(object):
                              self.data_df['longitude_{}'.format(key)], \
                              self.data_df['incident_cr_rate']
         else:
-            # df = df[df['incident_cr_rate'] > 0]
+            #df = df[df['integration_time'] > 800]
             lat, lon, rate = df['latitude_{}'.format(key)], \
                              df['longitude_{}'.format(key)], \
                              df['incident_cr_rate']
@@ -464,17 +482,27 @@ class Visualizer(object):
         LOG.info('{} +\- {}'.format(median, std))
         norm = ImageNormalize(rate,
                               stretch=LinearStretch(),
-                              vmin=mean - 4*std, vmax=mean + 4*std)
+                              vmin=mean - thresh*std, vmax=mean + thresh*std)
+        cbar_below_mean = [mean - (i+1)*std for i in range(thresh)]
+        cbar_above_mean = [mean + (i+1)*std for i in range(thresh)]
+        
+        cbar_bounds = cbar_below_mean + [mean] + cbar_above_mean
+        print(cbar_bounds)
+        cbar_bounds.sort()
+        sci_cmap = plt.cm.viridis
+        custom_norm = colors.BoundaryNorm(boundaries=cbar_bounds,
+                                          ncolors=sci_cmap.N)
 
-        geomagnetic_np = pd.read_csv(
-            '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_np_locs.txt',
-            delimiter=' ')
 
-        geomagnetic_sp = pd.read_csv(
-            '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_sp_locs.txt',
-            delimiter=' '
-        )
-        print(geomagnetic_np.head())
+        #geomagnetic_np = pd.read_csv(
+        #   '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_np_locs.txt',
+        #    delimiter=' ')
+
+        #geomagnetic_sp = pd.read_csv(
+        #    '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_sp_locs.txt',
+        #    delimiter=' '
+        #)
+        #print(geomagnetic_np.head())
 
         # geomagnetic_np = [360 - 72.69, 80.61]
         # geomagnetic_sp = [107.31, -80.61]
@@ -492,13 +520,15 @@ class Visualizer(object):
         #                      marker='X',c=c,
         #                      s=60, latlon=True)
 
+       # lon_grid, lat_grid = np.meshgrid(lon.values, lat.values)
         scat = self.map.scatter(lon.values, lat.values,
                          marker='o',
                          s=10,
                          latlon=True,
-                         c=rate, alpha=0.8,
-                         norm = norm,
-                         cmap='Reds')
+                         c=rate, alpha=0.1,
+                         norm = custom_norm,
+                         cmap='viridis')
+        #im = self.map.contourf(lon_grid, lat_grid, rate, norm=norm, cmap='viridis')
         ax = plt.gca()
         ax.set_title(title)
 
@@ -508,29 +538,31 @@ class Visualizer(object):
                                 columnspacing=0.5)
         # for i in range(len(ax1_legend.legendHandles)):
         #     ax1_legend.legendHandles[i]._sizes = [30]
-        cbar_tick_labels = ['<x>-3$\sigma$', '<x>', '<x>+3$\sigma$']
-        cbar_ticks = [mean - 3*std,mean, mean + 3*std]
+        #cbar_tick_labels = [f'<x>-{thresh}$\sigma$', '<x>', f'<x>+{thresh}$\sigma$']
+        #cbar_ticks = [mean - thresh*std,mean, mean + thresh*std]
+        cbar_ticks = cbar_bounds
         cax = self.fig.add_axes([0.1, 0.1, 0.8, 0.05])
         cbar = self.fig.colorbar(scat, cax=cax,
                                  ticks=cbar_ticks,orientation='horizontal')
         cbar.set_alpha(1)
         cbar.draw_all()
-        cbar.ax.set_xticklabels(cbar_tick_labels)
+        cbar_tick_labels = [f'<x>-{i}$\sigma$' for i in [5,4,3,2,1]] +['<x>']+ [f'<x>+{i}$\sigma$' for i in [1,2,3,4,5]]
+        cbar.ax.set_xticklabels(cbar_tick_labels, horizontalalignment='right', rotation=30)
 
         cbar.set_label('CR Rate [CR/s/$cm^2$]', fontsize=10)
         # cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(),
         #                         fontweight='medium',fontsize=8)
 
-
+        print(df.info())
         if save:
             if not fout:
                 fout = 'lat_lon_{}.png'.format(key)
 
             self.fig.savefig(fout,
                              format='png',bbox_inches='tight',
-                             dpi=250, transparent=False)
+                             dpi=350, transparent=False)
         plt.show()
-
+        return self.fig
 
     def plot_solar_cycle(self, variable=None, ax = None, smoothed=False):
         """ Retrieve solar cycle information
