@@ -15,6 +15,7 @@ from collections import defaultdict
 import logging
 import os
 import warnings
+import yaml
 
 from astropy.time import Time
 import h5py
@@ -41,13 +42,26 @@ class Initializer(object):
         Pipeline configuration object
 
     """
-    def __init__(self, instr, cfg):
+    def __init__(self, instr, cfg=None, instr_cfg=None):
 
         self._instr = instr
-        self._cfg = cfg
-        self._instr_cfg = self._cfg[self._instr]
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
-        self._base = os.path.join('/', *self._mod_dir.split('/')[:-2])
+        self._base = os.path.join('/',
+                                  *self._mod_dir.split('/')[:-2])
+        if cfg is None:
+            cfg_file = os.path.join(self._base,
+                                    'CONFIG',
+                                    'pipeline_config.yaml')
+
+            with open(cfg_file, 'r') as fobj:
+                cfg = yaml.load(fobj)
+            self._cfg =cfg
+
+        if instr_cfg is None:
+            self._instr_cfg = cfg[instr]
+        else:
+            self._instr_cfg = instr_cfg
+
         self._dates = None
         self._inactive_range = {
             'ACS_WFC': [

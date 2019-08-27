@@ -26,7 +26,7 @@ import yaml
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
-                    level=logging.DEBUG)
+                    )
 
 LOG = logging.getLogger('CosmicRayPipeline')
 
@@ -190,7 +190,7 @@ class GenerateMetadata(object):
             self.instr_cfg['instr_params']['readout_time']
 
 
-    def get_observatory_info(self):
+    def get_observatory_info(self, time_delta=None):
         """Compute the lat/lon and altitude of HST.
 
         Using the expstart and expend, generate a series MJD dates that correspond
@@ -204,8 +204,24 @@ class GenerateMetadata(object):
         lon_list = []
 
         # Break up the exposure into one minute intervals
-        time_delta = self.metadata['expend'] - self.metadata['expstart']
-        num_intervals = int(time_delta.to('minute').value)
+        if time_delta is None:
+            time_delta = self.metadata['expend'] - self.metadata['expstart']
+            num_intervals = 2*int(time_delta.to('minute').value)
+
+            # If the number of one minute intervals is less than 2, set the number
+            # of intervals to 5 (arbitrarily chosen)
+            if num_intervals < 2:
+                num_intervals = 5
+            # Generate MJD dates correspond to these one minute intervals
+            time_intervals = np.linspace(self.metadata['expstart'].mjd,
+                                         self.metadata['expend'].mjd,
+                                         num_intervals,
+                                         endpoint=True)
+            expend = self.metadata['expend'].mjd
+        else:
+            expend= self.metadata['expstart'].mjd + time_delta/86400.0
+            num_intervals = 2*int(time_delta/60)
+            print(num_intervals)
 
         # If the number of one minute intervals is less than 2, set the number
         # of intervals to 5 (arbitrarily chosen)
@@ -213,7 +229,7 @@ class GenerateMetadata(object):
             num_intervals = 5
         # Generate MJD dates correspond to these one minute intervals
         time_intervals = np.linspace(self.metadata['expstart'].mjd,
-                                     self.metadata['expend'].mjd,
+                                     expend,
                                      num_intervals,
                                      endpoint=True)
 

@@ -15,6 +15,8 @@ from astropy.visualization import ImageNormalize, SqrtStretch, LinearStretch, \
     ZScaleInterval, LogStretch, ManualInterval
 import costools
 import dask.array as da
+import matplotlib as mpl
+mpl.use('qt5agg')
 # from matplotlib import rc
 # rc('text', usetex=True)
 import matplotlib.pyplot as plt
@@ -39,8 +41,6 @@ logging.basicConfig(format='%(levelname)-4s '
 
 LOG = logging.getLogger('visualize')
 LOG.setLevel(logging.INFO)
-
-
 
 
 class Visualizer(object):
@@ -360,7 +360,7 @@ class Visualizer(object):
         mean, median, std = sigma_clipped_stats(exptime_cut['incident_cr_rate'],
                                                 sigma_lower=5,
                                                 sigma_upper=5)
-        LOG.info('{} mean: {} median: {} std: {}'.format(legend_label, mean, median, std))        
+        LOG.info('{} mean: {} median: {} std: {}'.format(legend_label, mean, median, std))
 
         sigma_mask = (exptime_cut['incident_cr_rate'] > mean - 3*std) & (exptime_cut['incident_cr_rate'] < mean + 5*std)
         sigma_cut = exptime_cut[sigma_mask]
@@ -368,7 +368,7 @@ class Visualizer(object):
         df1 = sigma_cut.loc[:, ['incident_cr_rate','mjd']]
         if normalize:
             LOG.info('Normalizing the date by the median value')
-            df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/mean 
+            df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/mean
 
 
         # Smooth the cosmic ray rate
@@ -439,7 +439,8 @@ class Visualizer(object):
 
 
     def plot_hst_loc(self, i = 5, df = None, title='',thresh=5,
-                     fout='',min_exptime=800, key='start', save=False):
+                     fout='',min_exptime=800, key='start', save=False,
+                     orbital_path1=None, orbital_path2=None):
 
         self.fig = plt.figure(figsize=(8, 6))
         # Get the model for the SAA
@@ -485,7 +486,7 @@ class Visualizer(object):
                               vmin=mean - thresh*std, vmax=mean + thresh*std)
         cbar_below_mean = [mean - (i+1)*std for i in range(thresh)]
         cbar_above_mean = [mean + (i+1)*std for i in range(thresh)]
-        
+
         cbar_bounds = cbar_below_mean + [mean] + cbar_above_mean
         print(cbar_bounds)
         cbar_bounds.sort()
@@ -519,6 +520,18 @@ class Visualizer(object):
         #                      geomagnetic_sp['lat'].values[k],
         #                      marker='X',c=c,
         #                      s=60, latlon=True)
+        # Plot the path of HST
+        self.map.plot(
+            orbital_path1.metadata['longitude'],
+            orbital_path1.metadata['latitude'],
+            label=f'Int. Time: {1000:.1f}s', color='k', ls='-'
+        )
+        self.map.plot(
+            orbital_path2.metadata['longitude'],
+            orbital_path2.metadata['latitude'],
+            label=f'Int. Time: {2000:.1f}s',color='k', ls='--'
+        )
+        # fig.axes[0].legend(loc='upper right', edgecolor='k')
 
        # lon_grid, lat_grid = np.meshgrid(lon.values, lat.values)
         scat = self.map.scatter(lon.values, lat.values,

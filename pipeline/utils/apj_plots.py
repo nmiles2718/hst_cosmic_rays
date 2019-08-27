@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from collections import defaultdict
+from collections import Iterable
+import logging
+from itertools import chain
 from datetime import timedelta
 import glob
 import os
@@ -16,15 +19,14 @@ from matplotlib import ticker
 import matplotlib as mpl
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
-#mpl.use('Qt4Agg')
-# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-## for Palatino and other serif fonts use:
-#rc('font',**{'family':'serif','serif':['Palatino']})
-# rc('text', usetex=True)
+mpl.use('qt5agg')
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 import matplotlib.gridspec as gridspec
 plt.style.use('ggplot')
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.patches as patches
+
 import numpy as np
 import pandas as pd
 
@@ -33,6 +35,7 @@ from sunpy.timeseries import TimeSeries
 from scipy.ndimage import median_filter, gaussian_filter
 from scipy.signal import find_peaks
 import visualize
+import metadata
 
 
 
@@ -53,8 +56,86 @@ def get_solar_min_and_max(noaa_data):
     return solar_cycle
 
 
+def draw_map(scale=0.25, ax=None):
+    mapbase = Basemap(projection='cyl', ax=ax)
+    # Draw the meridia
+    mapbase.shadedrelief(scale=scale)
+    # lats and longs are returned as a dictionary
+    lats = mapbase.drawparallels(np.linspace(-90, 90, 13),
+                                 labels=[True, False, False, False],
+                                 fontsize=8)
+
+    lons = mapbase.drawmeridians(np.linspace(-180, 180, 13),
+                                 labels=[False, False, False, True],
+                                 fontsize=8)
+
+    # keys contain the plt.Line2D instances
+    lat_lines = chain(*(tup[1][0] for tup in lats.items()))
+    lon_lines = chain(*(tup[1][0] for tup in lons.items()))
+    all_lines = chain(lat_lines, lon_lines)
+    # cycle through these lines and set the desired style
+    for line in all_lines:
+        line.set(linestyle='-', alpha=0.3, color='w')
+
+    return mapbase
+
+
+def plot_hst_loc_per_observation(
+        fname_long='/Users/nmiles/hst_cosmic_rays/'
+              'data/STIS/CCD/mastDownload/HST/odbrf7ggq/odbrf7ggq_flt.fits',
+        fname_longest='/Users/nmiles/hst_cosmic_rays/data/WFPC2/mastDownload/'
+                      'HST/u21y2801t/u21y2801t_c0m.fits',
+        figsize=(6,5),
+        instr_long='STIS_CCD',
+        instr_longest='WFPC2',
+        exp1=None,
+        exp2=None
+):
+    fig, ax = plt.subplots(figsize=figsize, nrows=1, ncols=1)
+    # Get observation metadata
+    observation_exp1 = metadata.GenerateMetadata(
+        fname=fname_long,
+        instr=instr_long
+    )
+    observation_exp1.get_image_data()
+    if exp1 is None:
+        exp1 = observation_exp1.metadata['integration_time']
+        observation_exp1.get_observatory_info(time_delta=exp1)
+    else:
+        observation_exp1.get_observatory_info(time_delta=exp1)
+
+    observation_exp2 = metadata.GenerateMetadata(
+        fname=fname_long,
+        instr=instr_long
+    )
+    observation_exp2.get_image_data()
+    if exp2 is None:
+        exp2 = observation_exp2.metadata['integration_time']
+        observation_exp2.get_observatory_info(time_delta=exp2)
+    else:
+        observation_exp2.get_observatory_info(time_delta=exp2)
+
+    # # Draw the map
+    # mapbase = draw_map(scale=0.5, ax=ax)
+    #
+    # Plot the path of HST
+    mapbase.plot(
+        observation_exp1.metadata['longitude'],
+        observation_exp1.metadata['latitude'],
+        label=f'Int. Time: {exp1:.1f}s'
+    )
+    mapbase.plot(
+        observation_exp2.metadata['longitude'],
+        observation_exp2.metadata['latitude'],
+        label=f'Int. Time: {exp2:.1f}s',
+    )
+    ax.legend(loc='upper right', edgecolor='k')
+    # plt.show()
+    return observation_exp1, observation_exp2
+
+
 def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis):
-   # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,8)) 
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
     v = visualize.Visualizer()
     combined_data = {'latitude_start':[],'longitude_start':[], 'incident_cr_rate':[],
                      'integration_time':[]}
@@ -71,10 +152,10 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis):
         combined_data['incident_cr_rate'] += cr_rate
         combined_data['integration_time'] += list(df['integration_time'])
     df_combined = pd.DataFrame(combined_data)
-    fig = v.plot_hst_loc(df=df_combined, key='start')
+    fig = v.plot_hst_loc(df=df_combined, key='start', orbital_path1=None, orbital_path2=None)
     fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_vs_location_allinstr.png')
-    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')    
-    return df_combined    
+    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
+    return df_combined
 
 def combine_integration_time_info(hrc, stis, wfc, wfpc2, uvis):
     instrument_name=['STIS/CCD','ACS/HRC','ACS/WFC','WFPC2','WFC3/UVIS']
@@ -85,26 +166,26 @@ def combine_integration_time_info(hrc, stis, wfc, wfpc2, uvis):
     for i,df in enumerate([stis, hrc, wfc, wfpc2, uvis]):
         counts = df['integration_time'].value_counts()
         data_dict[instrument_name[i]] = counts
-    
+
     df = pd.DataFrame(data_dict)
     return df
 
 
 
-def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True, add_title=True): 
+def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True, add_title=True):
     expcut = combined_df.integration_time.gt(800)
-    counts = combined_df['integration_time'][expcut].value_counts() 
+    counts = combined_df['integration_time'][expcut].value_counts()
     total = integration_df.sum().sum()
-    #counts.sort_index(inplace=True) 
-    counts_norm = integration_df/total 
+    #counts.sort_index(inplace=True)
+    counts_norm = integration_df/total
     CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                           '#f781bf', '#a65628', '#984ea3',
                           '#999999', '#e41a1c', '#dede00']
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,5)) 
-    # Only show plots for flashdurs that have more than 30 observations 
-    cut = counts.iloc[:N] 
-    cut_norm =  counts_norm.iloc[:N] 
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,5))
+    # Only show plots for flashdurs that have more than 30 observations
+    cut = counts.iloc[:N]
+    cut_norm =  counts_norm.iloc[:N]
     #colors = []
     #for int_time in cut.index:
     #    match = df[df['integration_time']==int_time]
@@ -112,16 +193,16 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
     #    instrument = set(match['instrument'])
     #    print(f'{color} {instrument}')
     #    colors.append(color)
-    #cut.sort_index(inplace=True) 
-    integration_df.loc[cut.index,:].plot.barh(ax=ax, logy=logy, logx=logx,color=CB_color_cycle, rot=0,stacked=True,label=f'Integration Times') 
+    #cut.sort_index(inplace=True)
+    integration_df.loc[cut.index,:].plot.barh(ax=ax, logy=logy, logx=logx,color=CB_color_cycle, rot=0,stacked=True,label=f'Integration Times')
 
-    ax.xaxis.set_major_formatter(plt.ScalarFormatter()) 
-    ax.legend(loc='upper right', edgecolor='k') 
-    ax.set_ylabel('Integration Time [s]') 
+    ax.xaxis.set_major_formatter(plt.ScalarFormatter())
+    ax.legend(loc='upper right', edgecolor='k')
+    ax.set_ylabel('Integration Time [s]')
     if add_title:
         ax.set_title(f'Top {N:.0f} Integration Times')
     fout = os.path.join(APJ_PLOT_DIR, 'exptime_comp_plot.png')
-    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight') 
+    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     return counts, cut
 
 
@@ -170,6 +251,91 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
     plt.show()
 
 
+def cr_rejection_algorithm(
+        flist=None,
+        x=2045,
+        y=1061,
+        box_w=10,
+        box_h=10,
+        figsize=(8,6),
+        fout='example_of_cr_rejection.png'
+):
+    if flist is None:
+        flist = glob.glob(
+            '/Users/nmiles/hst_cosmic_rays/APJ_plots/test_data/*flt.fits'
+        )
+
+    img_data = []
+    pix_data = []
+    for f in flist[:12]:
+        data = fits.getdata(f)
+        img_data.append(data)
+        pix_data.append(data[y][x])
+
+
+    fig = plt.figure(figsize=figsize)
+    gs0 = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, wspace=0.25)
+    gs00 = gridspec.GridSpecFromSubplotSpec(
+        nrows=4,
+        ncols=3,
+        wspace=0.05,
+        hspace=0.5,
+        subplot_spec=gs0[0]
+    )
+    fig.suptitle(
+        'Comparing Pixel Values Across 12 Dark Frames',
+        fontweight='bold'
+    )
+    scatter_ax = fig.add_subplot(gs0[0, 1])
+    # scatter_ax.set_title(rf'Pixel Value at ({x},{y})')
+    scatter_ax.scatter([i+1 for i in range(12)], pix_data, label='Pixel Value')
+    scatter_ax.set_xticks([i+1 for i in range(12)])
+    scatter_ax.set_xticklabels([str(i+1) for i in range(12)])
+    yticks = ticker.MaxNLocator(11)
+    scatter_ax.set_ylim((-50,1000))
+    scatter_ax.yaxis.set_major_locator(yticks)
+    # scatter_ax.set_yticks([100*i for i in range(9)])
+    scatter_ax.axhline(np.median(pix_data),
+                       ls='dashed',
+                       c='k',
+                       label=rf'median: {np.median(pix_data):.3f} $e^-$')
+    scatter_ax.set_xlabel('Image Number')
+    scatter_ax.set_ylabel(r'Signal [$e^-$]')
+    scatter_ax.legend(loc='upper right', edgecolor='k')
+
+
+    img_subplots = [
+        fig.add_subplot(gs00[i,j]) for i in range(4) for j in range(3)
+    ]
+
+
+
+    norm = ImageNormalize(
+        img_data[0],
+        stretch=LinearStretch(),
+        vmin=0,
+        vmax=80
+    )
+    mk_patch = lambda x, y: patches.Rectangle(
+        (x-0.5,y-0.5), width=1, height=1, fill=False, color='r', lw=1.25
+    )
+    for i, ax in enumerate(img_subplots):
+        ax.grid(False)
+        ax.set_title(f"{i+1}", fontsize=12)
+        ax.get_yaxis().set_visible(False)
+        ax.get_xaxis().set_visible(False)
+        im = ax.imshow(img_data[i], norm=norm, cmap='gray', origin='lower')
+        ax.set_xlim((x - box_w, x + box_w))
+        ax.set_ylim((y - box_h, y + box_h))
+        patch = mk_patch(x, y)
+        ax.add_patch(patch)
+
+
+    fig.savefig(os.path.join(APJ_PLOT_DIR, fout),
+                format='png',
+                dpi=300, bbox_inches='tight')
+
+
 
 def periodogram(hrc, stis, wfc, wfpc2, uvis):
     fig = plt.figure(figsize=(10,8))
@@ -213,14 +379,14 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         max_power_idx2_range = np.argmax(power[peak_range_2])
         max_power_idx2_full = peak_range_2[max_power_idx2_range]
         max_power_freq2 = freq[max_power_idx2_full]
-        max_power_period2 = 1/max_power_freq2        
+        max_power_period2 = 1/max_power_freq2
         peak2 += ls.false_alarm_probability(power[max_power_idx2_full])
         print(max_power_period2, label, max_power_freq2, ls.false_alarm_probability(power[max_power_idx2_full]))
         data_out[label] = (freq, power)
         ax.plot(freq, power, color=CB_color_cycle[i], label=label)
         ax.set_xlim(-0.005, 0.04)
         xticks =[0, 0.01, 0.02, 0.03,  0.04]
-        ax.xaxis.set_minor_locator(AutoMinorLocator(5)) 
+        ax.xaxis.set_minor_locator(AutoMinorLocator(5))
         ax.set_xticks(xticks)
         ax.tick_params(axis='x', which='major', width=1.5, length=5)
         #ax.set_xticklabels(xticks, rotation=45, ha='right')
@@ -248,7 +414,7 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
 
 
 def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
-    v= visualize.Visualizer()
+    v = visualize.Visualizer()
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1,
                        figsize=(10,8),
                        sharex=True)
@@ -362,7 +528,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     ax2.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
     ax2.set_ylabel('$R_I$', fontsize=14)
     ax2.set_xlabel('Date', fontsize=14)
-    ax1.set_ylim(0.75, 1.3)    
+    ax1.set_ylim(0.75, 1.3)
     ax1.set_ylabel('Mean Normalized CR Rates')
     fout = os.path.join(APJ_PLOT_DIR,'cr_rate_vs_time.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
