@@ -205,22 +205,11 @@ class GenerateMetadata(object):
 
         # Break up the exposure into one minute intervals
         if time_delta is None:
-            time_delta = self.metadata['expend'] - self.metadata['expstart']
             num_intervals = 2*int(time_delta.to('minute').value)
-
-            # If the number of one minute intervals is less than 2, set the number
-            # of intervals to 5 (arbitrarily chosen)
-            if num_intervals < 2:
-                num_intervals = 5
-            # Generate MJD dates correspond to these one minute intervals
-            time_intervals = np.linspace(self.metadata['expstart'].mjd,
-                                         self.metadata['expend'].mjd,
-                                         num_intervals,
-                                         endpoint=True)
             expend = self.metadata['expend'].mjd
         else:
             expend= self.metadata['expstart'].mjd + time_delta/86400.0
-            num_intervals = 2*int(time_delta/60)
+            num_intervals = np.round(time_delta/60)
             print(num_intervals)
 
         # If the number of one minute intervals is less than 2, set the number

@@ -417,6 +417,8 @@ class Visualizer(object):
         else:
             self.map=map
         # Set the background map up
+        #self.map.drawcoastlines()
+        #self.map.fillcontinents()
         self.map.shadedrelief(scale=scale)
 
         # Draw the meridians
@@ -520,35 +522,40 @@ class Visualizer(object):
         #                      geomagnetic_sp['lat'].values[k],
         #                      marker='X',c=c,
         #                      s=60, latlon=True)
-        # Plot the path of HST
-        self.map.plot(
-            orbital_path1.metadata['longitude'],
-            orbital_path1.metadata['latitude'],
-            label=f'Int. Time: {1000:.1f}s', color='k', ls='-'
-        )
-        self.map.plot(
-            orbital_path2.metadata['longitude'],
-            orbital_path2.metadata['latitude'],
-            label=f'Int. Time: {2000:.1f}s',color='k', ls='--'
-        )
-        # fig.axes[0].legend(loc='upper right', edgecolor='k')
 
        # lon_grid, lat_grid = np.meshgrid(lon.values, lat.values)
         scat = self.map.scatter(lon.values, lat.values,
                          marker='o',
-                         s=10,
+                         s=5,
                          latlon=True,
-                         c=rate, alpha=0.1,
+                         c=rate, alpha=0.15,
                          norm = custom_norm,
                          cmap='viridis')
         #im = self.map.contourf(lon_grid, lat_grid, rate, norm=norm, cmap='viridis')
         ax = plt.gca()
         ax.set_title(title)
 
+        # Plot the path of HST
+        #self.map.plot(
+        #    orbital_path1.metadata['longitude'],
+        #    orbital_path1.metadata['latitude'],lw=1.25,
+        #    label=f'Int. Time: {1000:.1f}s', color='k', ls='-'
+        #)
+        self.map.scatter(
+            orbital_path2.metadata['longitude'][::4][1:],
+            orbital_path2.metadata['latitude'][::4][1:],c='k',s=20,label='285 seccond interval'
+        )
+        self.map.plot(
+            orbital_path2.metadata['longitude'],
+            orbital_path2.metadata['latitude'],
+            label=f'Orbital Path Over {2000:.0f} seconds',color='k', ls='--', lw=1.25
+        )
+
         ax1_legend = ax.legend(loc='upper right',
                                 ncol=1,
                                 labelspacing=0.2,
-                                columnspacing=0.5)
+                                columnspacing=0.5,
+                                edgecolor='k')
         # for i in range(len(ax1_legend.legendHandles)):
         #     ax1_legend.legendHandles[i]._sizes = [30]
         #cbar_tick_labels = [f'<x>-{thresh}$\sigma$', '<x>', f'<x>+{thresh}$\sigma$']
@@ -565,8 +572,6 @@ class Visualizer(object):
         cbar.set_label('CR Rate [CR/s/$cm^2$]', fontsize=10)
         # cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(),
         #                         fontweight='medium',fontsize=8)
-
-        print(df.info())
         if save:
             if not fout:
                 fout = 'lat_lon_{}.png'.format(key)

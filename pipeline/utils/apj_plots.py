@@ -81,21 +81,17 @@ def draw_map(scale=0.25, ax=None):
 
 
 def plot_hst_loc_per_observation(
-        fname_long='/Users/nmiles/hst_cosmic_rays/'
-              'data/STIS/CCD/mastDownload/HST/odbrf7ggq/odbrf7ggq_flt.fits',
-        fname_longest='/Users/nmiles/hst_cosmic_rays/data/WFPC2/mastDownload/'
-                      'HST/u21y2801t/u21y2801t_c0m.fits',
+        fname = os.path.join(APJ_PLOT_DIR, 'odbrf7ggq_flt.fits'),
         figsize=(6,5),
-        instr_long='STIS_CCD',
-        instr_longest='WFPC2',
+        instr='STIS_CCD',
         exp1=None,
         exp2=None
 ):
-    fig, ax = plt.subplots(figsize=figsize, nrows=1, ncols=1)
+    #fig, ax = plt.subplots(figsize=figsize, nrows=1, ncols=1)
     # Get observation metadata
     observation_exp1 = metadata.GenerateMetadata(
-        fname=fname_long,
-        instr=instr_long
+        fname=fname,
+        instr=instr
     )
     observation_exp1.get_image_data()
     if exp1 is None:
@@ -105,8 +101,8 @@ def plot_hst_loc_per_observation(
         observation_exp1.get_observatory_info(time_delta=exp1)
 
     observation_exp2 = metadata.GenerateMetadata(
-        fname=fname_long,
-        instr=instr_long
+        fname=fname,
+        instr=instr
     )
     observation_exp2.get_image_data()
     if exp2 is None:
@@ -119,23 +115,23 @@ def plot_hst_loc_per_observation(
     # mapbase = draw_map(scale=0.5, ax=ax)
     #
     # Plot the path of HST
-    mapbase.plot(
-        observation_exp1.metadata['longitude'],
-        observation_exp1.metadata['latitude'],
-        label=f'Int. Time: {exp1:.1f}s'
-    )
-    mapbase.plot(
-        observation_exp2.metadata['longitude'],
-        observation_exp2.metadata['latitude'],
-        label=f'Int. Time: {exp2:.1f}s',
-    )
-    ax.legend(loc='upper right', edgecolor='k')
+    # mapbase.plot(
+    #    observation_exp1.metadata['longitude'],
+    #    observation_exp1.metadata['latitude'],
+    #    label=f'Int. Time: {exp1:.1f}s'
+    #)
+    #mapbase.plot(
+    #    observation_exp2.metadata['longitude'],
+    #    observation_exp2.metadata['latitude'],
+    #    label=f'Int. Time: {exp2:.1f}s',
+    #)
+    #ax.legend(loc='upper right', edgecolor='k')
     # plt.show()
     return observation_exp1, observation_exp2
 
 
-def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis):
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
+def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis, orbital_path1=None, orbital_path2=None):
+    #fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
     v = visualize.Visualizer()
     combined_data = {'latitude_start':[],'longitude_start':[], 'incident_cr_rate':[],
                      'integration_time':[]}
@@ -152,7 +148,8 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis):
         combined_data['incident_cr_rate'] += cr_rate
         combined_data['integration_time'] += list(df['integration_time'])
     df_combined = pd.DataFrame(combined_data)
-    fig = v.plot_hst_loc(df=df_combined, key='start', orbital_path1=None, orbital_path2=None)
+    fig = v.plot_hst_loc(df=df_combined, key='start', orbital_path1=orbital_path1,
+                            orbital_path2=orbital_path2)
     fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_vs_location_allinstr.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     return df_combined
@@ -176,6 +173,7 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
     expcut = combined_df.integration_time.gt(800)
     counts = combined_df['integration_time'][expcut].value_counts()
     total = integration_df.sum().sum()
+    print(integration_df.sum())
     #counts.sort_index(inplace=True)
     counts_norm = integration_df/total
     CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
@@ -193,17 +191,66 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
     #    instrument = set(match['instrument'])
     #    print(f'{color} {instrument}')
     #    colors.append(color)
-    #cut.sort_index(inplace=True)
-    integration_df.loc[cut.index,:].plot.barh(ax=ax, logy=logy, logx=logx,color=CB_color_cycle, rot=0,stacked=True,label=f'Integration Times')
-
+    #cut.sort_index(inplace=True
+    match_cut = integration_df.loc[cut.index,:]
+    instr_sum = match_cut.sum()    
+    total = match_cut.sum().sum()
+    percentages=100*instr_sum/total
+    new_labels = [f'{instr} ({val:.3f}%)' for instr, val in zip(percentages.index.values, percentages)]
+    print(new_labels)
+    match_cut.sort_index(inplace=True)
+    barh = match_cut.plot.barh(ax=ax, logy=logy, logx=logx,color=CB_color_cycle,rot=0,stacked=True)
     ax.xaxis.set_major_formatter(plt.ScalarFormatter())
-    ax.legend(loc='upper right', edgecolor='k')
+    barh_legend = plt.legend(bbox_to_anchor=(1.0001, 1),
+                            loc=2,
+                            ncol=1, edgecolor='k')
+    handles, labels = ax.get_legend_handles_labels()
+    for label in labels:
+        print(match_cut[label].sum())
+    #ax.legend(loc='upper right',ncol=3, edgecolor='k')
+    barh_legend = plt.legend(handles, new_labels,
+                            bbox_to_anchor=(1.0001,1),
+                            loc=2,
+                            ncol=1, edgecolor='k')
     ax.set_ylabel('Integration Time [s]')
     if add_title:
         ax.set_title(f'Top {N:.0f} Integration Times')
     fout = os.path.join(APJ_PLOT_DIR, 'exptime_comp_plot.png')
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     return counts, cut
+
+
+def plot_morphology(
+        data,
+        bins,
+        drange,
+        figsize=(6,5),
+        xlabel=None,
+        ylabel=None,
+        title=None,
+        ax=None,
+        color=None,
+        label=None,
+        normalize=True,
+        logx=False,
+        logy=True,
+        lw=1.75,
+        ls='-'
+):
+    v = visualize.Visualizer()
+    fig, ax, hist, bins = v.plot_hist(
+        data,
+        bins=bins,
+        c=color,
+        range=drange,
+        ax=ax,
+        label=label,
+        normalize=normalize
+    )
+
+
+    return fig, ax, hist, bins
+
 
 
 def rate_hist(hrc, stis, wfc, wfpc2, uvis):
