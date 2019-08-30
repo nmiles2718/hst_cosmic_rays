@@ -168,6 +168,37 @@ def combine_integration_time_info(hrc, stis, wfc, wfpc2, uvis):
     return df
 
 
+def plot_morphology(
+        data,
+        bins,
+        drange,
+        figsize=(6,5),
+        xlabel=None,
+        ylabel=None,
+        title=None,
+        ax=None,
+        color=None,
+        label=None,
+        normalize=True,
+        logx=False,
+        logy=True,
+        lw=1.75,
+        ls='-'
+):
+    v = visualize.Visualizer()
+    fig, ax, hist, bins = v.plot_hist(
+        data,
+        bins=bins,
+        c=color,
+        range=drange,
+        ax=ax,
+        label=label,
+        normalize=normalize
+    )
+
+    return fig, ax, hist, bins
+
+
 
 def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True, add_title=True):
     expcut = combined_df.integration_time.gt(800)

@@ -15,7 +15,11 @@
 /pipeline/*/__pycache__/
 /pipeline/.ipynb_checkpoints/
 /pipeline/.DS_Store
+/pipeline/*.ipynb
+/pipeline/utils/*txt
 .DS_Store
 /CONFIG/processed*txt
+/CONFIG/failed*txt
+/doc/
 *.fits
 .idea/
