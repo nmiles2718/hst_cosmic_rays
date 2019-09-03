@@ -205,6 +205,7 @@ class GenerateMetadata(object):
 
         # Break up the exposure into one minute intervals
         if time_delta is None:
+            time_delta = self.metadata['expend'] - self.metadata['expstart']
             num_intervals = 2*int(time_delta.to('minute').value)
             expend = self.metadata['expend'].mjd
         else:

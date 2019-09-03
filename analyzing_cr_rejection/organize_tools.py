@@ -4,6 +4,7 @@ import argparse
 from collections import defaultdict
 import glob
 import inspect
+import json
 import logging
 import os
 import shutil
@@ -60,6 +61,7 @@ def generate_record(
         crrejtab=None,
         crsigmas='6,5,4',
         crthresh=0.75,
+        crradius=1.0,
         initgues='med',
         scalense=0,
         skysub="mode"
@@ -85,17 +87,17 @@ def generate_record(
     arginfo = inspect.getargvalues(frame)
     args = arginfo.args
     values = [arginfo.locals[arg] for arg in args]
-    data = zip(values, args)
-    fout = f"{outputdir}/_summary.txt"
-    LOG.info(f"Writing the input parameters to the following file:\n {fout}")
-    with open(fout, mode='w') as fobj:
-        fobj.write('# Cosmic Ray Rejection Parameters\n')
-        for val, label in data:
-            fobj.write(f"{label} {val}\n")
+    fout_json = f"{outputdir}/_summary.json"
+    LOG.info(f"Writing the input parameters to the following file:\n{fout_json}")
+    data_dict = {}
+    for key, val in zip(args, values):
+        data_dict[key] = val
+    json.dump(data_dict, open(fout_json, mode='w'))
+
 
 
 # noinspection PyTypeChecker
-def setup_output(flist1, flist2, date_str=None):
+def setup_output(flist1, flist2, dir_suffix=''):
     """ Setup output directories for each list of files
 
     Parameters
@@ -109,15 +111,12 @@ def setup_output(flist1, flist2, date_str=None):
     -------
 
     """
-    if date_str is None:
-        date_str = ''
-
     # Generate the output path for each input list
     dir1_path = os.path.dirname(flist1[0])
     dir1_name = dir1_path.split('/')[-1]
     outdir1 = dir1_path.replace(
         dir1_name,
-        f"{dir1_name.split('_')[0]}_{date_str}"
+        f"{dir1_name.split('_')[0]}_{dir_suffix}"
     )
 
     try:
@@ -129,46 +128,80 @@ def setup_output(flist1, flist2, date_str=None):
     dir2_name = dir2_path.split('/')[-1]
     outdir2 = dir2_path.replace(
         dir2_name,
-        f"{dir2_name.split('_')[0]}_{date_str}"
+        f"{dir2_name.split('_')[0]}_{dir_suffix}"
     )
     try:
         os.mkdir(outdir2)
     except FileExistsError:
         pass
     LOG.info(
-        f"\nSet up two output directories: \n{outdir1}\n {outdir2}\n {'-'*79}"
+        f"Set up two output directories: \n{outdir1}\n{outdir2}\n {'-'*79}"
     )
 
     for f1 in tqdm(flist1, desc=f'Copying to {os.path.basename(outdir1)} '):
+        fits.setval(f1, keyword='CRREJTAB', 
+            value='/Users/nmiles/hst_cosmic_rays/j3m1403io_crr.fits')
         shutil.copy(f1, outdir1)
+        shutil.copy(f1.replace('flt.fits','spt.fits'), outdir1)
 
     for f2 in tqdm(flist2,desc=f'Copying to {os.path.basename(outdir2)} '):
+        fits.setval(f2, keyword='CRREJTAB', 
+            value='/Users/nmiles/hst_cosmic_rays/j3m1403io_crr.fits')
         shutil.copy(f2, outdir2)
+        shutil.copy(f2.replace('flt.fits','spt.fits'), outdir2)
 
     return outdir1, outdir2
 
+def sort_flist(flist):
+    date_time = []
+    for f in flist:
+        with fits.open(f) as hdu:
+            hdr = hdu[0].header
+            try:
+                dateobs = hdr['DATE-OBS']
+            except KeyError:
+                dateobs = hdr['TDATEOBS']
+            try:
+                timeobs = hdr['TIME-OBS']
+            except KeyError:
+                timeobs = hdr['TTIMEOBS']
 
-# def main(dir1, dir2):
-#     # Get string to use for recorded the start of processing
-#     tday = Time.now().to_datetime()
-#     date_str = tday.strftime('%b%d_%H:%M')
-#     flist1 = glob.glob(dir1+'*flt.fits')
-#     flist2 = glob.glob(dir2+'*flt.fits')
-#     outdir1, outdir2 = setup_output(flist1, flist2, date_str=date_str)
-#     generate_record(outdir1, crradius=1, crsigmas='8,6,4', crthresh=1)
+        date_time.append(Time(f"{dateobs} {timeobs}",
+                              format='iso').to_datetime())
+    data = list(zip(flist, date_time))
+    data.sort(key=lambda val: val[1])
+    flist, date_time = zip(*data)
+    return flist
 
 
+
+def initialize(dir1, dir2, nimages=None, dir_suffix=None):
+    # Get string to use for recorded the start of processing
+    if dir_suffix is None:
+        tday = Time.now().to_datetime()
+        dir_suffix = tday.strftime('%b%d')
+
+    flist1 = sort_flist(glob.glob(dir1+'*flt.fits'))
+    flist2 = sort_flist(glob.glob(dir2+'*flt.fits'))
+    
+    if nimages is not None:
+        flist1 = flist1[:nimages]
+        flist2 = flist2[:nimages]
+
+    outdir1, outdir2 = setup_output(flist1, flist2, dir_suffix=dir_suffix)
+    return outdir1, outdir2
 
 def parse_inputs():
     args = vars(parser.parse_args())
     return args
 
+
 if __name__ == '__main__':
     # args = vars(parser.parse_args())
     args = {
         'dir1':'/Users/nmiles/hst_cosmic_rays/'
-               'analyzing_cr_rejection/long_clean/',
+               'analyzing_cr_rejection/1100.0_clean/',
         'dir2':'/Users/nmiles/hst_cosmic_rays/'
-               'analyzing_cr_rejection/short_clean/'
+               'analyzing_cr_rejection/60.0_clean/'
     }
     main(**args)

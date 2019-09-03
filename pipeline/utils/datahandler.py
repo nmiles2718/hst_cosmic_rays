@@ -301,6 +301,20 @@ class DataReader(object):
         LOG.info(msg)
         self.hdf5_files = hdf5_files
 
+    def read_single_dst(self, fname, dset):
+        fobj = h5py.File(fname, mode='r')
+        grp = fobj[self.statistic]
+        dsets = list(grp.keys())
+        if dset in dsets:
+            data = grp[dset]
+            affected_pixels = data[:]
+            metadata = data.attrs
+        else:
+            LOG.info(f'Nothing found for {dset}')
+            return None, None
+
+        return affected_pixels, metadata
+
     def read_cr_stat(self, fill_value=-999, units=None):
         """Read in all the data for the specified :py:attr:`statistic`
 
@@ -362,6 +376,9 @@ class DataReader(object):
         elif self.statistic == 'shapes':
             self._shape = data
 
+        elif self.statistic == 'cr_affected_pixels':
+            self._pixels_affected = data
+
 
     def read_cr_rate(self):
         """ Method for reading in the incident cosmic ray rate.
@@ -421,8 +438,8 @@ class DataReader(object):
 
         data['mjd'] = [val.mjd for val in data['date']]
         date_index = pd.DatetimeIndex([val.iso for val in data['date']])
-        LOG.info(len(date_index))
-        for key in data.keys():
-            LOG.info('key: {} shape: {}'.format(key, len(data[key])))
+        # # LOG.info(len(date_index))
+        # for key in data.keys():
+        #     LOG.info('key: {} shape: {}'.format(key, len(data[key])))
         self.data_df = pd.DataFrame(data, index = date_index)
         self.data_df.sort_index(inplace=True)
