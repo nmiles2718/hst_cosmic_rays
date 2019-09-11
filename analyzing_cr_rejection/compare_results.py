@@ -63,7 +63,7 @@ def create_data_objects(flist):
 	return obj
 
 
-def make_MEF(fname, hdf5file1=None, hdf5file2=None):
+def make_MEF(fname, hdf5file1=None, hdf5file2=None, params1=None, params2=None):
 	"""
 	Parameters
 	----------
@@ -96,6 +96,7 @@ def make_MEF(fname, hdf5file1=None, hdf5file2=None):
 		params = '_'.join(os.path.basename(hdf5file1).split('.hdf5')[0].split('_')[-3:])
 		hdr1.fromkeys(metadata1)
 		hdr1['EXTNAME'] = 'CRLABEL'
+		hdr1['PARAMS'] = params1
 		hdu_list.append(fits.ImageHDU(header=hdr1, data=label1))
 	if hdf5file2 is not None:
 		label2, metadata2 = label_from_file(
@@ -108,6 +109,7 @@ def make_MEF(fname, hdf5file1=None, hdf5file2=None):
 		params = '_'.join(os.path.basename(hdf5file2).split('.hdf5')[0].split('_')[-3:])
 		hdr2.fromkeys(metadata2)
 		hdr2['EXTNAME'] = 'CRLABEL'
+		hdr2['PARAMS'] = params2
 		hdu_list.append(fits.ImageHDU(header=hdr2, data=label2))
 	LOG.info(f"{hdu_list.info()}")
 	hdu_list.writeto(f"{fname.replace('_flt.fits', '_all.fits')}", overwrite=True)
@@ -166,8 +168,8 @@ def examine_label(dirname=_RESULTS_DIR, exptime=60.0):
 	print(len(dataset1), len(dataset2))
 
 	for f1, f2 in zip(dataset1, dataset2):
-		make_MEF(fname=f1, hdf5file1=file1)
-		make_MEF(fname=f2, hdf5file2=file2)
+		make_MEF(fname=f1, hdf5file1=file1, params1=params1)
+		make_MEF(fname=f2, hdf5file2=file2, params2=params2)
 		
 
 def exptime_summary(dh, title=''):
