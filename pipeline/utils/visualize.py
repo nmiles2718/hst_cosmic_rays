@@ -158,7 +158,7 @@ class Visualizer(object):
         if ax is None:
             fig, ax = self.mk_fig(nrows=1, ncols=1)
         else:
-            fig = None
+            fig = ax.get_figure()
 
         if logy:
             # self.ax.step(edges[:-1], h.compute(), color='r')

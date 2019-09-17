@@ -19,6 +19,7 @@ ACS_WFC:
     readout_time: 50.0
     gain_keyword: 'ATODGN*'
     detector_size: 37.748
+    pixel_size: 15
 ACS_HRC:
   search_pattern: '/data/ACS/HRC/mastDownload/HST/*/*flt.fits'
   hdf5_files:
@@ -42,6 +43,7 @@ ACS_HRC:
     readout_time: 15.0
     gain_keyword: 'ATODGN*'
     detector_size: 4.624
+    pixel_size: 21
 NICMOS_NIC1:
   search_pattern: '/data/NICMOS/NIC1/mastDownload/HST/*/*ima.fits'
   hdf5_files:
@@ -116,6 +118,7 @@ STIS_CCD:
     readout_time: 15.0
     gain_keyword: 'ATODGAIN'
     detector_size: 4.624
+    pixel_size: 21
 
 WFC3_IR:
   search_pattern: '/data/WFC3/IR/mastDownload/HST/*/*ima.fits'
@@ -157,6 +160,8 @@ WFC3_UVIS:
     readout_time: 50.0
     gain_keyword: 'ATODGN*'
     detector_size: 37.804
+    pixel_size: 15
+
 
 WFPC2:
   search_pattern: '/data/WFPC2/mastDownload/HST/*/*c0m.fits'
@@ -180,6 +185,7 @@ WFPC2:
     readout_time: 30
     gain_keyword: 'ATODGAIN'
     detector_size: 5.76
+    pixel_size: 15
 
 grp_names:
   cr_affected_pixels: cr_affected_pixels
