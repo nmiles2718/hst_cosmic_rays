@@ -101,7 +101,7 @@ parser.add_argument('-store_downloads',
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
-                    level=logging.DEBUG)
+                    )
 LOG = logging.getLogger('CosmicRayPipeline')
 LOG.setLevel(logging.INFO)
 
@@ -109,7 +109,7 @@ LOG.setLevel(logging.INFO)
 class CosmicRayPipeline(object):
     def __init__(self, aws=None, analyze=None, download=None, ccd=None,
                  chunks=None, ir=None, instr=None, initialize=None,
-                 process=None, store_downloads=None, use_dq=None):
+                 process=None, store_downloads=None, use_dq=None, test=None):
 
         # Initialize Args
         self._aws = aws
@@ -134,9 +134,14 @@ class CosmicRayPipeline(object):
             'analysis': 0
         }
 
-        self._cfg_file = os.path.join(self._base,
-                                     'CONFIG',
-                                     'pipeline_config.yaml')
+        if test:
+            self._cfg_file = os.path.join(self._base,
+                                        'CONFIG',
+                                        'testing_pipeline_config.yaml')
+        else:
+            self._cfg_file = os.path.join(self._base,
+                                        'CONFIG',
+                                        'pipeline_config.yaml')
 
         # Load the CONFIG file
         with open(self._cfg_file, 'r') as fobj:
@@ -195,6 +200,10 @@ class CosmicRayPipeline(object):
     @chunks.getter
     def chunks(self):
         return self._chunks
+
+    @chunks.setter
+    def chunks(self, value):
+        self._chunks = value
 
     @property
     def ccd(self):

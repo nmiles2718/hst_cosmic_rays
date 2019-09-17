@@ -55,7 +55,9 @@ class Initializer(object):
 
             with open(cfg_file, 'r') as fobj:
                 cfg = yaml.load(fobj)
-            self._cfg =cfg
+            self._cfg = cfg
+        else:
+            self._cfg = cfg
 
         if instr_cfg is None:
             self._instr_cfg = cfg[instr]
@@ -89,7 +91,6 @@ class Initializer(object):
     def base(self):
         """Base path of the pipleine repository `~/hst_cosmic_rays/`"""
         return self._base
-
 
     @property
     def cfg(self):
@@ -265,11 +266,14 @@ class Initializer(object):
 
         """
         hdf5_files = self.instr_cfg['hdf5_files']
-
         new_flist = defaultdict(list)
         for key in hdf5_files.keys():
             rel_path = hdf5_files[key]
             full_path = os.path.join(self.base, *rel_path.split('/'))
+            if isinstance(chunks, str):
+                fnew = full_path.replace('.hdf5', '_{}.hdf5'.format(chunks))
+                new_flist[key].append(fnew)
+                continue
             i = 0
             while i < chunks:
                 fnew = full_path.replace('.hdf5', '_{}.hdf5'.format(i + 1))
@@ -279,7 +283,7 @@ class Initializer(object):
         for key in new_flist.keys():
             for f in new_flist[key]:
                 if not os.path.isdir(os.path.dirname(f)):
-                    os.mkdir(os.path.dirname(f))
+                    os.makedirs(os.path.dirname(f), exist_ok=True)
 
                 LOG.info(
                     'File structure: /{}'.format(self.cfg['grp_names'][key])

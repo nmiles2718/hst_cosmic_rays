@@ -13,7 +13,6 @@ import numpy as np
 import organize_tools as org_tools
 import pandas as pd
 from stistools import ocrreject
-from stistools import ocrreject
 from tqdm import tqdm
 
 logging.basicConfig(format='%(levelname)-4s '
