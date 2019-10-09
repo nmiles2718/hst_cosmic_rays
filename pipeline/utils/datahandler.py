@@ -315,7 +315,7 @@ class DataReader(object):
 
         return affected_pixels, metadata
 
-    def read_cr_stat(self, fill_value=-999, units=None):
+    def read_cr_stat(self, fill_value=-999, units=None, min_exptime=200):
         """Read in all the data for the specified :py:attr:`statistic`
 
         This method should only be used to read in the following statistics:
@@ -346,15 +346,19 @@ class DataReader(object):
         tmp = []
         for f in self.hdf5_files:
             fobj = h5py.File(f, mode='r')
+            print(list(fobj.keys()))
             grp = fobj[self.statistic]
             for name in grp.keys():
                 dset = grp[name]
-                if not units:
-                    tmp.append(da.from_array(dset, chunks=(15000)))
-                elif units == 'sigmas':
-                    tmp.append(da.from_array(dset[:][0], chunks=(15000)))
-                else:
-                    tmp.append(da.from_array(dset[:][1], chunks=(15000)))
+                if not units and dset.attrs['integration_time'] > min_exptime:
+                    tmp.append(da.from_array(dset, chunks=(25000)))
+                elif units == 'sigmas' and dset.attrs['integration_time'] > min_exptime:
+                    tmp.append(da.from_array(dset[:][0], chunks=(25000)))
+                elif units == 'pixels' and dset.attrs['integration_time'] > min_exptime:
+                    #tmp.append(da.from_array(self.instr_cfg['instr_params']['pixel_size']**2*dset[:][1], chunks=(15000)))
+                    tmp.append(da.from_array(dset[:][1], chunks=(25000)))
+                elif dset.attrs['integration_time'] > min_exptime:
+                    tmp.append(da.from_array(dset[:][1], chunks=(25000)))
         x = da.concatenate(tmp, axis=0)
         # Remove an NaN's and replace them with the fill value
         data = da.ma.fix_invalid(x, fill_value=fill_value)

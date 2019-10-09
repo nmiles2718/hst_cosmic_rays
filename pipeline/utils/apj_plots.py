@@ -7,12 +7,13 @@ from itertools import chain
 from datetime import timedelta
 import glob
 import os
-from astropy.stats import sigma_clipped_stats, LombScargle
+from astropy.stats import sigma_clipped_stats, LombScargle, gaussian_sigma_to_fwhm
 from astropy.io import fits
 from astropy.time import Time
 from astropy.visualization import LinearStretch, ZScaleInterval,\
     AsinhStretch, SqrtStretch, ImageNormalize
-
+import datahandler as dh
+import dask.array as da
 
 from matplotlib import rc
 from matplotlib import ticker
@@ -40,6 +41,27 @@ import metadata
 
 
 APJ_PLOT_DIR = '../../APJ_plots/'
+
+
+def read_data(stat='energy_deposited',min_exptime=50, units=None):
+    reader_wfc = dh.DataReader(instr='ACS_WFC', statistic=stat)
+    reader_hrc = dh.DataReader(instr='ACS_HRC', statistic=stat)
+    reader_wfc3 = dh.DataReader(instr='WFC3_UVIS', statistic=stat)
+    reader_wfpc2 = dh.DataReader(instr='WFPC2', statistic=stat)
+
+    for r in [reader_wfpc2, reader_wfc, reader_hrc, reader_wfc3]:
+        r.find_hdf5()
+
+    reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
+    flist = glob.glob('../../results/STIS_crrejtab_CRSIGMAS/*{}*hdf5'.format(stat))
+    reader_stis.hdf5_files = flist
+    if 'rate' in stat:
+        for r in [reader_wfpc2,reader_stis, reader_wfc, reader_hrc, reader_wfc3]:
+            r.read_cr_rate()
+    else:
+        for r in [reader_wfpc2,reader_stis, reader_wfc, reader_hrc, reader_wfc3]:
+            r.read_cr_stat(units=units, min_exptime=min_exptime)
+    return reader_hrc, reader_stis, reader_wfc, reader_wfpc2, reader_wfc3
 
 def get_solar_min_and_max(noaa_data):
     solar_cycle = {'Cycle 23': None, 'Cycle 24':None}
@@ -168,7 +190,7 @@ def combine_integration_time_info(hrc, stis, wfc, wfpc2, uvis):
     return df
 
 
-def plot_morphology(
+def plot_morph(
         data,
         bins,
         drange,
@@ -183,15 +205,20 @@ def plot_morphology(
         logx=False,
         logy=True,
         lw=1.75,
-        ls='-'
+        ls='-',
+        use_fwhm=False
 ):
     v = visualize.Visualizer()
+    if use_fwhm:
+        data = data * gaussian_sigma_to_fwhm
+
     fig, ax, hist, bins = v.plot_hist(
         data,
         bins=bins,
         c=color,
         range=drange,
         ax=ax,
+        logy=logy,
         label=label,
         normalize=normalize
     )
@@ -250,9 +277,23 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
     fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
     return counts, cut
 
+def compute_basic_stats(hrc, stis, wfc, wfpc2, uvis):
+    labels=['ACS/HRC', 'STIS/CCD', 'ACS/WFC', 'WFPC2', 'WFC3/UVIS']
+    for dset, label in zip([hrc, stis, wfc, wfpc2, uvis],labels):
+      #  avg = da.nanmean(dset, axis=0).compute()
+       # std = da.nanstd(dset, axis=0).compute()
+        #print(f'{label}: {avg}+\-{std}\n')
+        quantiles = da.percentile(dset, q=[25, 50, 75], interpolation='linear').compute()
+        print('Percentiles for {}'.format(label))
+        for val, q in zip(quantiles, [25, 50, 75]):
+            print('{:.0f} {:.4f}'.format(q, val))
 
 def plot_morphology(
-        data,
+        hrc,
+        stis,
+        wfc,
+        wfpc2,
+        uvis,
         bins,
         drange,
         figsize=(6,5),
@@ -262,27 +303,99 @@ def plot_morphology(
         ax=None,
         color=None,
         label=None,
-        normalize=True,
+        normalize=False,
         logx=False,
         logy=True,
         lw=1.75,
-        ls='-'
+        ls='-',
+        xlim=None,
+        ylim=None,
+        fout=None
 ):
+
+    instrument_name=['STIS/CCD','ACS/HRC','ACS/WFC','WFPC2','WFC3/UVIS']
+    CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                            '#f781bf', '#a65628', '#984ea3',
+                            '#999999', '#e41a1c', '#dede00']
     v = visualize.Visualizer()
-    fig, ax, hist, bins = v.plot_hist(
-        data,
-        bins=bins,
-        c=color,
-        range=drange,
-        ax=ax,
-        label=label,
-        normalize=normalize
-    )
-
-
+    for i, data in enumerate([stis, hrc, wfc, wfpc2, uvis]):
+        print('Analyzing distribution for {}'.format(instrument_name[i]))
+        if i == 0: 
+            fig, ax, hist, bins = v.plot_hist(
+                data,
+                bins=bins,
+                c=CB_color_cycle[i],
+                range=drange,
+                logy=logy,
+                label=instrument_name[i],
+                normalize=normalize
+            )
+        else:
+            if instrument_name[i] == 'WFC3/UVIS':
+               #pass 
+                print('removing postlfash')
+                data = data - 12*10.0
+            fig, ax, hist, bins = v.plot_hist(
+                  data,
+                  bins=bins,
+                  c=CB_color_cycle[i],
+                  range=drange,
+                  ax=ax,
+                  logy=logy,
+                  label=instrument_name[i],
+                  normalize=normalize
+             )
+    #ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    #ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+    ax.tick_params(axis='both', which='major', width=1.5, length=5)
+    ax.legend(loc='best',edgecolor='k')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_ylabel('Normalized Bin Count')
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+    if fout is not None:
+        fig.savefig(os.path.join(APJ_PLOT_DIR, fout), format='png', dpi=300)
+    plt.show()
     return fig, ax, hist, bins
 
 
+def orbital_altitude(hrc, stis, wfc, wfpc2, uvis):
+    CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                           '#f781bf', '#a65628', '#984ea3',
+                           '#999999', '#e41a1c', '#dede00']
+    labels = ['STIS/CCD','ACS/HRC', 'ACS/WFC', 'WFPC2', 'WFC3/UVIS']
+    datasets = [stis, hrc, wfc, wfpc2, uvis]
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3.25, 4.25))
+    for dset, label, color in zip(datasets,labels, CB_color_cycle):
+        altitude_df = dset.loc[:, ['mjd', 'altitude_start']]
+        averaged = altitude_df.resample(rule='5D').mean()
+        ax.scatter(averaged.index, averaged['altitude_start'], 
+                    label=label,
+                    s=3,
+                    color=color)
+    sm2 = Time('1995-07-01', format='iso').to_datetime()
+    sm3b = Time('2002-03-01', format='iso').to_datetime()
+    ax.text(x=sm2, y=605, s='SM2',fontsize=10)
+    ax.text(x=sm3b, y=582, s='SM3B', fontsize=10)
+    #ax.axvline(sm2, ls='--', c='k')
+    #ax.axvline(sm3b, ls='--', c='k')
+    ax.set_xlabel('Date',fontsize=10, color='k')
+    ax.set_ylabel('Orbital Altitude [km]',fontsize=10, color='k')
+    ax_leg = ax.legend(loc='upper right', edgecolor='k', fontsize=8)
+    ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+    for i in range(len(ax_leg.legendHandles)):
+         ax_leg.legendHandles[i]._sizes = [15]
+    ax.tick_params(axis='both',labelsize=10, which='both', color='k', labelcolor='k')
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(30)
+        tick.set_ha('right')
+    #ax.set_title('Orbital Decay of HST')
+    fig.savefig(os.path.join(APJ_PLOT_DIR,'orbital_decay.png'), format='png', dpi=300, bbox_inches='tight')
+    plt.show()
 
 def rate_hist(hrc, stis, wfc, wfpc2, uvis):
     fig = plt.figure(figsize=(10,8))
@@ -416,18 +529,20 @@ def cr_rejection_algorithm(
 
 
 def periodogram(hrc, stis, wfc, wfpc2, uvis):
-    fig = plt.figure(figsize=(10,8))
-    gs0 = gridspec.GridSpec(ncols=1, nrows=2, figure=fig)
+    fig = plt.figure(figsize=(3,4))
+    ax = fig.add_subplot(111)
+    gs0 = gridspec.GridSpec(ncols=1, nrows=2, figure=fig, hspace=0.25)
     gs00 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,
-                                            wspace=0.5, subplot_spec=gs0[0])
+                                            wspace=0.55, subplot_spec=gs0[0])
     gs10 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,
-                                            wspace=0.5, subplot_spec=gs0[1])
-    ax1 = fig.add_subplot(gs00[0,1:3])
-    ax2 = fig.add_subplot(gs00[0,3:5])
-    ax3 = fig.add_subplot(gs10[0,:2])
-    ax4 = fig.add_subplot(gs10[0,2:4])
-    ax5 = fig.add_subplot(gs10[0,4:6])
-    axes = [ax1, ax2, ax3, ax4, ax5]
+                                            wspace=0.55, subplot_spec=gs0[1])
+    #ax1 = fig.add_subplot(gs00[0,1:3])
+    #ax2 = fig.add_subplot(gs00[0,3:5])
+    #ax3 = fig.add_subplot(gs10[0,:2])
+    #ax4 = fig.add_subplot(gs10[0,2:4])
+    #ax5 = fig.add_subplot(gs10[0,4:6])
+    axes = [ax, ax, ax, ax, ax]
+    #plt.setp(ax.spines.values(), color='k')
     #fig, axes = plt.subplots(nrows=, ncols=1, figsize=(6,6))
     CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                           '#f781bf', '#a65628', '#984ea3',
@@ -437,7 +552,13 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
     data_out = {}
     peak1 = 0
     peak2 = 0
+    offset = 0.002
+    factor = 0
     for i, (ax, label, dset) in enumerate(zip(axes, labels, datasets)):
+        if i == 1:
+            continue
+        if i == 4:
+            continue
         flags = dset.integration_time.gt(200)
         df = dset[['mjd','incident_cr_rate']][flags]
         smoothed = df.rolling(window='20D', min_periods=15).mean()
@@ -461,16 +582,21 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         peak2 += ls.false_alarm_probability(power[max_power_idx2_full])
         print(max_power_period2, label, max_power_freq2, ls.false_alarm_probability(power[max_power_idx2_full]))
         data_out[label] = (freq, power)
-        ax.plot(freq, power, color=CB_color_cycle[i], label=label)
-        ax.set_xlim(-0.005, 0.04)
+        ax.plot(freq + factor*offset, power, color=CB_color_cycle[i], label=f'{label}+{factor:.0f}*offset', lw=1.5)
+        ax.set_xlim(-0.0025, 0.04)
         xticks =[0, 0.01, 0.02, 0.03,  0.04]
         ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+        ax.yaxis.set_minor_locator(AutoMinorLocator(5))
         ax.set_xticks(xticks)
-        ax.tick_params(axis='x', which='major', width=1.5, length=5)
+        ax.tick_params(axis='both',labelsize=8, which='both', color='k', labelcolor='k')
+       # ax.tick_params(axis='x', which='major', width=1.5, length=5)
         #ax.set_xticklabels(xticks, rotation=45, ha='right')
         #for tick in ax.get_xticklabels():
         #    tick.set_rotation(45)
         ax.set_ylim(0, 0.5)
+        for tick in ax.get_xticklabels():
+            tick.set_rotation(30)
+            tick.set_ha('right')
         peaks, _ = find_peaks(power, height=0.08, distance = 10)
         #for val in peaks:
         #    print(val, freq[val])
@@ -478,15 +604,19 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         #        ax.axvline(freq[val], linestyle='--', color='k', linewidth=1, alpha=0.45)
         #    except Exception:
         #        pass
-        leg = ax.legend(loc='best')
+        leg = ax.legend(loc='best', fontsize=8)
         leg.get_frame().set_edgecolor('k')
-        t = ax.text(0,0,'',fontsize=14)
+        t = ax.text(0,0,'',fontsize=10)
+        factor +=1
+    #ax.grid(linestyle='-', linewidth='0.5', color='k')
     print(f'Average FAP for peak 1 {peak1/5:}')
     print(f'Average FAP for peak 2 {peak2/5:}')
-    fig.text(0.38, 0.02, 'Frequency [cycles/day]', fontproperties=t.get_font_properties())
-    fig.text(0.05, 0.63, 'Lomb-Scargle Power', fontproperties=t.get_font_properties(), rotation='vertical')
-    fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_periodogram.png')
-    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
+    ax.set_ylabel('Lomb-Scargle Power', fontsize=10, color='k')
+    ax.set_xlabel('Frequency [cycles/day]', fontsize=10, color='k')
+    #fig.text(0.32, 0.02, 'Frequency [cycles/day]', fontproperties=t.get_font_properties(), color='white')
+    #fig.text(0.03, 0.63, 'Lomb-Scargle Power', fontproperties=t.get_font_properties(), rotation='vertical', color='white')
+    fout = os.path.join(APJ_PLOT_DIR, 'cr_rate_periodogram_poster_stacked.png')
+    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight',transparent=False)
     plt.show()
     return data_out
 
@@ -494,12 +624,14 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
 def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     v = visualize.Visualizer()
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1,
-                       figsize=(10,8),
+                       figsize=(5,4),
                        sharex=True)
     smooth_type = 'rolling'
     window='90D'
     min_periods=70
-
+    #for ax in [ax1, ax2]:
+    #    ax.grid(linestyle='-', linewidth='0.5', color='k')
+    #    plt.setp(ax.spines.values(), color='k')
     stis_plot_params = {
         'df': stis,
         'legend_label': 'STIS/CCD',
@@ -550,6 +682,9 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
         'window': window,
         'min_periods': min_periods
     }
+    ax1.tick_params(which='both', axis='both', color='k', labelcolor='k')
+    ax2.tick_params(which='both', axis='both', color='k', labelcolor='k')
+    #fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
     #fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
     # datasets = [stis_plot_params, wfpc2_plot_params, wfc_plot_params]
     datasets = [stis_plot_params, wfpc2_plot_params, hrc_plot_params,
@@ -557,8 +692,10 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
     for i,dset in enumerate(datasets):
         fig, ax1 = v.plot_cr_rate_vs_time(**dset,normalize=True,min_exptime=300)
 
-
-
+    ax1.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax1.yaxis.set_minor_locator(AutoMinorLocator(5))
+    ax2.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax2.yaxis.set_minor_locator(AutoMinorLocator(5))
     solar_df = read_solar_data()
     solar_cycle = get_solar_min_and_max(solar_df)
    
@@ -575,18 +712,15 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
              solar_df['sunspot RI smooth'],
              label='Smoothed',
              c='#D81B60')
-
-    for tick in ax1.get_xticklabels():
-        tick.set_visible(True)
-    ax1.xaxis.set_tick_params(which='both', labelbottom=True)
+    ax1.tick_params(labelbottom=False)
     ax1_legend = ax1.legend(loc='best',
                             ncol=3,
-                            labelspacing=0.2,
+                            labelspacing=0.2,fontsize=8,
                             columnspacing=0.5)
     ax1_legend.get_frame().set_edgecolor('k')
 
-    for i in range(len(ax1_legend.legendHandles)):
-        ax1_legend.legendHandles[i]._sizes = [30]
+    for i in range(len(ax1_legend.legendHandles)): 
+        ax1_legend.legendHandles[i]._sizes = [15]
 
     for cycle in solar_cycle.keys():
             # Min
@@ -597,19 +731,24 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis):
             ax1.axvline(solar_cycle[cycle][1], ls='--', color='k')
             ax2.axvline(solar_cycle[cycle][1], ls='--', color='k')
 
-    ax2_legend = ax2.legend(loc='best')
+    ax2_legend = ax2.legend(loc='best', fontsize=8)
     ax2_legend.get_frame().set_edgecolor('k')
-
-    date_min = Time('1991-12-01', format='iso')
-    date_max = Time('2020-01-01', format='iso')
+    
+    for tick in ax2.get_xticklabels():
+        tick.set_rotation(30)
+        tick.set_ha('right')
+    
+    date_min = Time('1990-12-01', format='iso')
+    date_max = Time('2019-10-01', format='iso')
     ax1.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
     ax2.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
-    ax2.set_ylabel('$R_I$', fontsize=14)
-    ax2.set_xlabel('Date', fontsize=14)
-    ax1.set_ylim(0.75, 1.3)
-    ax1.set_ylabel('Mean Normalized CR Rates')
-    fout = os.path.join(APJ_PLOT_DIR,'cr_rate_vs_time.png')
-    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight')
+    ax2.set_ylabel('$R_I$', fontsize=10, color='k')
+    ax2.set_xlabel('Date', fontsize=10,color='k')
+    ax1.set_ylim(0.6, 1.4)
+    ax1.set_ylabel('Mean Normalized CR Rate',fontsize=10, color='k')
+    
+    fout = os.path.join(APJ_PLOT_DIR,'cr_rate_vs_time_poster.png')
+    fig.savefig(fout, format='png', dpi=350, bbox_inches='tight',transparent=False)
     plt.show()
 
 

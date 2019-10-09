@@ -145,13 +145,16 @@ class Visualizer(object):
         """
         if logx:
             data = da.log10(data)
-
+        
         if range is not None:
             h, edges = da.histogram(data, bins=bins,
                                     range=range, density=normalize)
         else:
-            h, edges = da.histogram(data, bins=bins, density=normalize)
+            h, edges = da.histogram(data, bins=bins)
         hist = h.compute()
+        
+        #if normalize:
+        #    hist = hist/hist.max()
 
         # Create an axis if it doesnt exists
         lw = 1.75
@@ -365,7 +368,7 @@ class Visualizer(object):
         sigma_mask = (exptime_cut['incident_cr_rate'] > mean - 3*std) & (exptime_cut['incident_cr_rate'] < mean + 5*std)
         sigma_cut = exptime_cut[sigma_mask]
 
-        df1 = sigma_cut.loc[:, ['incident_cr_rate','mjd']]
+        df1 = exptime_cut.loc[:, ['incident_cr_rate','mjd']]
         if normalize:
             LOG.info('Normalizing the date by the median value')
             df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/mean
@@ -400,9 +403,9 @@ class Visualizer(object):
                          for val in avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['mjd']],
                         avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate']+offset,
                         label=legend_label,
-                        s=10,
+                        s=2,
                         color=CB_color_cycle[i])
-
+        ax.tick_params(labelbottom=False)
         # ax.set_xlabel('Date')
         ax.set_ylabel('Cosmic Ray Rate [$CR/s/cm^2$]', fontsize=14)
         # ax.set_title('Smoothed Cosmic Ray Rate')
