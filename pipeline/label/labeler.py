@@ -12,6 +12,7 @@ from astropy.stats import sigma_clipped_stats, median_absolute_deviation
 from astropy.visualization import ImageNormalize, LinearStretch, ZScaleInterval
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import matplotlib.patches as patches
 import numpy as np
 from scipy import ndimage
 
@@ -167,14 +168,17 @@ class Label(object):
                 # If the data has units of DN, convert to electrons
                 ext_data = [datum * avg_gain for datum in ext_data]
             self.sci = np.concatenate(ext_data, axis=0)
+            self.sci[self.sci < 0] = 0
 
         elif extname == 'dq' and ext_data:
             self.dq = np.concatenate(ext_data, axis=0)
 
 
+
+
     def ccd_labeling(self, use_dq=True, dq_flag=8192, do_bitwise_comp=True,
                       deblend=False, threshold_l=2, threshold_u = 5000,
-                      structure_element=np.ones((3, 3))):
+                     pix_thresh=None, structure_element=np.ones((3, 3))):
         """ Run a label analysis on the DQ or SCI arrays of CCD dark frames
 
         If performed on the DQ arrays, there will be a bitwise comparison to
@@ -222,6 +226,13 @@ class Label(object):
         """
         if use_dq:
             array_to_label = self.dq
+        elif pix_thresh is not None:
+            LOG.info('Generating the label with an'
+                f' absolute threshold of {pix_thresh}')
+            # Create an array of 1's and 0's using the SCI data
+            array_to_label = np.where(
+                self.sci > pix_thresh, 1, 0
+            )
         else:
             # Generate some stats to use for the source detection
             mean, median, std = sigma_clipped_stats(self.sci,
@@ -307,8 +318,8 @@ class Label(object):
 
 
         """
-        grid = plt.GridSpec(1, 2, wspace=0.2, hspace=0.15)
-        fig = plt.figure(figsize=(8, 5))
+        grid = plt.GridSpec(1, 2, wspace=0.05, hspace=0.)
+        fig = plt.figure(figsize=(5, 3))
         ax1 = fig.add_subplot(grid[0, 0])
         ax2 = fig.add_subplot(grid[0, 1], sharex=ax1, sharey=ax1)
         for ax in [ax1, ax2]:
@@ -322,7 +333,15 @@ class Label(object):
                                labelleft=False)
         return fig, ax1, ax2
 
-    def plot(self, xlim=None, ylim=None, fout=None, save=False):
+    def plot(
+            self,
+            instr=None,
+            xlim=None,
+            ylim=None,
+            fout=None,
+            save=False,
+            centroids=None
+    ):
         """ Plot the label
 
         Parameters
@@ -338,6 +357,9 @@ class Label(object):
 
         save : bool
             If True, save the generated plot to the plots directory
+
+        instr: str
+            Instrument name to use in the title of the plot
 
 
         Returns
@@ -371,13 +393,42 @@ class Label(object):
         if ylim is not None:
             ax1.set_ylim(ylim)
 
-        ax1.set_title('SCI Extension')
-        ax2.set_title('Cosmic Ray Segmentation Map')
+        if centroids is not None:
+            for centroid in centroids:
+                patch1 = patches.Rectangle(
+                    xy=centroid,
+                    width=1,
+                    height=1,
+                    fill=False,
+                    lw=2,
+                    color='red'
+                )
+                patch2 = patches.Rectangle(
+                    xy=centroid,
+                    width=1,
+                    height=1,
+                    fill=False,
+                    lw=2,
+                    color='red'
+                )
+                ax1.add_patch(patch1)
+                ax2.add_patch(patch2)
+        for ax in [ax1, ax2]:
+            ax.grid(False)
+            ax.yaxis.set_major_locator(plt.NullLocator())
+            ax.xaxis.set_major_locator(plt.NullLocator())
+
+        ax1.set_title('SCI Extension', fontsize=10)
+        ax2.set_title('CR Segmentation Map', fontsize=10)
+        fig.suptitle('{}'.format(instr), y=0.96, )
         if save:
             fig.savefig(fout,
-                        format='png',
-                        dpi=300, bbox_inches='tight')
-
+                        format='eps',
+                        dpi=150,
+                        bbox_inches='tight',
+                        transparent=True)
+        self.ax1 = ax1
+        self.ax2 = ax2
         plt.show()
 
 
@@ -391,11 +442,12 @@ class CosmicRayLabel(Label):
     fname : str
         Name of FITS file
 
-    instr : str
-        Instrument currently being processed
+    gain_keyword: str
+        Keyword to use for extracting gain conversion. Currently only
+        the average gain across all readout amplifiers is used for the
+        conversion of DN to ELECTRONS. Additionally, the conversion is only
+        applied if the BUNIT keyword is DN or COUNTS.
 
-    instr_cfg : dict
-        Instrument specific configuration object
 
 
     """

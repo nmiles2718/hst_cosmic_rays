@@ -41,6 +41,9 @@ class GenerateMetadata(object):
     fname : str
         Name of FITS file
 
+    instr :
+        Instrument to analyze (e.g. STIS_CCD, ACS_HRC, ACS_WFC, WFPC2, WFC3_UVIS)
+
     instr_cfg : dict
         Instrument specific configuration object
 
@@ -247,6 +250,7 @@ class GenerateMetadata(object):
             self.metadata['altitude'] = np.asarray(altitude_list)
             self.metadata['time_intervals'] = time_intervals
         else:
+            LOG.info('SPT file not found, place it in the data directory')
             # If the SPT file for some reason doesn't exist, save NaNs
             self.metadata['altitude'] = np.nan
             self.metadata['latitude'] = np.nan

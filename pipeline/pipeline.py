@@ -416,6 +416,8 @@ class CosmicRayPipeline(object):
             dask.delayed(self.run_labeling_single)(f) for f in self.flist
         ]
 
+        dask.visualize(*delayed_objects, filename='labeling_graph.png')
+
         results = list(dask.compute(*delayed_objects,
                                     scheduler='processes',
                                     num_workers=os.cpu_count()))

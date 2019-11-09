@@ -33,10 +33,10 @@ class Stats(object):
 
     Parameters
     ----------
-    cr_label : :py:class:`~label.labeler.CosmicRayLabel`
-        The resulting :py:class:`~label.labeler.CosmicRayLabel`
+    cr_label : :py:class:`~label.labeler.Label`
+        The resulting :py:class:`~label.labeler.Label`
         object after executing the
-        :py:meth:`~label.labeler.CosmicRayLabel.run_ccd_label` method.
+        :py:meth:`~label.labeler.Label.run_ccd_label` method.
 
     """
 

@@ -20,7 +20,7 @@ from matplotlib import ticker
 import matplotlib as mpl
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
-mpl.use('qt5agg')
+# mpl.use('qt5agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import matplotlib.gridspec as gridspec
@@ -35,7 +35,7 @@ import sunpy.net
 from sunpy.timeseries import TimeSeries
 from scipy.ndimage import median_filter, gaussian_filter
 from scipy.signal import find_peaks
-import visualize
+# import visualize
 import metadata
 
 
@@ -53,9 +53,15 @@ def read_data(stat='energy_deposited',min_exptime=50, units=None):
         r.find_hdf5()
 
     reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
-    flist = glob.glob('../../results/STIS_crrejtab_CRSIGMAS/*{}*hdf5'.format(stat))
+    flist = glob.glob(
+        '../../results/STIS_crrejtab_CRSIGMAS/*{}*hdf5'.format(stat)
+    )
     reader_stis.hdf5_files = flist
     if 'rate' in stat:
+        flist = glob.glob(
+            '../../results/STIS_crrejtab_CRSIGMAS/*cr_rate*hdf5'
+        )
+        reader_stis.hdf5_files = flist
         for r in [reader_wfpc2,reader_stis, reader_wfc, reader_hrc, reader_wfc3]:
             r.read_cr_rate()
     else:
@@ -449,7 +455,7 @@ def cr_rejection_algorithm(
         box_w=10,
         box_h=10,
         figsize=(8,6),
-        fout='example_of_cr_rejection.png'
+        fout='example_of_cr_rejection_transparent_poster.png'
 ):
     if flist is None:
         flist = glob.glob(
@@ -465,18 +471,18 @@ def cr_rejection_algorithm(
 
 
     fig = plt.figure(figsize=figsize)
-    gs0 = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, wspace=0.25)
+    gs0 = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, wspace=0.4)
     gs00 = gridspec.GridSpecFromSubplotSpec(
         nrows=4,
         ncols=3,
-        wspace=0.05,
-        hspace=0.5,
+        wspace=0.0,
+        hspace=0.0,
         subplot_spec=gs0[0]
     )
-    fig.suptitle(
-        'Comparing Pixel Values Across 12 Dark Frames',
-        fontweight='bold'
-    )
+    # fig.suptitle(
+    #     'Comparing Pixel Values Across 12 Dark Frames',
+    #     fontweight='bold', color='white'
+    # )
     scatter_ax = fig.add_subplot(gs0[0, 1])
     # scatter_ax.set_title(rf'Pixel Value at ({x},{y})')
     scatter_ax.scatter([i+1 for i in range(12)], pix_data, label='Pixel Value')
@@ -489,17 +495,20 @@ def cr_rejection_algorithm(
     scatter_ax.axhline(np.median(pix_data),
                        ls='dashed',
                        c='k',
-                       label=rf'median: {np.median(pix_data):.3f} $e^-$')
-    scatter_ax.set_xlabel('Image Number')
-    scatter_ax.set_ylabel(r'Signal [$e^-$]')
-    scatter_ax.legend(loc='upper right', edgecolor='k')
-
-
+                       label=rf'Med: {np.median(pix_data):.3f} $e^-$')
+    scatter_ax.set_xlabel('Image Number', color='k')
+    scatter_ax.set_ylabel(r'Signal [$e^-$]', color='k')
+    leg = scatter_ax.legend(loc='upper right', edgecolor='k', fontsize=8)
+    # scatter_ax.grid(ls='-',color='k')
+    # plt.setp(scatter_ax.spines.values(), color='k')
+    # for text in leg.get_texts():
+    #     plt.setp(text, color='w')
+    # ax.set_ylim(0, noaa_df['sunspot RI'].max() + 30)
+    scatter_ax.tick_params(which='both', axis='both', color='k',
+                   labelcolor='k')
     img_subplots = [
         fig.add_subplot(gs00[i,j]) for i in range(4) for j in range(3)
     ]
-
-
 
     norm = ImageNormalize(
         img_data[0],
@@ -508,11 +517,11 @@ def cr_rejection_algorithm(
         vmax=80
     )
     mk_patch = lambda x, y: patches.Rectangle(
-        (x-0.5,y-0.5), width=1, height=1, fill=False, color='r', lw=1.25
+        (x-0.5,y-0.5), width=1, height=1, fill=False, color='r', lw=1.4
     )
     for i, ax in enumerate(img_subplots):
         ax.grid(False)
-        ax.set_title(f"{i+1}", fontsize=12)
+        # ax.set_title(f"{i+1}", fontsize=12, color='white')
         ax.get_yaxis().set_visible(False)
         ax.get_xaxis().set_visible(False)
         im = ax.imshow(img_data[i], norm=norm, cmap='gray', origin='lower')
@@ -524,7 +533,9 @@ def cr_rejection_algorithm(
 
     fig.savefig(os.path.join(APJ_PLOT_DIR, fout),
                 format='png',
-                dpi=300, bbox_inches='tight')
+                dpi=300,
+                bbox_inches='tight',
+                transparent=False)
 
 
 
@@ -990,7 +1001,7 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
 
     }
 
-    rc('text', usetex=True)
+    # rc('text', usetex=True)
 
     data = []
 
@@ -1013,8 +1024,14 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
             vmax=data_dict_cr[key]['interval'][1]
         )
 
-    v = visualize.Visualizer()
-    fig, axes = v.mk_fig(nrows=2, ncols=3, figsize=(9, 6))
+    # v = visualize.Visualizer()
+    # fig, axes = v.mk_fig(nrows=2, ncols=3, figsize=(9, 6))
+    fig = plt.figure(figsize=(8, 4))
+    gs0 = gridspec.GridSpec(ncols=3, nrows=2, figure=fig, hspace=0.05, wspace=0.3)
+    # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(9,6))
+    axes = [
+        fig.add_subplot(gs0[i, j]) for i in range(2) for j in range(3)
+    ]
 
     # Plot the thickness data
     for ax, key in zip(axes[:3], data_dict_th.keys()):
@@ -1031,17 +1048,21 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
                                              cmap='plasma', origin='lower')
         ax.set_title('{}'.format(key.replace('_','/').upper()))
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes('bottom', size='5%', pad=0.05)
+        # cax = divider.append_axes('bottom', size='5%', pad=0.05)
+        # cbar = fig.colorbar(data_dict_th[key]['im'], cax=cax,
+        #                     ticks=data_dict_th[key]['cbar_ticks'],
+        #                     orientation='horizontal')
+        cax = divider.append_axes('right', size='5%', pad=0.05)
         cbar = fig.colorbar(data_dict_th[key]['im'], cax=cax,
                             ticks=data_dict_th[key]['cbar_ticks'],
-                            orientation='horizontal')
+                            orientation='vertical')
         # cbar.ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1f'))
         # cbar.ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         cbar_labels = [str(x) for x in data_dict_th[key]['cbar_ticks']]
         # cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
-        cbar.ax.set_xticklabels(cbar_labels, rotation=45, fontsize=10)
+        cbar.ax.set_yticklabels(cbar_labels, ha='left', rotation=0, fontsize=8)
 
-        cbar.set_label(r'Thickness $[\mu m]$')
+        cbar.set_label(r'Thickness $[\mu m]$', fontsize=10)
     # fout = os.path.join(APJ_PLOT_DIR, 'thickness_all_instr.png')
     # fig.savefig(fout,
     #             transparent=True,
@@ -1062,13 +1083,18 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
                                             cmap='plasma', origin='lower')
 
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes('bottom', size='5%', pad=0.05)
+        # cax = divider.append_axes('bottom', size='5%', pad=0.05)
+        # cbar = fig.colorbar(data_dict_cr[key]['im'], cax=cax,
+        #                     ticks=data_dict_cr[key]['cbar_ticks'],
+        #                     orientation='horizontal')
+
+        cax = divider.append_axes('right', size='5%', pad=0.05)
         cbar = fig.colorbar(data_dict_cr[key]['im'], cax=cax,
                             ticks=data_dict_cr[key]['cbar_ticks'],
-                            orientation='horizontal')
+                            orientation='vertical')
         cbar_labels = [str(x) for x in data_dict_cr[key]['cbar_ticks']]
-        cbar.ax.set_xticklabels(cbar_labels, rotation=45, fontsize=10)
-        cbar.set_label(r'Number of CR Strikes')
+        cbar.ax.set_yticklabels(cbar_labels,ha='left', rotation=0, fontsize=8)
+        cbar.set_label(r'Num. of CR Strikes', fontsize=10)
 
     # Add a colorbar to show the image scaling
     # divider1 = make_axes_locatable(ax1)
@@ -1103,16 +1129,62 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
     # #              size=16, weight='bold')
     # fig1.savefig('cr_heat_map_WFC.png',
     #              transparent=True, format='png', dpi=350, bbox_inches='tight')
-    fout = os.path.join(APJ_PLOT_DIR, 'cr_th_all_instr.png')
+    fout = os.path.join(APJ_PLOT_DIR, 'cr_th_all_instr_proceedings.eps')
     fig.savefig(fout,
-                 transparent=True,
-                 format='png',
-                 dpi=350,
-                 bbox_inches='tight')
+                 format='eps',
+                 dpi=150, bbox_inches='tight')
     plt.show()
 
-def plot_example_dark():
-    pass
+def plot_example_darks(hrc=None, wfc=None, wfpc2=None, stis=None, uvis=None):
+    hrc = '/Users/nmiles/hst_cosmic_rays/data/ACS/HRC/mastDownload/HST/j8ba0hrpq/j8ba0hrpq_flt.fits'
+    wfc = '/Users/nmiles/hst_cosmic_rays/data/ACS/WFC/j8jbrcgrq_flt.fits'
+    stis = '/Users/nmiles/hst_cosmic_rays/data/STIS/STIS_grazing_CR/o3sl01pcq_flt.fits'
+    wfpc2 = '/Users/nmiles/hst_cosmic_rays/data/WFPC2/mastDownload/HST/u21y2801t/u21y2801t_c0m.fits'
+    uvis = '/Users/nmiles/hst_cosmic_rays/data/WFC3/UVIS/icfcafaaq_blv_tmp.fits'
+
+    fig = plt.figure(figsize=(7,5))
+    gs0 = gridspec.GridSpec(ncols=5, nrows=1, figure=fig, hspace=0, wspace=0)
+    # gs00 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6, hspace=0,
+    #                                         wspace=0., subplot_spec=gs0[0])
+    # gs10 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6, hspace=0,
+    #                                         wspace=0., subplot_spec=gs0[1])
+    # ax1 = fig.add_subplot(gs00[0, 1:3])
+    # ax2 = fig.add_subplot(gs00[0, 3:5])
+    # ax3 = fig.add_subplot(gs10[0, :2])
+    # ax4 = fig.add_subplot(gs10[0, 2:4])
+    # ax5 = fig.add_subplot(gs10[0, 4:6])
+    ax1 = fig.add_subplot(gs0[0])
+    ax2 = fig.add_subplot(gs0[1])
+    ax3 = fig.add_subplot(gs0[2])
+    ax4 = fig.add_subplot(gs0[3])
+    ax5 = fig.add_subplot(gs0[4])
+    axes = [ax1, ax2, ax3, ax4, ax5]
+    labels = ['ACS/HRC', 'ACS/WFC', 'STIS/CCD', 'WFPC2', 'WFC3/UVIS']
+    datasets = [hrc, wfc, stis, wfpc2, uvis]
+
+    for dset, label, ax in zip(datasets, labels, axes):
+        with fits.open(dset) as hdu:
+            data = hdu[1].data
+            norm = ImageNormalize(data, stretch=LinearStretch(), interval=ZScaleInterval())
+            ax.imshow(data, norm=norm, origin='lower', cmap='gray')
+            ax.yaxis.set_major_locator(plt.NullLocator())
+            ax.xaxis.set_major_locator(plt.NullLocator())
+            ax.grid(False)
+            ax.set_xlim((100,400))
+            ax.set_ylim((100,400))
+            # ax.text(x=120,y=356, s=label, color='#F4CC70',fontsize=8, fontweight='medium', backgroundcolor='white')
+            # ax.set_title(label)
+
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR, 'example_darks_transparent.png'),
+        format='png',
+        dpi=350,
+        bbox_inches='tight',
+        transparent=True)
+
+    plt.show()
+
+
 
 
 def get_solar_min_and_max(noaa_data):
@@ -1159,12 +1231,15 @@ def read_solar_data():
     return df
 
 
-def plot_solar_cycle(smoothed=True, figsize=(5,4), save=True):
-    v = visualize.Visualizer()
+def plot_solar_cycle(smoothed=True, figsize=(6,4), save=True):
+    # v = visualize.Visualizer()
     noaa_df = read_solar_data()
     solar_cycles = get_solar_min_and_max(noaa_data=noaa_df)
-    fig, ax = v.mk_fig(nrows=1, ncols=1, figsize=figsize)
+    # fig, ax = v.mk_fig(nrows=1, ncols=1, figsize=figsize)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
     fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
+    ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(5))
     ax.plot(noaa_df.index.values,
             noaa_df['sunspot RI'],
             label='Monthly Mean',
@@ -1191,7 +1266,7 @@ def plot_solar_cycle(smoothed=True, figsize=(5,4), save=True):
                )
 
 
-    ax.text(cycle23_max + timedelta(days=2*365), 150, s='Cycle 23',
+    ax.text(cycle23_max + timedelta(days=2*365), 150, s='Cycle 23',color='white',
             fontsize=12)
 
     predicted_cycle24_end = Time('2019-06-01', format='iso').to_datetime()
@@ -1199,7 +1274,7 @@ def plot_solar_cycle(smoothed=True, figsize=(5,4), save=True):
                facecolor='r',
                alpha=0.2,
                )
-    ax.text(cycle24_max - timedelta(days=365), 150, s='Cycle 24',
+    ax.text(cycle24_max - timedelta(days=365), 150, s='Cycle 24',color='white',
             fontsize=12)
 
     operational_coverage_start = Time('1994-01-01', format='iso').to_datetime()
@@ -1207,17 +1282,20 @@ def plot_solar_cycle(smoothed=True, figsize=(5,4), save=True):
                facecolor='r',
                alpha=0.0,hatch='/'
                )
-
+    # launch_date = Time('1990-04-24', format='iso').to_datetime()
     ax.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
-    ax.set_xlabel('Date')
-    ax.set_ylabel('$R_I$')
-    leg = ax.legend(loc='best')
+    ax.set_xlabel('Date', color='white')
+    ax.set_ylabel('$R_I$', color='white')
+    leg = ax.legend(loc='best', edgecolor='white')
+    # for text in leg.get_texts():
+    #     plt.setp(text, color='w')
     ax.set_ylim(0, noaa_df['sunspot RI'].max() + 30)
+    ax.tick_params(which='both', axis='both', color='white', labelcolor='white')
 
     # ax.set_title('International Sunspot Number')
     if save:
-        fout = os.path.join(APJ_PLOT_DIR, 'solar_cycle.png')
-        fig.savefig(fout,format='png', dpi=300,bbox_inches='tight')
+        fout = os.path.join(APJ_PLOT_DIR, 'solar_cycle_poster.png')
+        fig.savefig(fout,format='png', dpi=300,bbox_inches='tight', transparent=True)
     # ax.set_xticklabels(ax.get_xticklabels(), rotation=20, ha='left')
 
 
