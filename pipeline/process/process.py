@@ -544,7 +544,7 @@ class ProcessCCD(object):
 
 
             results = [dask.delayed(self.ACS)(d, i) for d, i in pairs]
-            dask.visualize(*results, filename='cr_processing_graph.png')
+            # dask.visualize(*results, filename='cr_processing_graph.png')
             results = list(dask.compute(*results,
                                         scheduler='processes',
                                         num_workers=os.cpu_count()))
@@ -561,14 +561,14 @@ class ProcessCCD(object):
 
             # WFC3 only has one CCDTAB, so we've downlodaed it locally already
             results = [dask.delayed(self.WFC3)(d, i) for d, i in pairs]
-            dask.visualize(*results, filename='cr_processing_graph.png')
+            # dask.visualize(*results, filename='cr_processing_graph.png')
             results = dask.compute(*results,
                                    scheduler='processes',
                                    num_workers=os.cpu_count())
 
         elif 'stis' in self.instr.lower():
             results = [dask.delayed(self.STIS)(d, i) for d, i  in pairs]
-            dask.visualize(*results, filename='cr_processing_graph.png')
+            # dask.visualize(*results, filename='cr_processing_graph.png')
 
             results = dask.compute(*results,
                          scheduler='processes',
@@ -726,9 +726,7 @@ class ProcessIR(object):
         results = [dask.delayed(self.write_out)(fname) for fname in self.flist]
         dask.compute(*results)
 
-#
-#
-#
+
 if __name__ == "__main__":
     # For debugging purposes
     flist = glob.glob('/ifs/missions/projects/plcosmic/hst_cosmic_rays/data/ACS/WFC/mastDownload/HST/*/*flt.fits')

@@ -57,10 +57,10 @@ def main(instr):
 
     for r in [rates, size, energy]:
         r.find_hdf5()
-    if 'STIS' in instr.upper():
-        for r in [rates, size, energy]:
-            for i,f in enumerate(r.hdf5_files):
-                r.hdf5_files[i] = f.replace('STIS','STIS_crrejtab_CRSIGMAS')
+    # if 'STIS' in instr.upper():
+    #     for r in [rates, size, energy]:
+    #         for i,f in enumerate(r.hdf5_files):
+    #             r.hdf5_files[i] = f.replace('STIS','STIS/stis_saa_results/')
     
     print(rates.hdf5_files)
     print(size.hdf5_files)

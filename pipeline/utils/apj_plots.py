@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from collections import Iterable
+import datetime as dt
 import logging
 from itertools import chain
 from datetime import timedelta
@@ -10,12 +11,22 @@ import os
 from astropy.stats import sigma_clipped_stats, LombScargle, gaussian_sigma_to_fwhm
 from astropy.io import fits
 from astropy.time import Time
+from astropy.wcs import WCS
 from astropy.visualization import LinearStretch, ZScaleInterval,\
-    AsinhStretch, SqrtStretch, ImageNormalize
+    LogStretch, SqrtStretch, ImageNormalize
+import costools
 import datahandler as dh
+import sys
+sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline/')
 import dask.array as da
+from process import process
+from label import labeler
 
+import matplotlib as mpl
+mpl.rcParams['hatch.linewidth'] = 0.6
 from matplotlib import rc
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
 from matplotlib import ticker
 import matplotlib as mpl
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
@@ -26,6 +37,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.gridspec as gridspec
 plt.style.use('ggplot')
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import  inset_axes, zoomed_inset_axes
 import matplotlib.patches as patches
 
 import numpy as np
@@ -40,7 +52,47 @@ import metadata
 
 
 
-APJ_PLOT_DIR = '../../APJ_plots/'
+COSMICRAY_ML = '/Users/nmiles/hst_cosmic_rays/cosmicrayml/'
+APJ_PLOT_DIR = '/Users/nmiles/hst_cosmic_rays/APJ_plots/'
+
+
+def plot_cosmicrayml_pointins(data_dict, vmins=[0,0], vmaxes=[1000, 1000]):
+    norms = {}
+    wcs_info = {}
+    for key, vmin, vmax in zip(data_dict.keys(), vmins, vmaxes):
+        norm = ImageNormalize(
+            data_dict[key].data,
+            stretch=LogStretch(),
+            vmin=vmin,
+            vmax=vmax
+        )
+        norms[key] = norm
+        img_wcs = WCS(data_dict[key].header, data_dict[key])
+        wcs_info[key] = img_wcs
+
+    fig = plt.Figure()
+    keys = list(wcs_info.keys())
+    ax = fig.add_subplot(1,2,1, projection=wcs_info[keys[0]])
+    ax1 = fig.add_subplot(1,2,2, projection=wcs_info[keys[1]])
+
+    for key, ax in zip(keys,[ax,ax1]):
+        ax.imhow(data_dict[key].data, norm=norms[key], origin='lower', cmap='gray')
+
+
+
+
+def get_cosmicrayml_pointings(
+        dirname='/Users/nmiles/hst_cosmic_rays/cosmicrayml/stellar_data/N44-CENTER'
+):
+    flist = glob.glob(f"{dirname}/pointing?/combined*drc_sci.fits")
+    data_dict = {}
+
+    for f in flist:
+        data_dict[f"{os.path.basename(f)}"] = fits.open(f)
+
+
+    return data_dict
+
 
 
 def read_data(stat='energy_deposited',min_exptime=50, units=None):
@@ -48,20 +100,21 @@ def read_data(stat='energy_deposited',min_exptime=50, units=None):
     reader_hrc = dh.DataReader(instr='ACS_HRC', statistic=stat)
     reader_wfc3 = dh.DataReader(instr='WFC3_UVIS', statistic=stat)
     reader_wfpc2 = dh.DataReader(instr='WFPC2', statistic=stat)
+    reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
 
     for r in [reader_wfpc2, reader_wfc, reader_hrc, reader_wfc3]:
         r.find_hdf5()
-
-    reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
-    flist = glob.glob(
-        '../../results/STIS_crrejtab_CRSIGMAS/*{}*hdf5'.format(stat)
-    )
-    reader_stis.hdf5_files = flist
+    #
+    # reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
+    # flist = glob.glob(
+    #     '../../results/STIS_crrejtab_CRSIGMAS/*{}*hdf5'.format(stat)
+    # )
+    # reader_stis.hdf5_files = flist
     if 'rate' in stat:
-        flist = glob.glob(
-            '../../results/STIS_crrejtab_CRSIGMAS/*cr_rate*hdf5'
-        )
-        reader_stis.hdf5_files = flist
+        # flist = glob.glob(
+        #     '../../results/STIS_crrejtab_CRSIGMAS/*cr_rate*hdf5'
+        # )
+        # reader_stis.hdf5_files = flist
         for r in [reader_wfpc2,reader_stis, reader_wfc, reader_hrc, reader_wfc3]:
             r.read_cr_rate()
     else:
@@ -351,8 +404,8 @@ def plot_morphology(
                   label=instrument_name[i],
                   normalize=normalize
              )
-    #ax.xaxis.set_minor_locator(AutoMinorLocator(5))
-    #ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+    # ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    # ax.yaxis.set_minor_locator(AutoMinorLocator(5))
     ax.tick_params(axis='both', which='major', width=1.5, length=5)
     ax.legend(loc='best',edgecolor='k')
     ax.set_xlabel(xlabel)
@@ -374,7 +427,7 @@ def orbital_altitude(hrc, stis, wfc, wfpc2, uvis):
                            '#999999', '#e41a1c', '#dede00']
     labels = ['STIS/CCD','ACS/HRC', 'ACS/WFC', 'WFPC2', 'WFC3/UVIS']
     datasets = [stis, hrc, wfc, wfpc2, uvis]
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(3.25, 4.25))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,7))
     for dset, label, color in zip(datasets,labels, CB_color_cycle):
         altitude_df = dset.loc[:, ['mjd', 'altitude_start']]
         averaged = altitude_df.resample(rule='5D').mean()
@@ -454,7 +507,7 @@ def cr_rejection_algorithm(
         y=1061,
         box_w=10,
         box_h=10,
-        figsize=(8,6),
+        figsize=(7,4.5),
         fout='example_of_cr_rejection_transparent_poster.png'
 ):
     if flist is None:
@@ -464,19 +517,31 @@ def cr_rejection_algorithm(
 
     img_data = []
     pix_data = []
+    cr_affected = []
     for f in flist[:12]:
-        data = fits.getdata(f)
-        img_data.append(data)
-        pix_data.append(data[y][x])
+        print(f)
+        with fits.open(f) as hdu:
+            data = hdu[1].data
+            dq = hdu[3].data
+            img_data.append(data)
+            pix_data.append(data[y][x])
+            if dq[y][x] > 8100:
+                cr_affected.append(True)
+            else:
+                cr_affected.append(False)
 
+    print(sum(cr_affected))
+    # p = process.ProcessCCD(instr='ACS_WFC', flist=flist[:12])
+    # p.sort()
+    # p.cr_reject()
 
     fig = plt.figure(figsize=figsize)
     gs0 = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, wspace=0.4)
     gs00 = gridspec.GridSpecFromSubplotSpec(
         nrows=4,
         ncols=3,
-        wspace=0.0,
-        hspace=0.0,
+        wspace=0.15,
+        hspace=0.45,
         subplot_spec=gs0[0]
     )
     # fig.suptitle(
@@ -495,10 +560,12 @@ def cr_rejection_algorithm(
     scatter_ax.axhline(np.median(pix_data),
                        ls='dashed',
                        c='k',
-                       label=rf'Med: {np.median(pix_data):.3f} $e^-$')
+                       label=rf'Med: {np.median(pix_data):.2f} $e^-$')
     scatter_ax.set_xlabel('Image Number', color='k')
     scatter_ax.set_ylabel(r'Signal [$e^-$]', color='k')
-    leg = scatter_ax.legend(loc='upper right', edgecolor='k', fontsize=8)
+
+    leg = scatter_ax.legend(loc='upper left', edgecolor='k', fontsize=8,
+                            bbox_to_anchor=(1.02, 1.))
     # scatter_ax.grid(ls='-',color='k')
     # plt.setp(scatter_ax.spines.values(), color='k')
     # for text in leg.get_texts():
@@ -514,14 +581,15 @@ def cr_rejection_algorithm(
         img_data[0],
         stretch=LinearStretch(),
         vmin=0,
-        vmax=80
+        vmax=85
     )
     mk_patch = lambda x, y: patches.Rectangle(
-        (x-0.5,y-0.5), width=1, height=1, fill=False, color='r', lw=1.4
+        (x-0.5,y-0.5), width=1, height=1, fill=False, color='r', lw=1.15
     )
     for i, ax in enumerate(img_subplots):
         ax.grid(False)
-        # ax.set_title(f"{i+1}", fontsize=12, color='white')
+        ttl=ax.set_title(f"{i+1}", fontsize=11, color='k')
+        ttl.set_position([.5, 0.98])
         ax.get_yaxis().set_visible(False)
         ax.get_xaxis().set_visible(False)
         im = ax.imshow(img_data[i], norm=norm, cmap='gray', origin='lower')
@@ -537,6 +605,7 @@ def cr_rejection_algorithm(
                 bbox_inches='tight',
                 transparent=False)
 
+    plt.show()
 
 
 def periodogram(hrc, stis, wfc, wfpc2, uvis):
@@ -1238,7 +1307,7 @@ def plot_solar_cycle(smoothed=True, figsize=(6,4), save=True):
     # fig, ax = v.mk_fig(nrows=1, ncols=1, figsize=figsize)
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
     fig.autofmt_xdate(bottom=0.2, rotation=30, ha='right')
-    ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+    ax.xaxis.set_minor_locator(mdates.YearLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator(5))
     ax.plot(noaa_df.index.values,
             noaa_df['sunspot RI'],
@@ -1249,7 +1318,7 @@ def plot_solar_cycle(smoothed=True, figsize=(6,4), save=True):
             label='Smoothed',
             c='#D81B60')
     date_min = Time('1990-12-01', format='iso')
-    date_max = Time('2019-03-01', format='iso')
+    date_max = Time('2020-01-01', format='iso')
 
 
     # Add vertical lines for cycle 23 minima and shade between
@@ -1266,7 +1335,7 @@ def plot_solar_cycle(smoothed=True, figsize=(6,4), save=True):
                )
 
 
-    ax.text(cycle23_max + timedelta(days=2*365), 150, s='Cycle 23',color='white',
+    ax.text(cycle23_max + timedelta(days=2*365), 150, s='Cycle 23',color='k',
             fontsize=12)
 
     predicted_cycle24_end = Time('2019-06-01', format='iso').to_datetime()
@@ -1274,30 +1343,412 @@ def plot_solar_cycle(smoothed=True, figsize=(6,4), save=True):
                facecolor='r',
                alpha=0.2,
                )
-    ax.text(cycle24_max - timedelta(days=365), 150, s='Cycle 24',color='white',
+    ax.text(cycle24_max - timedelta(days=365), 150, s='Cycle 24',color='k',
             fontsize=12)
 
     operational_coverage_start = Time('1994-01-01', format='iso').to_datetime()
-    ax.axvspan(operational_coverage_start, predicted_cycle24_end,
+    operational_coverage_end = Time('2023-01-01', format='iso').to_datetime()
+    ax.axvspan(operational_coverage_start, operational_coverage_end,
                facecolor='r',
-               alpha=0.0,hatch='/'
+               alpha=0.0,hatch='//'
                )
     # launch_date = Time('1990-04-24', format='iso').to_datetime()
     ax.set_xlim((date_min.to_datetime(), date_max.to_datetime()))
-    ax.set_xlabel('Date', color='white')
-    ax.set_ylabel('$R_I$', color='white')
-    leg = ax.legend(loc='best', edgecolor='white')
+    ax.set_xlabel('Date', color='k')
+    ax.set_ylabel('$R_I$', color='k')
+    leg = ax.legend(loc='best', edgecolor='k')
     # for text in leg.get_texts():
     #     plt.setp(text, color='w')
     ax.set_ylim(0, noaa_df['sunspot RI'].max() + 30)
-    ax.tick_params(which='both', axis='both', color='white', labelcolor='white')
+    ax.tick_params(which='both', axis='both', color='k', labelcolor='k')
 
     # ax.set_title('International Sunspot Number')
     if save:
-        fout = os.path.join(APJ_PLOT_DIR, 'solar_cycle_poster.png')
-        fig.savefig(fout,format='png', dpi=300,bbox_inches='tight', transparent=True)
+        fout = os.path.join(APJ_PLOT_DIR, 'solar_cycle.png')
+        fig.savefig(fout,format='png', dpi=300,bbox_inches='tight', transparent=False)
     # ax.set_xticklabels(ax.get_xticklabels(), rotation=20, ha='left')
 
+
+def read_SAA_data():
+    stis = dh.DataReader(instr='STIS_CCD', statistic='incident_cr_rate')
+    stis.hdf5_files = \
+        glob.glob(
+            '/Users/nmiles/hst_cosmic_rays/results/STIS/stis_ccd_saa_cr_rate*hdf5'
+        )
+    stis.read_cr_rate()
+    wfc3 = dh.DataReader(instr='WFC3_UVIS', statistic='incident_cr_rate')
+    wfc3.hdf5_files = \
+        glob.glob(
+            '/Users/nmiles/hst_cosmic_rays/results/WFC3/wfc3_uvis_saa_cr_rate*hdf5'
+        )
+    wfc3.read_cr_rate()
+    return stis, wfc3
+
+def plot_stis_saa_images():
+    data_dir = '/Users/nmiles/hst_cosmic_rays/data/STIS/SAA_data/HST/'
+    df = pd.read_csv(
+        'stis_ccd_catalog.txt',
+        header=0,
+        index_col='date_start',
+        parse_dates=True
+    )
+    df = df.sort_index()
+    df = df[df.integration_time.lt(1000)]
+    saa_northern = (312.0, 1.0)
+    saa_southern = (300.0, -60.0)
+
+    mask = df['latitude_start'] < saa_northern[1]
+    df_saa_cut = df[mask]
+    norm_data = fits.getdata(
+        '/Users/nmiles/hst_cosmic_rays/data/'
+        'STIS/STIS_grazing_CR/o3sl01pcq_flt.fits'
+    )
+    norm_hdr = fits.getheader(
+        '/Users/nmiles/hst_cosmic_rays/data/'
+        'STIS/STIS_grazing_CR/o3sl01pcq_flt.fits'
+    )
+    norm = ImageNormalize(norm_data*norm_hdr['ATODGAIN'], stretch=SqrtStretch(), vmin=0, vmax=50)
+
+
+    img_data = {}
+    img_info = defaultdict(list)
+    for f in df_saa_cut['obs_id']:
+        hdr = fits.getheader(os.path.join(data_dir,f.split('_flt')[0], f))
+        img_info['OBSID'].append(f)
+        img_info['EXPTIME [s]'].append(hdr['TEXPTIME'])
+        img_info['EXPSTART [MJD]'].append(hdr['TEXPSTRT'])
+        img_data[f] = fits.getdata(
+            os.path.join(data_dir,f.split('_flt')[0], f)
+        )
+        img_data[f] *= hdr['ATODGAIN']
+    fig = plt.figure(figsize=(7,6))
+    gs = gridspec.GridSpec(4, 5, hspace=0.25, wspace=0)
+    axes = []
+    for i in range(19):
+        ax = fig.add_subplot(gs[i])
+        ax.grid(False)
+        ax.axes.get_xaxis().set_visible(False)
+        ax.axes.get_yaxis().set_visible(False)
+        axes.append(ax)
+
+    xlim = (425, 575)
+    ylim = (425, 575)
+    for i, key in enumerate(img_data.keys()):
+        im = axes[i].imshow(img_data[key], norm=norm, cmap='gray', origin='lower')
+        axes[i].set_title(f"{i+1}", fontsize=10)
+        axes[i].set_xlim(xlim)
+        axes[i].set_ylim(ylim)
+    cax = fig.add_axes([0.9, 0.1, 0.033, 0.77])
+    cbar = fig.colorbar(im, cax=cax, orientation='vertical')
+    cbar.set_label('ELECTRONS', weight='bold')
+    df = pd.DataFrame(img_info)
+    tb = df.to_latex(index=False)
+    with open('stis_saa_images.txt', 'a') as fobj:
+        fobj.write(tb)
+
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR, 'stis_saa_observations.png'),
+        format='png',
+        dpi=250,
+        bbox_inches='tight'
+    )
+    plt.show()
+    return img_data
+
+def compute_saa_rates():
+    df = pd.read_csv(
+        'stis_ccd_catalog.txt',
+        header=0,
+        index_col='date_start',
+        parse_dates=True
+    )
+    df = df.sort_index()
+    df = df[df.integration_time.lt(1000)]
+    saa_northern = (312.0, 1.0)
+    saa_southern = (300.0, -60.0)
+
+    mask = df['latitude_start'] < saa_northern[1]
+    df_saa_cut = df[mask]
+    stis_avg_energy_per_cr = 2621.1422
+    area = 4.624
+
+    rates = []
+    num_crs =[]
+    for i, row in df_saa_cut.iterrows():
+        num_cr = row['cumulative_energy']/stis_avg_energy_per_cr
+        rate = num_cr/(row['integration_time']*area)
+        num_crs.append(num_cr)
+        rates.append(rate)
+    df_saa_cut['estimated_rates'] = rates
+    df_saa_cut['num_crs'] = num_crs
+    df.to_csv('stis_ccd_catalog_with_estimated_rates.txt', header=True, index=True)
+    return df_saa_cut
+
+
+def stis_saa_plot(data_df=None, i=5):
+
+    # stis_reader = dh.DataReader(statistic='incident_cr_rate', instr='STIS_CCD')
+    # flist = glob.glob(
+    #     '/Users/nmiles/hst_cosmic_rays/results/'
+    #     'STIS/stis_saa_results/stis*cr_rate*hdf5'
+    # )
+    # stis_reader.hdf5_files = flist
+    # print(stis_reader.hdf5_files)
+    # stis_reader.read_cr_rate()
+    stis = pd.read_csv(
+        'stis_ccd_catalog.txt',
+        header=0,
+        index_col='date_start',
+        parse_dates=True
+    )
+    # print(stis_reader.data_df)
+    # stis = stis_reader.data_df['1997-02-01':'1997-03-01']
+
+    saa_eastern = (39.0, -30.0)  # lon/lat
+    saa_western = (267.0, -20.0)
+    saa_northern = (312.0, 1.0)
+    saa_southern = (300.0,-60.0)
+
+    mask = (stis['latitude_start'] < saa_northern[1]) #& (stis['incident_cr_rate'] < 20)
+
+    stis_saa_cut = stis[mask]
+    # fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7,6))
+    fig1, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    fig2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(7, 5))
+    # Create the lat/lon map
+    m = Basemap(projection='cyl',llcrnrlon=-120,
+                llcrnrlat= -60,
+                urcrnrlon= 60,
+                urcrnrlat= 10,
+                ax=ax1)
+
+    m.shadedrelief(scale=0.2)
+
+    # lats and longs are returned as a dictionary
+    lats = m.drawparallels(np.linspace(-90, 90, 13),
+                                  labels=[True, True, False, False])
+
+    lons = m.drawmeridians(np.linspace(-180, 180, 13),
+                                  labels=[False, False, False, True])
+
+    # keys contain the plt.Line2D instances
+    lat_lines = chain(*(tup[1][0] for tup in lats.items()))
+    lon_lines = chain(*(tup[1][0] for tup in lons.items()))
+    all_lines = chain(lat_lines, lon_lines)
+    # cycle through these lines and set the desired style
+    for line in all_lines:
+        line.set(linestyle='-', alpha=0.3, color='w')
+
+    saa = [list(t) for t in zip(*costools.saamodel.saaModel(i))]
+    # Ensure the polygon representing the SAA is a closed curve by adding
+    # the starting points to the end of the list of lat/lon coords
+    saa[0].append(saa[0][0])
+    saa[1].append(saa[1][0])
+    m.plot(saa[1], saa[0],
+                  c='r',
+                  latlon=True,
+                  label='SAA contour {}'.format(i))
+
+    hst_lon, hst_lat = stis_saa_cut['longitude_start'], stis_saa_cut['latitude_start']
+    shifted_lon = []
+    for i, lon in enumerate(hst_lon):
+        if lon > 180.0:
+            shifted_lon.append(lon - 360.0)
+        else:
+            shifted_lon.append(lon)
+    x_coord, y_coord = m(shifted_lon, hst_lat)
+    labels = [k for k in range(len(stis_saa_cut))]
+    indices = []
+    for j, (lon, lat, label) in enumerate(zip(hst_lon, hst_lat, labels)):
+        if j >= 4:
+            indices.append(j)
+            print(j -4 +1, lat, lon)
+            m.scatter(lon, lat,
+                    marker='o', s=12,c='r',
+                    latlon=True)
+
+            ax1.annotate('{}'.format(j-4 + 1),
+                         xy=(x_coord[j], y_coord[j]),fontsize=9,
+                         xycoords='data')
+
+    ax2.semilogy([k - 4 + 1 for k in indices],
+                stis_saa_cut['cumulative_energy_per_area_per_time'][indices],
+                 marker='o')
+    # STIS CR stats computed from server data
+    # 25% 2524.830691
+    # 50% 3215.160755
+    # 75% 4341.264237
+    ax2.fill_between(
+        np.arange(0, np.max(indices)+1),
+        2524.830691,
+        4341.264237,
+        alpha=0.25,
+        color='k'
+    )
+    ax2.axhline(3215.160755, color='k', ls='--')
+    ax1.legend(loc='best')
+    ax2.set_xticks([k - 4 + 1 for k in indices])
+    ax2.tick_params(which='both', axis='both', labelsize=10)
+    ax1.legend(loc='best')
+    ax2.set_xticks([k - 4 + 1 for k in indices])
+    ax2.set_xlim(0.25,19.75)
+    ax2.set_ylim(1e3, 1e7)
+    ax2.set_ylabel('Rate of Energy Deposition [$e^-/s/cm^2$]', fontsize=10)
+    ax2.set_xlabel('Observation Number', fontsize=10)
+    # ax1.set_title('STIS/CCD Observations of the South Atlantic Anomaly (SAA)')
+    fig1.savefig('stis_saa_crossing.png', format='png', dpi=250, bbox_inches='tight')
+    fig2.savefig('stis_saa_total_energy.png', format='png', dpi=250, bbox_inches='tight')
+    plt.show()
+    # with open('stis_saa_darks.txt', 'a') as fobj:
+    #     for indx in indices:
+    #         fobj.write('{}\n'.format(stis_saa_cut['date'][indx]))
+
+def plot_grazing_cr():
+    fname = '/Users/nmiles/hst_cosmic_rays/data/STIS/STIS_grazing_CR/o3sl01pcq_flt.fits'
+    metadatum = metadata.GenerateMetadata(fname=fname, instr='STIS_CCD')
+    metadatum.get_image_data()
+    metadatum.get_observatory_info()
+
+    crlabel = labeler.CosmicRayLabel(
+        fname=fname,
+        gain_keyword=metadatum.instr_cfg['instr_params']['gain_keyword']
+    )
+    crlabel.get_data(
+        extname='sci',
+        extnums=metadatum.instr_cfg['instr_params']['extnums']
+    )
+
+    crlabel.ccd_labeling(
+        use_dq=False,
+        threshold_l=2,
+        structure_element=[[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+        threshold_u=5000,
+    )
+    # crlabel.plot()
+    mean, med, std = sigma_clipped_stats(crlabel.sci.ravel(), maxiters=5,
+                                         sigma_upper=4, sigma_lower=3.5)
+    sizes = pd.Series(np.bincount(crlabel.label.ravel()), name='sizes')
+    sizes = sizes.sort_values(ascending=False)
+    print(sizes.iloc[:5])
+    label_ids = sizes.index.values
+    print(label_ids[:5])
+    cr_indx = label_ids[2]
+    coords = np.where(crlabel.label == cr_indx)
+    xcr = 814
+    ycr = 177
+
+    xbound = 800
+    ybound = 112
+    yflag = coords[0] > 112
+    xflag = coords[1] > 800
+
+    coords = set(
+        list(zip(coords[0][xflag & yflag], coords[1][xflag & yflag]))
+    )
+    print(len(coords))
+    coords_to_exclude = set([(188, 811), (189, 811), (190, 811), (191,811),
+                             (188, 812), (189, 812), (190, 812), (191,812),
+                             (188, 813),
+                             (176, 812),(177, 812), (176, 813),(177, 813)])
+
+    coords = list(coords.difference(coords_to_exclude))
+    print(len(coords))
+    coords = np.array(coords)
+    # print(coords)
+    delta_y = np.max(coords[:, 1]) - np.min(coords[:, 1])
+    delta_x = np.max(coords[:, 0]) - np.min(coords[:, 0])
+    pix_values = []
+    for coord in coords:
+        pix_values.append(crlabel.sci[coord[0]][coord[1]])
+
+    origin = (154, 830)
+    print(origin)
+    distances = []
+    for coord in coords:
+        diff = coord - origin
+        if diff[1] < 0:
+            distances.append(-1*np.hypot(*diff))
+        else:
+            distances.append(np.hypot(*diff))
+    data = list(zip(pix_values, coords, distances))
+    data.sort(key=lambda val: val[-1])
+    pix_values, coords, distances = zip(*data)
+    pix_values = np.array(pix_values)
+    coords = np.array(coords)
+    distances = np.array(distances)
+
+    norm = ImageNormalize(crlabel.sci, stretch=SqrtStretch(), vmin=0, vmax=100)
+    fig = plt.figure(figsize=(8, 8))
+    gs = gridspec.GridSpec(
+        ncols=3, nrows=2, figure=fig, hspace=0.45, wspace=0.15
+    )
+    ax1 = fig.add_subplot(gs[0, :])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1], sharex=ax2, sharey=ax2)
+    ax4 = fig.add_subplot(gs[1, 2], sharex=ax2, sharey=ax2)
+    # fig, ax = plt.subplots(nrows=1, ncols=2)
+    ax1.scatter(distances, pix_values, marker='o')
+    ax1.set_yscale('log')
+    ax1.axhline(med, ls='--', color='k', label=f'Med: {med:.2f}$e^-$')
+    # ax1.axhline(100, ls='--', color='r')
+    ax1.legend(loc='upper left', edgecolor = 'k', fontsize = 8,
+               bbox_to_anchor = (1.02, 1.)
+               )
+    for axis in [ax2, ax3, ax4]:
+        axis.imshow(crlabel.sci, origin='lower', norm=norm, cmap='gray')
+        axis.grid(False)
+        axis.get_yaxis().set_visible(False)
+        axis.get_xaxis().set_visible(False)
+        axis.annotate(
+            s='Origin',
+            xy=(origin[1], origin[0]),
+            xytext=(origin[1]+5, origin[0]+17),
+            color='w',
+            fontsize=12,
+            arrowprops={'arrowstyle':'simple'}
+        )
+
+
+    # origin_patch = patches.Circle((origin[1], origin[0]), radius=1., color='r')
+    # ax2.add_patch(origin_patch)
+    color = '#e41a1c'
+    for i, coord in enumerate(coords):
+        if pix_values[i] > 1000:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=0.85, color=color,
+                                      fill=False)
+            ax4.add_patch(patch)
+        elif pix_values[i] >= 250 and pix_values[i] <= 1000:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=0.85, color=color,
+                                      fill=False)
+            ax3.add_patch(patch)
+        else:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=0.85, color=color,
+                                      fill=False)
+            ax2.add_patch(patch)
+
+
+    ax1.set_ylabel('$p(x,y)$ [$e^-$]', fontsize=10)
+    ax1.set_xlabel('Distance From Origin [pix]', fontsize=10)
+    ax2.set_title('$p(x,y) < 250 e^-$', fontsize=10)
+    ax3.set_title('$ 250 \leq p(x,y) \leq 1000 e^-$',fontsize=10)
+    ax4.set_title('$ p(x,y) > 1000 e^- $', fontsize=10)
+    ax1.set_ylim(1, 1e4)
+    ax1.set_xlim(-60, 60)
+    ax1.xaxis.set_minor_locator(MultipleLocator(5))
+    ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
+    ax1.tick_params(axis='both', which='major', width=1.5, length=5)
+    ax2.set_xlim((795, 860))
+    ax2.set_ylim((110, 205))
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR,'grazing_cr_plot.png'),
+        dpi=250,
+        bbox_inches='tight',
+        format='png'
+    )
+    plt.show()
 
 def main():
     pass

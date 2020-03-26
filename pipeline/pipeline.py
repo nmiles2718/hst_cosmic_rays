@@ -378,7 +378,7 @@ class CosmicRayPipeline(object):
             'use_dq': self.use_dq,
             'extnums': self.instr_cfg['instr_params']['extnums'],
             'threshold_l': 2,
-            'threshold_u': 1500,
+            'threshold_u': 1e5,
             'plot': False
         }
 
@@ -416,7 +416,7 @@ class CosmicRayPipeline(object):
             dask.delayed(self.run_labeling_single)(f) for f in self.flist
         ]
 
-        dask.visualize(*delayed_objects, filename='labeling_graph.png')
+        # dask.visualize(*delayed_objects, filename='labeling_graph.png')
 
         results = list(dask.compute(*delayed_objects,
                                     scheduler='processes',
@@ -629,16 +629,9 @@ class CosmicRayPipeline(object):
                 # Send the final email iff there were results computed
                 if results:
                     self.send_email(start, stop, results)
-                break
-            break
-
 
 if __name__ == '__main__':
     args = parser.parse_args()
     args = vars(args)
     p = CosmicRayPipeline(**args)
-    # p = CosmicRayPipeline(instr='stis_ccd', ccd=True, download=False,
-    #                       process=False, analyze=True, initialize=True, chunks=4)
     p.run()
-    # cmd = 'python pipeline_updated.py -instr stis_ccd -download -process -analyze -initialize'
-    # os.system(cmd)

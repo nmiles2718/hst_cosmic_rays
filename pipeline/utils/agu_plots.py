@@ -261,11 +261,10 @@ def read_solar_data():
     return df
 
 
-def stis_saa_plot(instrument_data, i=5):
+def stis_saa_plot(data_df=None, i=5):
 
 
-
-    stis = instrument_data['STIS_CCD'].data_df['1997-02-01':'1997-02-28']
+    stis = data_df['1997-02-01':'1997-02-28']
 
     saa_eastern = (39.0, -30.0)  # lon/lat
     saa_western = (267.0, -20.0)

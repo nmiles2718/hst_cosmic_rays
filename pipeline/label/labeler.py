@@ -9,7 +9,7 @@ import logging
 
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats, median_absolute_deviation
-from astropy.visualization import ImageNormalize, LinearStretch, ZScaleInterval
+from astropy.visualization import ImageNormalize, LinearStretch, ZScaleInterval, LogStretch
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.patches as patches
@@ -240,14 +240,14 @@ class Label(object):
                                                     sigma_upper=3)
             std_mad = median_absolute_deviation(self.sci)
             # LOG.info('mean: {}, median: {}, std: {}'.format(mean, median, std))
-            LOG.info('mean: {:.3f}, median: {:.3f}, std: {:.3f}'.format(
+            LOG.info('Mean: {:.3f}, Median: {:.3f}, Median Absolute Deivation: {:.3f}'.format(
                 mean, median, std_mad)
             )
 
 
             # Create an array of 1's and 0's using the SCI data
             array_to_label = np.where(
-                self.sci > np.absolute(median) + 10 * std_mad, 1, 0
+                self.sci > np.absolute(median) + 5 * std_mad, 1, 0
             )
 
         if do_bitwise_comp and use_dq:
@@ -264,8 +264,6 @@ class Label(object):
         cr_labels = label.ravel()  # Returns a flattened label
         # Count up the number of pixels associated with each unique label
         sizes = np.bincount(cr_labels)
-        arg_max = np.argmax(sizes)
-        sizes[arg_max] = 0
         large_CRs = (sizes > threshold_l) & (sizes < threshold_u)
 
         # Create a 2-D mask from the 1-D array of large cosmic rays, and set all
@@ -319,7 +317,7 @@ class Label(object):
 
         """
         grid = plt.GridSpec(1, 2, wspace=0.05, hspace=0.)
-        fig = plt.figure(figsize=(5, 3))
+        fig = plt.figure(figsize=(6, 4))
         ax1 = fig.add_subplot(grid[0, 0])
         ax2 = fig.add_subplot(grid[0, 1], sharex=ax1, sharey=ax1)
         for ax in [ax1, ax2]:
@@ -340,6 +338,9 @@ class Label(object):
             ylim=None,
             fout=None,
             save=False,
+            stretch='log',
+            vmin=0,
+            vmax=150,
             centroids=None
     ):
         """ Plot the label
@@ -380,9 +381,17 @@ class Label(object):
         rgb[0] = (0,0,0)
         cmap = colors.ListedColormap(rgb)
 
+        if stretch == 'log':
+            st = LogStretch()
+        elif stretch == 'linear':
+            st = LinearStretch()
+        else:
+            st = LinearStretch()
+
         norm = ImageNormalize(self.sci,
-                              stretch=LinearStretch(),
-                              interval=ZScaleInterval())
+                              stretch=st,
+                              vmin=vmin,
+                              vmax=vmax)
 
         ax1.imshow(self.sci, norm=norm, cmap='gray', origin='lower')
         ax2.imshow(self.label, cmap=cmap, origin='lower')
@@ -395,20 +404,18 @@ class Label(object):
 
         if centroids is not None:
             for centroid in centroids:
-                patch1 = patches.Rectangle(
+                patch1 = patches.Circle(
                     xy=centroid,
-                    width=1,
-                    height=1,
+                    radius=3,
+                    lw=1.25,
                     fill=False,
-                    lw=2,
                     color='red'
                 )
-                patch2 = patches.Rectangle(
+                patch2 = patches.Circle(
                     xy=centroid,
-                    width=1,
-                    height=1,
+                    radius=3,
+                    lw=1.25,
                     fill=False,
-                    lw=2,
                     color='red'
                 )
                 ax1.add_patch(patch1)
@@ -419,12 +426,12 @@ class Label(object):
             ax.xaxis.set_major_locator(plt.NullLocator())
 
         ax1.set_title('SCI Extension', fontsize=10)
-        ax2.set_title('CR Segmentation Map', fontsize=10)
-        fig.suptitle('{}'.format(instr), y=0.96, )
+        ax2.set_title('Segmentation Map', fontsize=10)
+        fig.suptitle('{}'.format(instr), y=0.96,)
         if save:
             fig.savefig(fout,
                         format='eps',
-                        dpi=150,
+                        dpi=250,
                         bbox_inches='tight',
                         transparent=True)
         self.ax1 = ax1
@@ -512,14 +519,3 @@ class CosmicRayLabel(Label):
 
         """
         pass
-
-
-def main():
-   l = CosmicRayLabel(fname='/Users/nmiles/hst_cosmic_rays/data/WFPC2/'
-                            'mastDownload/HST/u21y0a05t/u21y0a05t_c0m.fits',
-                      gain_keyword='ATODGN*')
-   l.run_ccd_label(deblend=False, use_dq=False, threshold_l=3, threshold_u=1000)
-
-
-if __name__ == '__main__':
-    main()

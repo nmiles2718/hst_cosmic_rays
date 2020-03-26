@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-
+"""
+This module utilizes the `astroquery.mast` package to programmatically download
+observations from the Mikulski Archive for Space Telescopes (MAST).
+"""
 import logging
 import os
 import warnings
@@ -25,8 +28,21 @@ LOG.setLevel(logging.INFO)
 
 
 class Downloader(object):
+    """
+    Downloader class for handling downloads locally and on AWS
+
+    Parameters
+    ----------
+    instr : str
+        Instrument to download data for
+
+    instr_cfg : dict
+        Instrument configuration
+
+    """
 
     def __init__(self, instr, instr_cfg=None):
+
 
         self._mod_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -118,6 +134,10 @@ class Downloader(object):
 
         """
         return self._download_dir
+
+    @download_dir.setter
+    def download_dir(self, value):
+        self._download_dir = value
 
     @property
     def inactive_range(self):
@@ -316,21 +336,3 @@ class Downloader(object):
             LOG.error('{}\n{}'.format(e, self._msg_div))
         else:
             Observations.download_products(download_list, **download_params)
-
-# def main():
-#     import yaml
-#     cfg_file = '/Users/nmiles/hst_cosmic_rays/CONFIG/pipeline_config.yaml'
-#     with open(cfg_file) as fobj:
-#         cfg = yaml.load(fobj)
-#     instr = 'WFC3_UVIS'
-#     d = Downloader(instr=instr, instr_cfg=cfg[instr])
-#     d.initialize_dates()
-#     d.get_date_ranges()
-#     d.query(range=d.dates[0], aws=False)
-#     d.download(d.dates[0][0].datetime.date().isoformat())
-#
-# if __name__ == "__main__":
-#     main()
-
-
-

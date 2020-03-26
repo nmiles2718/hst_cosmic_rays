@@ -346,7 +346,7 @@ class DataReader(object):
         tmp = []
         for f in self.hdf5_files:
             fobj = h5py.File(f, mode='r')
-            print(list(fobj.keys()))
+            # print(list(fobj.keys()))
             grp = fobj[self.statistic]
             for name in grp.keys():
                 dset = grp[name]

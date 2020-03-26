@@ -5,18 +5,18 @@ HSTcosmicrays
 
 **Author**: Nathan Miles
 
-HSTcosmicrays is a package designed to extract morphological properties of cosmic rays identified in calibration dark frames. The package is broken down into a series of modules which are then combined via the :py:class:`~pipeline_updated.CosmicRayPipeline` object contained in the :py:mod:`~pipeline_updated` module. At the present moment, the pipeline will analyze all of the following CCD and IR imagers listed below:
+HSTcosmicrays is a package designed to extract morphological properties of cosmic rays identified in calibration dark frames. The package is broken down into a series of modules which are then combined via the :py:class:`~pipeline.CosmicRayPipeline` object contained in the :py:mod:`~pipeline` module. At the present moment, the pipeline will analyze all of the following CCD and IR imagers listed below:
 
-    * `Advanced Camera for Surveys (ACS) <http://www.stsci.edu/hst/acs/documents/handbooks/current/acs_ihb.pdf>`_
+    * `Advanced Camera for Surveys (ACS) <https://hst-docs.stsci.edu/display/ACSIHB/>`_
       
       * High Resolution Channel (HRC) [inactive]
       * Wide Field Channel (WFC) [active]
 
-    * `Space Telescope Imaging Spectrograph (STIS) <http://www.stsci.edu/hst/stis/documents/handbooks/currentIHB/stis_ihb.pdf>`_
+    * `Space Telescope Imaging Spectrograph (STIS) <https://hst-docs.stsci.edu/display/STISIHB/STIS+Instrument+Handbook>`_
       
       * CCD channel [active]
 
-    * `Wide Field Camera 3 (WFC3) <http://www.stsci.edu/hst/wfc3/documents/handbooks/currentIHB/wfc3_ihb.pdf>`_
+    * `Wide Field Camera 3 (WFC3) <https://hst-docs.stsci.edu/display/WFC3IHB/WFC3+Instrument+Handbook>`_
       
       * UVIS channel [active]
       * IR channel [active]
