@@ -173,9 +173,6 @@ class Label(object):
         elif extname == 'dq' and ext_data:
             self.dq = np.concatenate(ext_data, axis=0)
 
-
-
-
     def ccd_labeling(self, use_dq=True, dq_flag=8192, do_bitwise_comp=True,
                       deblend=False, threshold_l=2, threshold_u = 5000,
                      pix_thresh=None, structure_element=np.ones((3, 3))):

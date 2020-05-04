@@ -82,7 +82,7 @@ class Downloader(object):
         self._filtered_table = None
         self._instr = instr.replace('_', '/') # put into format for astroquery
         self._msg_div = '-' * 79
-        self._obstype = 'calibration'
+        self._obstype = 'all'
         self._product_type = ['image', 'spectrum'] # SPECTRUM is for STIS
         self._products = {}
         self._project = 'HST'
@@ -336,3 +336,4 @@ class Downloader(object):
             LOG.error('{}\n{}'.format(e, self._msg_div))
         else:
             Observations.download_products(download_list, **download_params)
+

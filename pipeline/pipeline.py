@@ -624,11 +624,12 @@ class CosmicRayPipeline(object):
                 )
 
                 # Clean up the files and write out the range just processed
-                #self._pipeline_cleanup(start, stop, failed)
+                self._pipeline_cleanup(start, stop, failed)
 
                 # Send the final email iff there were results computed
                 if results:
                     self.send_email(start, stop, results)
+
 
 if __name__ == '__main__':
     args = parser.parse_args()

@@ -18,7 +18,9 @@ parser.add_argument('-instr',
                     type=str,
                     default='ACS_WFC')
 
-def main(instr):
+def mk_catalog(instr):
+    """Generate a catalog of CR data extracted from each image
+    """
     # Desired information
     metadata_keywords = [
         'date',
@@ -78,6 +80,7 @@ def main(instr):
         
         fobj3 = h5py.File(f3, mode='r')
         grp3 = fobj3['energy_deposited']
+        print(len(list(grp1.keys())))
         for key in grp1.keys():
 
             rate_dset = grp1[key]
@@ -160,4 +163,4 @@ def main(instr):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    main(args.instr)
+    mk_catalog(args.instr)

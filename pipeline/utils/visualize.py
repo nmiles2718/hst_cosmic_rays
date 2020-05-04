@@ -14,9 +14,13 @@ import astropy.units as u
 from astropy.visualization import ImageNormalize, SqrtStretch, LinearStretch, \
     ZScaleInterval, LogStretch, ManualInterval
 import costools
+import cartopy.crs as ccrs
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+
 import dask.array as da
 import matplotlib as mpl
-mpl.use('qt5agg')
+#mpl.use('qt5agg')
 # from matplotlib import rc
 # rc('text', usetex=True)
 import matplotlib.pyplot as plt
@@ -24,9 +28,16 @@ import matplotlib.colors as colors
 
 plt.style.use('ggplot')
 from mpl_toolkits.basemap import Basemap
+import matplotlib.colors as colors
+from matplotlib.dates import DateFormatter
+from matplotlib.legend import Legend
+from matplotlib import ticker
+import matplotlib as mpl
+from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
+                               AutoMinorLocator)
 import numpy as np
 import pandas as pd
-# import pylandau
+import pmagpy.ipmag as ipmag
 
 
 from scipy.stats import gaussian_kde
@@ -143,8 +154,8 @@ class Visualizer(object):
 
         hist :
         """
-        if logx:
-            data = da.log10(data)
+       # if logx:
+       #     data = da.log10(data)
         
         if range is not None:
             h, edges = da.histogram(data, bins=bins,
@@ -163,7 +174,10 @@ class Visualizer(object):
         else:
             fig = ax.get_figure()
 
-        if logy:
+        if logx and logy:
+            ax.loglog(edges[:-1], hist, basex=10, basey=10,
+                        drawstyle='steps-mid',color=c, lw=lw, label=label, ls=ls)
+        elif logy:
             # self.ax.step(edges[:-1], h.compute(), color='r')
             ax.semilogy(edges[:-1], hist,
                              label=label,ls=ls,
@@ -309,8 +323,8 @@ class Visualizer(object):
         return frequency, power, ax
 
 
-    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,min_exptime=200,offset=0,
-                             smooth_type='rolling', window='20D', normalize=True,min_periods=20):
+    def plot_cr_rate_vs_time(self, df, legend_label, ax= None, i=0,min_exptime=200,yoffset=0,
+                             smooth_type='rolling',ms=2, window='20D', normalize=True,min_periods=20):
         """Plot the observed cosmic ray rate as a function of time.
 
         Parameters
@@ -369,21 +383,20 @@ class Visualizer(object):
         sigma_cut = exptime_cut[sigma_mask]
 
         df1 = exptime_cut.loc[:, ['incident_cr_rate','mjd']]
-        if normalize:
-            LOG.info('Normalizing the date by the median value')
-            df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/mean
-
 
         # Smooth the cosmic ray rate
         if smooth_type == 'rolling':
             LOG.info('Smoothing the data using a '
                      'rolling mean over a {} window'.format(window))
-            df1 = df1.rolling(window=window, min_periods=min_periods).mean()
+            df1 = df1.rolling(window=window, min_periods=min_periods).median()
         elif smooth_type == 'resample':
             LOG.info('Resampling the data using a rolling mean over'
                      'a {} window'.format(window))
-            df1 = df1.resample(rule=window).mean()
-
+            df1 = df1.resample(rule=window).median()
+        
+        if normalize:
+             LOG.info('Normalizing the date by the median value')
+             df1.loc[:,'incident_cr_rate'] = df1['incident_cr_rate']/df['incident_cr_rate'].median()
 
         avg_no_nan = df1.dropna()
 
@@ -401,10 +414,12 @@ class Visualizer(object):
         # Make the scatter plot
         ax.scatter([Time(val, format='mjd').to_datetime()
                          for val in avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['mjd']],
-                        avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate']+offset,
+                        avg_no_nan[avg_no_nan.incident_cr_rate.gt(0)]['incident_cr_rate']+yoffset,
                         label=legend_label,
-                        s=2,
+                        marker='o',
+                        s=ms,
                         color=CB_color_cycle[i])
+        
         ax.tick_params(labelbottom=False)
         # ax.set_xlabel('Date')
         ax.set_ylabel('Cosmic Ray Rate [$CR/s/cm^2$]', fontsize=14)
@@ -413,7 +428,7 @@ class Visualizer(object):
         return fig, ax
 
 
-    def draw_map(self, map=None, scale=0.9):
+    def _draw_map(self, map=None, scale=0.9):
 
         if map is None:
             pass
@@ -446,13 +461,13 @@ class Visualizer(object):
     def plot_hst_loc(self, i = 5, df = None, title='',thresh=5,
                      fout='',min_exptime=800, key='start', save=False,
                      orbital_path1=None, orbital_path2=None):
-
+        
         self.fig = plt.figure(figsize=(8, 6))
         # Get the model for the SAA
         self.map = Basemap(projection='cyl')
+        self._draw_map()
         df = df[df.integration_time.gt(min_exptime)]
         df.sort_values(by='incident_cr_rate', inplace=True)
-        self.draw_map()
         cbar_bounds = [0,20,40,60,80,100,120,140,160]
         sci_cmap = plt.cm.gray
         custom_norm = colors.BoundaryNorm(boundaries=cbar_bounds,
@@ -499,34 +514,6 @@ class Visualizer(object):
         custom_norm = colors.BoundaryNorm(boundaries=cbar_bounds,
                                           ncolors=sci_cmap.N)
 
-
-        #geomagnetic_np = pd.read_csv(
-        #   '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_np_locs.txt',
-        #    delimiter=' ')
-
-        #geomagnetic_sp = pd.read_csv(
-        #    '/Users/nmiles/hst_cosmic_rays/data/geomagnetic_sp_locs.txt',
-        #    delimiter=' '
-        #)
-        #print(geomagnetic_np.head())
-
-        # geomagnetic_np = [360 - 72.69, 80.61]
-        # geomagnetic_sp = [107.31, -80.61]
-        # for k, c in zip([0, -3], ['#b9773f', '#e227cc']):
-        #
-        #     self.map.scatter(geomagnetic_np['lon'].values[k],
-        #                      geomagnetic_np['lat'].values[k],
-        #                      marker='X',c=c,
-        #                      label='Geomagnetic'
-        #                            ' Poles ({})'.format(
-        #                          geomagnetic_np['year'].values[k]),
-        #                      s=60, latlon=True)
-        #     self.map.scatter(geomagnetic_sp['lon'].values[k],
-        #                      geomagnetic_sp['lat'].values[k],
-        #                      marker='X',c=c,
-        #                      s=60, latlon=True)
-
-       # lon_grid, lat_grid = np.meshgrid(lon.values, lat.values)
         scat = self.map.scatter(lon.values, lat.values,
                          marker='o',
                          s=5,
@@ -544,15 +531,17 @@ class Visualizer(object):
         #    orbital_path1.metadata['latitude'],lw=1.25,
         #    label=f'Int. Time: {1000:.1f}s', color='k', ls='-'
         #)
-        self.map.scatter(
-            orbital_path2.metadata['longitude'][::4][1:],
-            orbital_path2.metadata['latitude'][::4][1:],c='k',s=20,label='285 seccond interval'
-        )
-        self.map.plot(
-            orbital_path2.metadata['longitude'],
-            orbital_path2.metadata['latitude'],
-            label=f'Orbital Path Over {2000:.0f} seconds',color='k', ls='--', lw=1.25
-        )
+        if orbital_path2 is not None:
+            self.map.scatter(
+                orbital_path2.metadata['longitude'][::4][1:],
+                orbital_path2.metadata['latitude'][::4][1:],c='k',s=20,label='285 seccond interval'
+            )
+        if orbital_path1 is not None:
+            self.map.plot(
+                orbital_path2.metadata['longitude'],
+                orbital_path2.metadata['latitude'],
+                label=f'Orbital Path Over {2000:.0f} seconds',color='k', ls='--', lw=1.25
+            )
 
         ax1_legend = ax.legend(loc='upper right',
                                 ncol=1,
@@ -572,7 +561,7 @@ class Visualizer(object):
         cbar_tick_labels = [f'<x>-{i}$\sigma$' for i in [5,4,3,2,1]] +['<x>']+ [f'<x>+{i}$\sigma$' for i in [1,2,3,4,5]]
         cbar.ax.set_xticklabels(cbar_tick_labels, horizontalalignment='right', rotation=30)
 
-        cbar.set_label('CR Rate [CR/s/$cm^2$]', fontsize=10)
+        cbar.set_label('CR Flux [CR/s/$cm^2$]', fontsize=10)
         # cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(),
         #                         fontweight='medium',fontsize=8)
         if save:
@@ -584,6 +573,141 @@ class Visualizer(object):
                              dpi=350, transparent=False)
         plt.show()
         return self.fig
+
+    def plot_hst_loc_cartopy(self, i = 5, df = None, title='',thresh=5,
+                     fout='',min_exptime=800, key='start', save=False,
+                     orbital_path1=None, orbital_path2=None, projection=ccrs.PlateCarree()):
+        fig, ax = plt.subplots(
+            nrows=1, 
+            ncols=1,
+            figsize=(8,7),
+            tight_layout=True,
+            subplot_kw={'projection': projection}
+             )
+        crs = projection
+        transform = crs._as_mpl_transform(ax)
+        df = df[df.integration_time.gt(min_exptime)]
+        df.sort_values(by='incident_cr_rate', inplace=True)
+
+        # Plot configuration
+        ax.coastlines()
+        gl = ax.gridlines(crs=crs, draw_labels=True,
+                          linewidth=1, color='k', alpha=0.4, linestyle='--')
+        fname ='/ifs/missions/projects/plcosmic/hst_cosmic_rays/APJ_plots/HYP_50M_SR_W.tif'
+        ax.imshow(
+            plt.imread(fname),
+            origin='upper',
+            transform=crs,
+            extent=[-180, 180, -90, 90]
+        )
+        gl.xlabels_top = False
+        gl.ylabels_left = True
+        gl.ylabels_right = False
+        gl.xlines = True
+        # gl.xlocator = mticker.FixedLocator([-180, -45, 0, 45, 180])
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        gl.xlocator = MultipleLocator(60)
+        gl.ylocator = MultipleLocator(15)
+        gl.xlabel_style = {'size': 10, 'color': 'black'}
+        gl.xlabel_style = {'color': 'black'}
+
+        date = 2005
+        altitude = 565
+
+        # Calculate the B field grid
+        # Evenly space grid with 1 degree resolution in both Latitude and Longitude
+        lat = np.linspace(-90, 90, 1 * 180 + 1)
+        lon = np.linspace(0, 360, 1 * 360 + 1)
+        lat_grid, lon_grid = np.meshgrid(lat, lon)
+        coordinates = list(zip(lat_grid.ravel(), lon_grid.ravel()))
+        B_strength = []
+        for coords in coordinates:
+            b_field = ipmag.igrf([date, altitude, coords[0], coords[1]])
+            B_strength.append(b_field[-1])
+        B_strength_grid = np.array(B_strength).reshape(lat_grid.shape)
+
+        # Get the CR rate information
+        lat, lon, rate = df['latitude_{}'.format(key)], \
+                             df['longitude_{}'.format(key)], \
+                             df['incident_cr_rate']
+        LOG.info('{} {} {}'.format(len(lat), len(lon), len(rate)))
+
+        # Get average statistics to generate contour
+        mean, median, std = sigma_clipped_stats(rate, sigma_lower=3,
+                                                sigma_upper=3)
+        LOG.info('{} +\- {}'.format(mean, std))
+        norm = ImageNormalize(rate,
+                              stretch=LinearStretch(),
+                              vmin=mean - thresh*std, vmax=mean + thresh*std)
+        cbar_below_mean = [mean - (i+1)*std for i in range(thresh)]
+        cbar_above_mean = [mean + (i+1)*std for i in range(thresh)]
+
+        cbar_bounds = cbar_below_mean + [mean] + cbar_above_mean
+        print(cbar_bounds)
+        cbar_bounds.sort()
+        sci_cmap = plt.cm.viridis
+        custom_norm = colors.BoundaryNorm(boundaries=cbar_bounds,
+                                          ncolors=sci_cmap.N)
+
+        
+        scat = ax.scatter(
+            lon.values, 
+            lat.values,
+            marker='o',
+            s=3.5,
+            c=rate, alpha=0.2,
+            norm = custom_norm,
+            cmap='viridis',
+            transform=ccrs.PlateCarree()
+            )
+
+        cbar_ticks = cbar_bounds
+        cax = fig.add_axes([0.1, 0.2, 0.8, 0.05])
+        cbar = fig.colorbar(scat, cax=cax,
+                                 ticks=cbar_ticks,orientation='horizontal')
+        cbar.set_alpha(1)
+        cbar.draw_all()
+        cbar_tick_labels = [f'<x>-{i}$\sigma$' for i in [5,4,3,2,1]] +['<x>']+ [f'<x>+{i}$\sigma$' for i in [1,2,3,4,5]]
+        cbar.ax.set_xticklabels(cbar_tick_labels, horizontalalignment='right', rotation=30)
+
+        cbar.set_label('CR Flux [CR/s/$cm^2$]', fontsize=10)
+      
+        cntr = ax.contour(
+            lon_grid,
+            lat_grid,
+            B_strength_grid,
+            cmap='plasma', 
+            levels=10,
+            alpha=1, 
+            lw=2, 
+            transform=ccrs.PlateCarree()
+            )
+
+        h1, l1 = cntr.legend_elements("B_strength_grid")
+        l1_custom = [f"{val.split('=')[-1].strip('$').strip()} nT" for val in l1]
+
+        leg1 = Legend(
+            ax, h1, l1_custom, loc='upper left', edgecolor='k', 
+            fontsize=8,framealpha=0.45,facecolor='tab:gray',
+            bbox_to_anchor=(1.05, 1.03), title='Total Magnetic Intensity'
+            )
+        ax.add_artist(leg1)
+
+        if orbital_path1 is not None:
+            ax.scatter(
+                orbital_path1.metadata['longitude'][::4][1:],
+                orbital_path1.metadata['latitude'][::4][1:],c='k',s=20,label='285 seccond interval'
+            )
+
+        if orbital_path2 is not None:
+            ax.plot(
+                orbital_path2.metadata['longitude'],
+                orbital_path2.metadata['latitude'],
+                label=f'Orbital Path Over {2000:.0f} seconds',color='k', ls='--', lw=1.25
+            )
+        plt.show()
+        return fig
 
     def plot_solar_cycle(self, variable=None, ax = None, smoothed=False):
         """ Retrieve solar cycle information

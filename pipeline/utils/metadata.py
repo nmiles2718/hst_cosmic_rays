@@ -213,8 +213,7 @@ class GenerateMetadata(object):
             expend = self.metadata['expend'].mjd
         else:
             expend= self.metadata['expstart'].mjd + time_delta/86400.0
-            num_intervals = np.round(time_delta/60)
-            print(num_intervals)
+            num_intervals = int(np.round(time_delta/60))
 
         # If the number of one minute intervals is less than 2, set the number
         # of intervals to 5 (arbitrarily chosen)
