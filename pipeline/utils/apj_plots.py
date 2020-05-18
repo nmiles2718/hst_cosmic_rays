@@ -15,7 +15,10 @@ from astropy.time import Time
 from astropy.wcs import WCS
 from astropy.visualization import LinearStretch, ZScaleInterval,\
     LogStretch, SqrtStretch, ImageNormalize
-import costools
+# import costools
+import cartopy.crs as ccrs
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import datahandler as dh
 import sys
 sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline/')
@@ -28,6 +31,7 @@ mpl.rcParams['hatch.linewidth'] = 0.6
 import dask.array as da
 from matplotlib import rc
 import matplotlib.dates as mdates
+from matplotlib.legend import Legend
 from matplotlib.dates import DateFormatter
 from matplotlib import ticker
 import matplotlib as mpl
@@ -36,7 +40,7 @@ from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
 # mpl.use('qt5agg')
 import matplotlib.pyplot as plt
-#from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap
 import matplotlib.gridspec as gridspec
 plt.style.use('ggplot')
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -45,6 +49,7 @@ import matplotlib.patches as patches
 
 import numpy as np
 import pandas as pd
+import pmagpy.ipmag as ipmag
 
 import sunpy.net
 from sunpy.timeseries import TimeSeries
@@ -107,7 +112,7 @@ def read_data(stat='energy_deposited',min_exptime=50, units=None):
     reader_wfpc2 = dh.DataReader(instr='WFPC2', statistic=stat)
     reader_stis = dh.DataReader(instr='STIS_CCD', statistic=stat)
 
-    for r in [reader_wfpc2, reader_wfc, reader_hrc, reader_wfc3]:
+    for r in [reader_wfpc2, reader_stis, reader_wfc, reader_hrc, reader_wfc3]:
         r.find_hdf5()
 
     if 'rate' in stat:
@@ -197,7 +202,7 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis,cartopy=False, orbital_path1=None, 
     v = visualize.Visualizer()
     combined_data = {'latitude_start':[],'longitude_start':[], 'incident_cr_rate':[],
                      'integration_time':[],'instr':[],'date':[],'mjd':[]}
-    
+
     instrument_name=['ACS/HRC','STIS/CCD','ACS/WFC','WFPC2','UVIS']
     CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                           '#f781bf', '#a65628', '#984ea3',
@@ -218,7 +223,7 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis,cartopy=False, orbital_path1=None, 
     for key in combined_data.keys():
         print(key, len(combined_data[key]))
     df_combined = pd.DataFrame(combined_data)
-    df_combined_cut = df_combined[df_combined.incident_cr_rate.gt(0.4)] 
+    df_combined_cut = df_combined[df_combined.incident_cr_rate.gt(0.4)]
     df_combined.to_csv('combined_hst_cr_vs_loc_data.txt', header=True, index=False)
     if cartopy:
         fig = v.plot_hst_loc_cartopy(df=df_combined, key='start', orbital_path1=orbital_path1,
@@ -462,11 +467,11 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
     #gs0 = gridspec.GridSpec(ncols=1, nrows=2, figure=fig)
     #gs00 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,wspace=0.5, subplot_spec=gs0[0])
     #gs10 = gridspec.GridSpecFromSubplotSpec(nrows=1, ncols=6,wspace=0.5, subplot_spec=gs0[1])
-    #ax1 = fig.add_subplot(gs00[0,1:3]) 
-    #ax2 = fig.add_subplot(gs00[0,3:5])  
+    #ax1 = fig.add_subplot(gs00[0,1:3])
+    #ax2 = fig.add_subplot(gs00[0,3:5])
     #ax3 = fig.add_subplot(gs10[0,:2])
     #ax4 = fig.add_subplot(gs10[0,2:4])
-    #ax5 = fig.add_subplot(gs10[0,4:6])      
+    #ax5 = fig.add_subplot(gs10[0,4:6])
     #axes = [ax1, ax2, ax3, ax4, ax5]
     #master_ax = fig.add_subplot(111,frameon=False)
     #master_ax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
@@ -480,7 +485,7 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
     for i, (label, dset) in enumerate(zip(labels, datasets)):
         flags = dset.incident_cr_rate.gt(0.2) 
         cr_rate = dset['incident_cr_rate'][flags]
-        
+
         results =  sigma_clip(cr_rate, masked=True, return_bounds=True, sigma=3, maxiters=5)
         masked_array = results[0]
         bounds = results[1]
@@ -504,14 +509,14 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
         edges_avg = 0.5*(edges[:-1] + edges[1:])
         shift = edges_avg[np.argmax(hist)]
         print(shift)
-        ax1.step(0.5*(edges[:-1] + edges[1:]) - shift, hist/np.max(hist), label=label, color=CB_color_cycle[i]) 
+        ax1.step(0.5*(edges[:-1] + edges[1:]) - shift, hist/np.max(hist), label=label, color=CB_color_cycle[i])
         ax.step(0.5*(edges[:-1] + edges[1:]), hist/np.max(hist), label=label, color=CB_color_cycle[i])
         #ax.set_xticks([0,0.5, 1.0, 1.5, 2, 2.5, 3])
         #ax.axvline(median, c='k', ls='-', lw=0.75, )
         #ax.axvspan(lower_20, upper_80, color='gray', alpha=0.3)
         #ax1.axis('off')
-        #ax1.tick_params(labelleft=False,labelbottom=False)  
-        
+        #ax1.tick_params(labelleft=False,labelbottom=False)
+
         ax.xaxis.set_minor_locator(MultipleLocator(0.1))
         ax.xaxis.set_major_locator(MultipleLocator(0.5))
         ax.yaxis.set_major_locator(MultipleLocator(0.2))
@@ -520,14 +525,14 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
         ax1.xaxis.set_major_locator(MultipleLocator(0.5))
         ax1.yaxis.set_major_locator(MultipleLocator(0.2))
         ax1.yaxis.set_minor_locator(MultipleLocator(0.05))
-        
+
 
         #ax.axvline(lower_20, c='k', ls='--', lw=0.75)
         #ax.axvline(upper_80, c='k', ls='--', lw=0.75)
         leg = ax.legend(loc='best', edgecolor='k', fontsize=8)
         ax.set_xlim((0,3.0))
         ax1.set_xlim((0-shift, 3-shift))
-        #ax1.set_xlim((-6, 6)) 
+        #ax1.set_xlim((-6, 6))
         ax.set_ylim((-0.03,1.02))
         ax.set_ylim((-0.03, 1.02))
          #ax.text(1.8, 0.62,'N='+'{:,}'.format(hist.sum()))
@@ -537,7 +542,7 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
         ax.tick_params(axis='both', which='major', width=1.5, labelsize=8,length=5)
         ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
         ax1.tick_params(axis='both', which='major', width=1.5,labelsize=8, length=5)
-    
+
     fig.canvas.draw()
     labels = [item.get_text() for item in ax1.get_xticklabels()]
     print(labels)
@@ -548,7 +553,7 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
         else:
             new_labels.append('')
     ax1.set_xticklabels(new_labels, ha='center')
-        
+
 
 
     ax.set_xlabel('CR Flux [$CR/s/cm^2$]', fontsize=9)
@@ -684,7 +689,7 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
                    bbox_to_anchor=(1.05, 0.02, .5, .4),
                    bbox_transform=ax.transAxes, loc=2, borderpad=0)
     axins1.tick_params(which='both',left=False, right=True, labelleft=False, labelright=True)
-    
+
     #axins1 = inset_axes(ax, width="50%", height="75%",
     #               bbox_to_anchor=(.1, .5, .6, .5),
     #               bbox_transform=ax.transAxes, loc=3)
@@ -712,7 +717,7 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
     offset = 0.000
 
     factor = 0
-    
+
     #ax.annotate(
     #        s='Peak 1',
     #        xy=(0.002,0.025),
@@ -772,10 +777,10 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         max_power_idx2_full = peak_range_2[max_power_idx2_range]
         max_power_freq2 = freq[max_power_idx2_full]
         max_power_period2 = 1/max_power_freq2
-      
-          
+
+
        # axins1.axvline(max_power_freq2+factor*offset, color=CB_color_cycle[i], ls='--', lw=1.1)
-        
+
         peak2 += ls.false_alarm_probability(power[max_power_idx2_full])
         print(max_power_period2, label, max_power_freq2, ls.false_alarm_probability(power[max_power_idx2_full]))
         #data_out[label] = (freq, power)
@@ -807,7 +812,7 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
             a.tick_params(axis='both',labelsize=8, which='both', color='k', labelcolor='k')
             a.tick_params(axis='both', which='minor', width=1, length=2.5)
             a.tick_params(axis='both', which='major', width=1.5, length=5)
-            
+
         axins.xaxis.set_major_locator(MultipleLocator(0.001))
         axins.xaxis.set_minor_locator(MultipleLocator(0.0002))
         axins.yaxis.set_major_locator(MultipleLocator(0.01))
@@ -824,7 +829,7 @@ def periodogram(hrc, stis, wfc, wfpc2, uvis):
         #ax.tick_params(axis='both',labelsize=10, which='both', color='k', labelcolor='k')
         #ax.tick_params(axis='both', which='minor', width=1, length=2.5)
         #ax.tick_params(axis='both', which='major', width=1.5, length=5)
-        
+
         # ax.tick_params(axis='x', which='major', width=1.5, length=5)
         #ax.set_xticklabels(xticks, rotation=45, ha='right')
         #for tick in ax.get_xticklabels():
@@ -863,7 +868,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis,ms=4, min_exptime=40, delta=0.15):
     fig, ax1 = plt.subplots(nrows=1, ncols=1,
                        figsize=(7,5),
                        sharex=True)
-  
+
     smooth_type = 'rolling'
     window='30D'
     min_periods=25
@@ -947,8 +952,8 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis,ms=4, min_exptime=40, delta=0.15):
    #              'maximum_cycle24':Time('2014-02-01', format='iso'),
    #              'minimum_cycle23':Time('1996-05-01', format='iso'),
    #              'minimum_cycle24': Time('2008-12-01', format='iso')}
-    #ax2.plot(solar_df.index.values, 
-    #        solar_df['sunspot RI'], 
+    #ax2.plot(solar_df.index.values,
+    #        solar_df['sunspot RI'],
     #        label='Monthly Mean',
     #        c='#1E88E5')
 
@@ -963,7 +968,7 @@ def rate_vs_time(hrc, stis, wfc, wfpc2, uvis,ms=4, min_exptime=40, delta=0.15):
                 ax1.axvline(solar_cycle[cycle][0],label='Solar Min', ls='--', color='k')
              # Max
                 ax1.axvline(solar_cycle[cycle][1], label='Solar Max',ls='-', color='k')
-            
+
 
             ax1.axvline(solar_cycle[cycle][0],ls='--', color='k')
             # Max
@@ -1165,6 +1170,35 @@ def thickness_histograms():
                          sharex=True,sharey=True)
 
 
+def plot_stis_energy_area():
+    df = pd.read_csv('stis_ccd_catalog_full.txt', header=0)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4.5))
+    df['cumulative_energy_per_area_per_time'].hist(
+        range=(10, 1e4), bins=100, ax=ax
+    )
+    ax.xaxis.set_minor_locator(MultipleLocator(200))
+    ax.xaxis.set_major_locator(MultipleLocator(1000))
+    ax.yaxis.set_major_locator(MultipleLocator(200))
+    ax.yaxis.set_minor_locator(MultipleLocator(50))
+    ax.tick_params(which='minor', axis='both', width=1., length=2.)
+    ax.tick_params(which='major', axis='both', width=1.5, length=4)
+    ax.set_ylabel('Bin Count')
+    ax.set_xlabel('Energy Deposited per Image [$e^-/s/cm^2$]')
+    ax.set_xlim((0, 1e4))
+    stats = df.cumulative_energy_per_area_per_time.describe()
+    percentiles = np.percentile(df.cumulative_energy_per_area_per_time,q=[10,50,90])
+    print('\n'.join(list([str(val) for val in percentiles])))
+    stats['10%'] = percentiles[0]
+    stats['50%'] = percentiles[1]
+    stats['90%'] = percentiles[2]
+    ax.axvline(stats['10%'],ls='--',c='k', label="$10^{th}$ percentile")#={stats['10%']:.2f}$e^-/s/cm^2$")
+    ax.axvline(stats['50%'], ls='-',c='k', label=f"Median")#={stats['50%']:.2f}$e^-/s/cm^2$")
+    ax.axvline(stats['90%'], ls=':',c='k', label="$90^{th}$ percentile")#={stats['90%']:.2f}$e^-/s/cm^2$")
+    ax.legend(loc='best', edgecolor='k')
+    fout = os.path.join(APJ_PLOT_DIR, 'total_energy_deposited_per_s_cm2_stis.png')
+    fig.savefig(fout, dpi=250, format='png', bbox_inches='tight')
+    plt.show()
+
 
 def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
     """
@@ -1259,7 +1293,7 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
 
     # v = visualize.Visualizer()
     # fig, axes = v.mk_fig(nrows=2, ncols=3, figsize=(9, 6))
-    fig = plt.figure(figsize=(8, 4))
+    fig = plt.figure(figsize=(9, 7))
     gs0 = gridspec.GridSpec(ncols=3, nrows=2, figure=fig, hspace=0.05, wspace=0.3)
     # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(9,6))
     axes = [
@@ -1281,19 +1315,19 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
                                              cmap='plasma', origin='lower')
         ax.set_title('{}'.format(key.replace('_','/').upper()))
         divider = make_axes_locatable(ax)
-        # cax = divider.append_axes('bottom', size='5%', pad=0.05)
-        # cbar = fig.colorbar(data_dict_th[key]['im'], cax=cax,
-        #                     ticks=data_dict_th[key]['cbar_ticks'],
-        #                     orientation='horizontal')
-        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cax = divider.append_axes('bottom', size='5%', pad=0.05)
         cbar = fig.colorbar(data_dict_th[key]['im'], cax=cax,
                             ticks=data_dict_th[key]['cbar_ticks'],
-                            orientation='vertical')
+                            orientation='horizontal')
+        # cax = divider.append_axes('right', size='5%', pad=0.05)
+        # cbar = fig.colorbar(data_dict_th[key]['im'], cax=cax,
+        #                     ticks=data_dict_th[key]['cbar_ticks'],
+        #                     orientation='vertical')
         # cbar.ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%2.1f'))
         # cbar.ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         cbar_labels = [str(x) for x in data_dict_th[key]['cbar_ticks']]
-        # cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
-        cbar.ax.set_yticklabels(cbar_labels, ha='left', rotation=0, fontsize=8)
+        cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
+        # cbar.ax.set_yticklabels(cbar_labels, ha='left', rotation=0, fontsize=8)
 
         cbar.set_label(r'Thickness $[\mu m]$', fontsize=10)
     # fout = os.path.join(APJ_PLOT_DIR, 'thickness_all_instr.png')
@@ -1316,18 +1350,18 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
                                             cmap='plasma', origin='lower')
 
         divider = make_axes_locatable(ax)
-        # cax = divider.append_axes('bottom', size='5%', pad=0.05)
-        # cbar = fig.colorbar(data_dict_cr[key]['im'], cax=cax,
-        #                     ticks=data_dict_cr[key]['cbar_ticks'],
-        #                     orientation='horizontal')
-
-        cax = divider.append_axes('right', size='5%', pad=0.05)
+        cax = divider.append_axes('bottom', size='5%', pad=0.05)
         cbar = fig.colorbar(data_dict_cr[key]['im'], cax=cax,
                             ticks=data_dict_cr[key]['cbar_ticks'],
-                            orientation='vertical')
+                            orientation='horizontal')
+
+        # cax = divider.append_axes('right', size='5%', pad=0.05)
+        # cbar = fig.colorbar(data_dict_cr[key]['im'], cax=cax,
+        #                     ticks=data_dict_cr[key]['cbar_ticks'],
+        #                     orientation='vertical')
         cbar_labels = [str(x) for x in data_dict_cr[key]['cbar_ticks']]
-        cbar.ax.set_yticklabels(cbar_labels,ha='left', rotation=0, fontsize=8)
-        cbar.set_label(r'Num. of CR Strikes', fontsize=10)
+        cbar.ax.set_xticklabels(cbar.ax.get_xticklabels(), rotation=45)
+        cbar.set_label(r'Number of CR Strikes', fontsize=10)
 
     # Add a colorbar to show the image scaling
     # divider1 = make_axes_locatable(ax1)
@@ -1362,10 +1396,11 @@ def thickness_plot(fname=None, fname_comp=None, fout=None, instr=None):
     # #              size=16, weight='bold')
     # fig1.savefig('cr_heat_map_WFC.png',
     #              transparent=True, format='png', dpi=350, bbox_inches='tight')
-    fout = os.path.join(APJ_PLOT_DIR, 'cr_th_all_instr_proceedings.eps')
+    fout = os.path.join(APJ_PLOT_DIR, 'cr_th_all_instr.png')
     fig.savefig(fout,
-                 format='eps',
-                 dpi=150, bbox_inches='tight')
+                 format='png',
+                 dpi=250,
+                bbox_inches='tight')
     plt.show()
 
 def plot_example_darks(hrc=None, wfc=None, wfpc2=None, stis=None, uvis=None):
@@ -1469,7 +1504,7 @@ def plot_solar_cycle(all_integration_df, smoothed=True, figsize=(5,4), save=True
     fig, ax = v.mk_fig(nrows=1, ncols=1, figsize=figsize)
     ax1 = ax.twinx()
     ax.set_axisbelow(True)
-    
+
     sampled = all_integration_df.resample(rule='6M').sum()
     CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                           '#f781bf', '#a65628', '#984ea3',
@@ -1630,7 +1665,7 @@ def plot_stis_saa_images():
 
 def compute_saa_rates():
     df = pd.read_csv(
-        'stis_ccd_catalog.txt',
+        'stis_ccd_saa_catalog.txt',
         header=0,
         index_col='date_start',
         parse_dates=True
@@ -1654,8 +1689,173 @@ def compute_saa_rates():
         rates.append(rate)
     df_saa_cut['estimated_rates'] = rates
     df_saa_cut['num_crs'] = num_crs
-    df.to_csv('stis_ccd_catalog_with_estimated_rates.txt', header=True, index=True)
+    df_saa_cut.to_csv('stis_ccd_catalog_with_estimated_rates.txt', header=True, index=True)
     return df_saa_cut
+
+
+def stis_saa_plot_cartopy(i=5):
+    stis = pd.read_csv(
+        'stis_ccd_saa_catalog.txt',
+        header=0,
+        index_col='date_start',
+        parse_dates=True
+    )
+    print(stis.info())
+    # print(stis_reader.data_df)
+    # stis = stis_reader.data_df['1997-02-01':'1997-03-01']
+    fname = '/Users/nmiles/hst_cosmic_rays/APJ_plots/HYP_50M_SR_W/HYP_50M_SR_W.tif'
+
+    saa_eastern = (39.0, -30.0)  # lon/lat
+    saa_western = (267.0, -20.0)
+    saa_northern = (312.0, 1.0)
+    saa_southern = (300.0, -60.0)
+    saa_center_2004 = np.array([-45.5, -24.06])
+    slope = np.array([0.31, 0.18])
+    t = 7
+    saa_center_1997 = saa_center_2004 - 7 * slope
+    print(saa_center_1997[0] - 360, saa_center_1997[1])
+    saa_center_1997_furst = (-41.96, -23)
+
+    mask = (stis['latitude_start'] < saa_northern[
+        1])  # & (stis['incident_cr_rate'] < 20)
+
+
+
+    stis_saa_cut = stis[mask]
+    hst_lon = stis_saa_cut['longitude_start']
+    hst_lat = stis_saa_cut['latitude_start']
+    date = 1997
+    altitude = 615
+
+    # Evenly space grid with 1 degree resolution in both Latitude and Longitude
+    lat = np.linspace(-90, 90, 1 * 180 + 1)
+    lon = np.linspace(0, 360, 1 * 360 + 1)
+    lat_grid, lon_grid = np.meshgrid(lat, lon)
+    coordinates = list(zip(lat_grid.ravel(), lon_grid.ravel()))
+    B_strength = []
+    for coords in coordinates:
+        b_field = ipmag.igrf([date, altitude, coords[0], coords[1]])
+        B_strength.append(b_field[-1])
+    B_strength_grid = np.array(B_strength).reshape(lat_grid.shape)
+    # fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7,6))
+    fig, ax = plt.subplots(nrows=1,
+                           ncols=1,
+                           figsize=(8, 5),
+                           subplot_kw={'projection': ccrs.PlateCarree()})
+
+    crs = ccrs.PlateCarree()
+    transform = crs._as_mpl_transform(ax)
+    ax.imshow(
+        plt.imread(fname),
+        origin='upper',
+        transform=crs,
+        extent=[-180, 180, -90, 90]
+    )
+    # ax.stock_img()
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=1, color='k', alpha=0.4, linestyle='--')
+    gl.xlabels_top = False
+    gl.ylabels_left = True
+    gl.ylabels_right = False
+    gl.xlines = True
+    # gl.xlocator = mticker.FixedLocator([-180, -45, 0, 45, 180])
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    gl.xlocator = MultipleLocator(15)
+    gl.ylocator = MultipleLocator(10)
+    gl.xlabel_style = {'size': 10, 'color': 'black'}
+    gl.xlabel_style = {'color': 'black'}
+
+    # Generate an SAA contour
+    saa = [list(t) for t in zip(*costools.saamodel.saaModel(i))]
+    # Ensure the polygon representing the SAA is a closed curve by adding
+    # the starting points to the end of the list of lat/lon coords
+    saa[0].append(saa[0][0])
+    saa[1].append(saa[1][0])
+    saa_coords = list(zip(saa[1], saa[0]))
+    saa_coords.sort(key=lambda val: val[0], reverse=True)
+    # ax.add_patch(
+    #
+    #              )
+    shifted_saa_lon = []
+    for val in saa[1]:
+        if val > 180:
+            shifted_saa_lon.append(val - 360)
+        else:
+            shifted_saa_lon.append(val)
+    ax.plot(shifted_saa_lon, saa[0],
+            c='k',ls='--',lw=2.25,
+            label='SAA contour {}'.format(i))
+
+    ax.scatter(saa_center_1997_furst[0], saa_center_1997_furst[1], marker='x',
+               transform=ccrs.Geodetic(),s=50,
+               color='k', label='SAA Centroid, 1997')
+    B_field_levels = [19000, 19500, 20000, 20500, 21000, 21500,
+                      22000, 22500, 23000]
+    cntr = ax.contour(lon_grid, lat_grid, B_strength_grid, cmap='plasma',
+                      levels=B_field_levels, alpha=1, lw=2,
+                      transform=ccrs.PlateCarree())
+    # ax.clabel(cntr, inline=1, fontsize=8)
+    h1, l1 = cntr.legend_elements("B_strength_grid")
+    l1_custom = [f"{val:.0f} nT" for val in B_field_levels]
+    contour_legend = Legend(
+        ax,
+        h1,
+        l1_custom,
+        loc='upper left',
+        edgecolor='k',
+        fontsize=10,
+        framealpha=0.45,facecolor='tab:gray',
+        bbox_to_anchor=(1.02, 1.),
+        title='Total Magnetic Intensity'
+    )
+    ax.add_artist(contour_legend)
+    # ax.legend(h1, l1_custom, loc='upper left', edgecolor='k', fontsize=10,
+    #           bbox_to_anchor=(1.02, 1.))
+    # ax.clabel(cs, inline=1, fontsize=10)
+
+    shifted_lon = []
+    for i, lon in enumerate(hst_lon):
+        if lon > 180.0:
+            shifted_lon.append(lon - 360.0)
+        else:
+            shifted_lon.append(lon)
+    # x_coord, y_coord = m(shifted_lon, hst_lat)
+    labels = [k for k in range(len(stis_saa_cut))]
+    indices = []
+    for j, (lon, lat, label) in enumerate(zip(hst_lon, hst_lat, labels)):
+        if j >= 4:
+            indices.append(j)
+            print(j - 4 + 1, lat, lon)
+            ax.scatter(lon, lat,
+                      marker='o',
+                      s=10,
+                      c='r',
+                      )
+            xoffset = 0.001
+            yoffset = 1
+            ax.annotate('{}'.format(j - 4 + 1),
+                         xy=(lon + xoffset, lat + yoffset),
+                         fontsize=10, fontweight='bold',
+                         xycoords=transform)
+    # ax.scatter(saa_center_1997[0], saa_center_1997[1], marker='+',
+    #            transform=ccrs.Geodetic(),
+    #            s=50, color='k', label='SAA Centroid (Schaefer)')
+
+
+
+    ax.set_xlim(-105, 41)
+    ax.set_ylim(-56, 15)
+
+    ax.legend(
+        bbox_to_anchor=(0., 1.1, 1.5, .402),framealpha=0.45,facecolor='tab:gray',
+        loc='lower left', ncol=3, edgecolor='k')
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR, 'stis_saa_crossing.png'),
+        format='png', dpi=250,
+                 bbox_inches='tight')
+    plt.show()
 
 
 def stis_saa_plot(data_df=None, i=5):
@@ -1669,7 +1869,7 @@ def stis_saa_plot(data_df=None, i=5):
     # print(stis_reader.hdf5_files)
     # stis_reader.read_cr_rate()
     stis = pd.read_csv(
-        'stis_ccd_catalog.txt',
+        'stis_ccd_saa_catalog.txt',
         header=0,
         index_col='date_start',
         parse_dates=True
@@ -1681,21 +1881,19 @@ def stis_saa_plot(data_df=None, i=5):
     saa_western = (267.0, -20.0)
     saa_northern = (312.0, 1.0)
     saa_southern = (300.0,-60.0)
+    saa_center_2004 = np.array([-45.5, -24.06])
+    slope = np.array([0.31, 0.18])
+    t = 7
+    saa_center_1997 = saa_center_2004 - 7 * slope
+    print(saa_center_1997[0]-360, saa_center_1997[1])
+    saa_center_1997_furst = (-41.96, -23)
+
 
     mask = (stis['latitude_start'] < saa_northern[1]) #& (stis['incident_cr_rate'] < 20)
 
     stis_saa_cut = stis[mask]
     # fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7,6))
-    fig1, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
-    fig2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(7, 5))
-    # Create the lat/lon map
-    m = Basemap(projection='cyl',llcrnrlon=-120,
-                llcrnrlat= -60,
-                urcrnrlon= 60,
-                urcrnrlat= 10,
-                ax=ax1)
-
-    m.shadedrelief(scale=0.2)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4.5))
 
     # lats and longs are returned as a dictionary
     lats = m.drawparallels(np.linspace(-90, 90, 13),
@@ -1732,45 +1930,82 @@ def stis_saa_plot(data_df=None, i=5):
     x_coord, y_coord = m(shifted_lon, hst_lat)
     labels = [k for k in range(len(stis_saa_cut))]
     indices = []
+    mjd_start = []
+    mjd_end = []
     for j, (lon, lat, label) in enumerate(zip(hst_lon, hst_lat, labels)):
         if j >= 4:
             indices.append(j)
-            print(j -4 +1, lat, lon)
-            m.scatter(lon, lat,
-                    marker='o', s=12,c='r',
-                    latlon=True)
+            mjd_end.append(stis_saa_cut['mjd_end'].iloc[j])
+            mjd_start.append(stis_saa_cut['mjd_start'].iloc[j])
 
-            ax1.annotate('{}'.format(j-4 + 1),
-                         xy=(x_coord[j], y_coord[j]),fontsize=9,
-                         xycoords='data')
 
-    ax2.semilogy([k - 4 + 1 for k in indices],
+    time_deltas = []
+
+    for i, end in enumerate(mjd_end):
+        if i == len(mjd_end)-1:
+            continue
+        delta = (mjd_start[i + 1] - end) * 24 * 60 * 60
+        print(delta)
+        time_deltas.append(delta)
+
+    #[k - 4 + 1 for k in indices]
+    x_values = [0]+list(np.cumsum(time_deltas))
+    ax.semilogy(x_values,
                 stis_saa_cut['cumulative_energy_per_area_per_time'][indices],
                  marker='o')
+
+    # add marker labels
+    xoffset = 5
+    yoffset = 5
+    for i, (x, y) in enumerate(zip(x_values, stis_saa_cut['cumulative_energy_per_area_per_time'][indices])):
+        if i+1 <= 7:
+            ax.annotate('{}'.format(i+1),
+                        xy=(x - 4*xoffset, y + yoffset),
+                        fontsize=10,
+                        xycoords='data')
+        elif i+1 == 8:
+            ax.annotate('{}'.format(i + 1),
+                        xy=(x-xoffset, y+6e5 ),
+                        fontsize=10,
+                        xycoords='data')
+        else:
+            ax.annotate('{}'.format(i+1),
+                        xy=(x + xoffset, y + yoffset),
+                        fontsize=10,
+                        xycoords='data')
+
     # STIS CR stats computed from server data
     # 25% 2524.830691
     # 50% 3215.160755
     # 75% 4341.264237
-    ax2.fill_between(
-        np.arange(0, np.max(indices)+1),
+    ax.fill_between(
+        x_values,
         2524.830691,
         4341.264237,
         alpha=0.25,
         color='k'
     )
-    ax2.axhline(3215.160755, color='k', ls='--')
-    ax1.legend(loc='best')
-    ax2.set_xticks([k - 4 + 1 for k in indices])
-    ax2.tick_params(which='both', axis='both', labelsize=10)
-    ax1.legend(loc='best')
-    ax2.set_xticks([k - 4 + 1 for k in indices])
-    ax2.set_xlim(0.25,19.75)
-    ax2.set_ylim(1e3, 1e7)
-    ax2.set_ylabel('Rate of Energy Deposition [$e^-/s/cm^2$]', fontsize=10)
-    ax2.set_xlabel('Observation Number', fontsize=10)
+    ax.axhline(3215.160755, color='k', ls='--')
+
+    # ax.set_xticks([k - 4 + 1 for k in indices])
+    ax.tick_params(which='both', axis='both', labelsize=10)
+    # ax.legend(loc='best')
+    # ax2.set_xticks([k - 4 + 1 for k in indices])
+    # ax.set_xlim(0, )
+    ax.set_ylim(1e3, 1e7)
+    ax.set_ylabel('Rate of Energy Deposition [$e^-/s/cm^2$]', fontsize=10)
+    ax.set_xlabel('Time Elapsed Since Observation 1 [s]', fontsize=10)
+    ax.xaxis.set_major_locator(MultipleLocator(100))
+    ax.xaxis.set_minor_locator(MultipleLocator(25))
+
     # ax1.set_title('STIS/CCD Observations of the South Atlantic Anomaly (SAA)')
-    fig1.savefig('stis_saa_crossing.png', format='png', dpi=250, bbox_inches='tight')
-    fig2.savefig('stis_saa_total_energy.png', format='png', dpi=250, bbox_inches='tight')
+    # fig1.savefig('stis_saa_crossing.png', format='png', dpi=250, bbox_inches='tight')
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR,'stis_saa_total_energy.png'),
+        format='png',
+        dpi=250,
+        bbox_inches='tight'
+    )
     plt.show()
     # with open('stis_saa_darks.txt', 'a') as fobj:
     #     for indx in indices:
@@ -1851,21 +2086,37 @@ def plot_grazing_cr():
     distances = np.array(distances)
 
     norm = ImageNormalize(crlabel.sci, stretch=SqrtStretch(), vmin=0, vmax=100)
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(5,5))
+    # gs = gridspec.GridSpec(
+    #     ncols=3, nrows=2, figure=fig, hspace=0.45, wspace=0.15
+    # )
+    # ax1 = fig.add_subplot(gs[0, :])
+    # ax2 = fig.add_subplot(gs[1, 0])
+    # ax3 = fig.add_subplot(gs[1, 1], sharex=ax2, sharey=ax2)
+    # ax4 = fig.add_subplot(gs[1, 2], sharex=ax2, sharey=ax2)
+
     gs = gridspec.GridSpec(
-        ncols=3, nrows=2, figure=fig, hspace=0.45, wspace=0.15
+        ncols=6, nrows=2, figure=fig, hspace=0.45, wspace=0.0
     )
-    ax1 = fig.add_subplot(gs[0, :])
-    ax2 = fig.add_subplot(gs[1, 0])
-    ax3 = fig.add_subplot(gs[1, 1], sharex=ax2, sharey=ax2)
-    ax4 = fig.add_subplot(gs[1, 2], sharex=ax2, sharey=ax2)
+    ax1 = fig.add_subplot(gs[0, 1:5])
+    ax2 = fig.add_subplot(gs[1, 0:2])
+    ax3 = fig.add_subplot(gs[1, 2:4], sharex=ax2, sharey=ax2)
+    ax4 = fig.add_subplot(gs[1, 4:6], sharex=ax2, sharey=ax2)
     # fig, ax = plt.subplots(nrows=1, ncols=2)
-    ax1.scatter(distances, pix_values, marker='o')
+    cut1 = np.where(pix_values > 1000)[0]
+    cut2 = np.where((pix_values <= 1000) and (pix_values >=250))[0]
+    cut3 = np.where(pix_values < 250)[0]
+    ax1.scatter(distances, pix_values, label='cut1', marker='o', s=3.5)
+
+    ax1.scatter(distances, pix_values, label='cut1', marker='o',
+                s=3.5)
+    ax1.scatter(distances, pix_values, label='cut1', marker='o',
+                s=3.5)
     ax1.set_yscale('log')
-    ax1.axhline(med, ls='--', color='k', label=f'Med: {med:.2f}$e^-$')
+    ax1.axhline(med, ls='--', color='k', lw=0.75, label=f'Med: {med:.2f}$e^-$')
     # ax1.axhline(100, ls='--', color='r')
-    ax1.legend(loc='upper left', edgecolor = 'k', fontsize = 8,
-               bbox_to_anchor = (1.02, 1.)
+    ax1.legend(loc='upper right', edgecolor = 'k', fontsize = 7,
+               # bbox_to_anchor = (1.02, 1.)
                )
     for axis in [ax2, ax3, ax4]:
         axis.imshow(crlabel.sci, origin='lower', norm=norm, cmap='gray')
@@ -1877,7 +2128,7 @@ def plot_grazing_cr():
             xy=(origin[1], origin[0]),
             xytext=(origin[1]+5, origin[0]+17),
             color='w',
-            fontsize=12,
+            fontsize=8,
             arrowprops={'arrowstyle':'simple'}
         )
 
@@ -1885,34 +2136,36 @@ def plot_grazing_cr():
     # origin_patch = patches.Circle((origin[1], origin[0]), radius=1., color='r')
     # ax2.add_patch(origin_patch)
     color = '#e41a1c'
+    lw=0.5
     for i, coord in enumerate(coords):
         if pix_values[i] > 1000:
             patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
-                                      width=1, height=1., lw=0.85, color=color,
+                                      width=1, height=1., lw=lw, color=color,
                                       fill=False)
             ax4.add_patch(patch)
         elif pix_values[i] >= 250 and pix_values[i] <= 1000:
             patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
-                                      width=1, height=1., lw=0.85, color=color,
+                                      width=1, height=1., lw=lw, color=color,
                                       fill=False)
             ax3.add_patch(patch)
         else:
             patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
-                                      width=1, height=1., lw=0.85, color=color,
+                                      width=1, height=1., lw=lw, color=color,
                                       fill=False)
             ax2.add_patch(patch)
 
 
-    ax1.set_ylabel('$p(x,y)$ [$e^-$]', fontsize=10)
-    ax1.set_xlabel('Distance From Origin [pix]', fontsize=10)
-    ax2.set_title('$p(x,y) < 250 e^-$', fontsize=10)
-    ax3.set_title('$ 250 \leq p(x,y) \leq 1000 e^-$',fontsize=10)
-    ax4.set_title('$ p(x,y) > 1000 e^- $', fontsize=10)
-    ax1.set_ylim(1, 1e4)
+    ax1.set_ylabel('$p(x,y)$ [$e^-$]', fontsize=8)
+    ax1.set_xlabel('Distance From Origin [pix]', fontsize=8)
+    ax2.set_title('$p(x,y) < 250 e^-$', fontsize=8)
+    ax3.set_title('$ 250 \leq p(x,y) \leq 1000 e^-$',fontsize=8)
+    ax4.set_title('$ p(x,y) > 1000 e^- $', fontsize=8)
+    ax1.set_ylim(1, 5e4)
     ax1.set_xlim(-60, 60)
     ax1.xaxis.set_minor_locator(MultipleLocator(5))
-    ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
-    ax1.tick_params(axis='both', which='major', width=1.5, length=5)
+    # ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
+    # ax1.tick_params(axis='both', which='major', width=1., length=3)
+    ax1.tick_params(axis='both', which='both', labelsize=8)
     ax2.set_xlim((795, 860))
     ax2.set_ylim((110, 205))
     fig.savefig(
@@ -1923,3 +2176,330 @@ def plot_grazing_cr():
     )
     plt.show()
 
+def plot_grazing_cr_v2():
+    fname = '/Users/nmiles/hst_cosmic_rays/data/STIS/STIS_grazing_CR/o3sl01pcq_flt.fits'
+    metadatum = metadata.GenerateMetadata(fname=fname, instr='STIS_CCD')
+    metadatum.get_image_data()
+    metadatum.get_observatory_info()
+
+    crlabel = labeler.CosmicRayLabel(
+        fname=fname,
+        gain_keyword=metadatum.instr_cfg['instr_params']['gain_keyword']
+    )
+    crlabel.get_data(
+        extname='sci',
+        extnums=metadatum.instr_cfg['instr_params']['extnums']
+    )
+
+    crlabel.ccd_labeling(
+        use_dq=False,
+        threshold_l=2,
+        structure_element=[[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+        threshold_u=5000,
+    )
+    # crlabel.plot()
+    mean, med, std = sigma_clipped_stats(crlabel.sci.ravel(), maxiters=5,
+                                         sigma_upper=4, sigma_lower=3.5)
+    sizes = pd.Series(np.bincount(crlabel.label.ravel()), name='sizes')
+    sizes = sizes.sort_values(ascending=False)
+    print(sizes.iloc[:5])
+    label_ids = sizes.index.values
+    print(label_ids[:5])
+    cr_indx = label_ids[2]
+    coords = np.where(crlabel.label == cr_indx)
+    xcr = 814
+    ycr = 177
+
+    xbound = 800
+    ybound = 112
+    yflag = coords[0] > 112
+    xflag = coords[1] > 800
+
+    coords = set(
+        list(zip(coords[0][xflag & yflag], coords[1][xflag & yflag]))
+    )
+    print(len(coords))
+    coords_to_exclude = set([(188, 811), (189, 811), (190, 811), (191,811),
+                             (188, 812), (189, 812), (190, 812), (191,812),
+                             (188, 813),
+                             (176, 812),(177, 812), (176, 813),(177, 813)])
+
+    coords = list(coords.difference(coords_to_exclude))
+    print(len(coords))
+    coords = np.array(coords)
+    # print(coords)
+    delta_y = np.max(coords[:, 1]) - np.min(coords[:, 1])
+    delta_x = np.max(coords[:, 0]) - np.min(coords[:, 0])
+    pix_values = []
+    for coord in coords:
+        pix_values.append(crlabel.sci[coord[0]][coord[1]])
+
+    origin = (154, 830)
+    print(origin)
+    distances = []
+    for coord in coords:
+        diff = coord - origin
+        if diff[1] < 0:
+            distances.append(-1*np.hypot(*diff))
+        else:
+            distances.append(np.hypot(*diff))
+    data = list(zip(pix_values, coords, distances))
+    data.sort(key=lambda val: val[-1])
+    pix_values, coords, distances = zip(*data)
+    pix_values = np.array(pix_values)
+    coords = np.array(coords)
+    distances = np.array(distances)
+
+    norm = ImageNormalize(crlabel.sci, stretch=SqrtStretch(), vmin=0, vmax=100)
+    # fig = plt.figure(figsize=(5,5))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(5,3.5), tight_layout=True)
+    ax1 = ax[0]
+    ax2 = ax[1]
+    # ax3 = ax[2]
+    # ax4 = ax[3]
+    # gs = gridspec.GridSpec(
+    #     ncols=3, nrows=2, figure=fig, hspace=0.45, wspace=0.15
+    # )
+    # ax1 = fig.add_subplot(gs[0, :])
+    # ax2 = fig.add_subplot(gs[1, 0])
+    # ax3 = fig.add_subplot(gs[1, 1], sharex=ax2, sharey=ax2)
+    # ax4 = fig.add_subplot(gs[1, 2], sharex=ax2, sharey=ax2)
+
+    # gs = gridspec.GridSpec(
+    #     ncols=6, nrows=2, figure=fig, hspace=0.45, wspace=0.0
+    # )
+    # ax1 = fig.add_subplot(gs[0, 1:5])
+    # ax2 = fig.add_subplot(gs[1, 0:2])
+    # ax3 = fig.add_subplot(gs[1, 2:4], sharex=ax2, sharey=ax2)
+    # ax4 = fig.add_subplot(gs[1, 4:6], sharex=ax2, sharey=ax2)
+    # fig, ax = plt.subplots(nrows=1, ncols=2)
+    cut1 = np.where(pix_values > 1000)[0]
+    color1 = '#648FFF'
+    cut2 = np.where((pix_values <= 1000) & (pix_values >=250))[0]
+    color2 = '#DC267F'
+    cut3 = np.where(pix_values < 250)[0]
+    color3 = '#FFB000'
+    ax1.scatter(distances[cut1], pix_values[cut1],
+                label='$p(x,y) > 1000 e^- $', marker='o', s=5, color=color1)
+
+    ax1.scatter(distances[cut2], pix_values[cut2],
+                label='$250 \leq p(x,y) \leq 1000 e^-$', marker='o', s=5, color=color2)
+    ax1.scatter(distances[cut3], pix_values[cut3],
+                label='$p(x,y) < 250 e^-$', marker='o', s=5, color=color3)
+    ax1.set_yscale('log')
+    ax1.axhline(med, ls='--', color='k', lw=0.75, label=f'Med: {med:.2f}$e^-$')
+    # ax1.axhline(100, ls='--', color='r')
+    # ax1.legend(loc='upper right', edgecolor = 'k', fontsize = 7,
+    #            # bbox_to_anchor = (1.02, 1.)
+    #            )
+    # for a in [ax2, ax3, ax4]:
+    #     a.imshow(crlabel.sci, origin='lower', norm=norm, cmap='gray')
+    #     a.grid(False)
+    #     a.get_yaxis().set_visible(False)
+    #     a.get_xaxis().set_visible(False)
+    #     a.annotate(
+    #         s='Origin',
+    #         xy=(origin[1], origin[0]),
+    #         xytext=(origin[1] + 5, origin[0] + 17),
+    #         color='w',
+    #         fontsize=10,
+    #         arrowprops={'arrowstyle': 'simple'}
+    #     )
+    ax2.imshow(crlabel.sci, origin='lower', norm=norm, cmap='gray')
+    ax2.grid(False)
+    ax2.get_yaxis().set_visible(False)
+    ax2.get_xaxis().set_visible(False)
+    ax2.annotate(
+        s='Origin',
+        xy=(origin[1], origin[0]),
+        xytext=(origin[1]+5, origin[0]+17),
+        color='w',
+        fontsize=10,
+        arrowprops={'arrowstyle':'simple'}
+    )
+
+
+    # origin_patch = patches.Circle((origin[1], origin[0]), radius=1., color='r')
+    # ax2.add_patch(origin_patch)
+    color = '#e41a1c'
+    lw=1.15
+    for i, coord in enumerate(coords):
+        if pix_values[i] > 1000:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=lw, color=color1,
+                                      fill=False)
+            ax2.add_patch(patch)
+        elif pix_values[i] >= 250 and pix_values[i] <= 1000:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=lw, color=color2,
+                                      fill=False)
+            ax2.add_patch(patch)
+        else:
+            patch = patches.Rectangle((coord[1] - 0.5, coord[0] - 0.5),
+                                      width=1, height=1., lw=lw, color=color3,
+                                      fill=False)
+            ax2.add_patch(patch)
+
+
+    ax1.set_ylabel('$p(x,y)$ [$e^-$]', fontsize=8)
+    ax1.set_xlabel('Distance From Origin [pix]', fontsize=8)
+    # ax4.set_title('$p(x,y) < 250 e^-$', fontsize=8)
+    # ax3.set_title('$ 250 \leq p(x,y) \leq 1000 e^-$',fontsize=8)
+    # ax2.set_title('$ p(x,y) > 1000 e^- $', fontsize=8)
+    ax1.set_ylim(1, 5e4)
+    ax1.set_xlim(-60, 60)
+    ax1.xaxis.set_major_locator(MultipleLocator(20))
+    # ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
+    # ax1.tick_params(axis='both', which='major', width=1., length=3)
+    ax1.tick_params(axis='both', which='both', labelsize=8)
+    # ax1.legend(
+    #     bbox_to_anchor=(0., 1.1, 1.5, .402),fontsize=8,
+    #     loc='lower left', ncol=4, edgecolor='k')
+    # for a in [ax2, ax3, ax4]:
+    #     a.set_xlim((795, 860))
+    #     a.set_ylim((110, 205))
+    ax2.set_xlim((795, 860))
+    ax2.set_ylim((110, 205))
+    fig.savefig(
+        os.path.join(APJ_PLOT_DIR,'grazing_cr_plot.png'),
+        dpi=250,
+        bbox_inches='tight',
+        format='png'
+    )
+    plt.show()
+
+def label_comp_plot_v2(
+        denom_la='total_num_crpix_lacosmic',
+        denom_thresh='total_num_crpix_thresh'
+):
+    df = pd.read_csv('/Users/nmiles/hst_cosmic_rays/data/ACS/'
+                     'lacosmic_testset/2003/acs_wfc_img_stats_2003_MAD.txt',
+                     header=0)
+
+
+    # total_lacosmic = df['total_num_crpix_lacosmic'] / df['total_num_crpix_dq']
+    alpha_lacosmic = df['num_correct_crpix_lacosmic'] / df['total_num_crpix_lacosmic']
+
+    print(f"Mean accuracy LAcosmic: {alpha_lacosmic.mean():.2%}")
+    beta_lacosmic = df['num_incorrect_crpix_lacosmic'] / df[denom_la]
+    print(f"{beta_lacosmic.mean():.2%}")
+    alpha_thresh = df['num_correct_crpix_thresh'] / df['total_num_crpix_thresh']
+    # total_thresh = df['total_num_crpix_thresh'] / df['total_num_crpix_dq']
+
+    print(f"Mean accuracy Threshold Labeling: {alpha_thresh.mean():.2%}")
+    beta_thresh = df['num_incorrect_crpix_thresh'] / df[denom_thresh]
+    print(f"{beta_thresh.mean():.2%}")
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=False,
+                           figsize=(7, 4), gridspec_kw={'wspace':0.25})
+    ax = axes[0]
+    ax1 = axes[1]
+    xpoints = [i + 1 for i in range(len(df))]
+    la_scat = ax.scatter(xpoints, alpha_lacosmic, label='LAcosmic',
+                         marker='x',lw=0.75, s=7)
+    ax.axhline(alpha_lacosmic.mean(), ls='--', c='tab:red')
+    ax.axhline(alpha_thresh.mean() , ls=':', c='tab:blue')
+    thresh_scat = ax.scatter(xpoints, alpha_thresh,
+                                label='Threshold Labeling', s=7)
+
+    # ax_leg = ax.legend(loc='best', edgecolor='k')
+    ax.tick_params(axis='both', which='minor', width=1, length=2.5)
+    ax.tick_params(axis='both', which='major', width=1.5, length=5)
+
+    # for i in range(len(ax_leg.legendHandles)):
+    #     ax_leg.legendHandles[i]._sizes = [15]
+
+    ax.yaxis.set_minor_locator(MultipleLocator(0.05))
+    ax.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax.xaxis.set_minor_locator(MultipleLocator(5))
+    ax.xaxis.set_major_locator(MultipleLocator(20))
+    ax.set_ylim((0, 1))
+    ax.set_xlim((0, 110))
+    ax.set_ylabel('$\\alpha$', fontsize=12)
+    # ax.axhline(alpha_lacosmic.mean(), ls='--', c='tab:red')
+    # ax.axhline(alpha_thresh.mean(), ls=':', c='tab:blue')
+    ax.set_xlabel('Image Number')
+    fout = os.path.join(
+        APJ_PLOT_DIR,
+        'fraction_of_acsrej_pix_identified.png'
+    )
+    # fig.savefig(fout, format='png', dpi=200, bbox_inches='tight')
+    # plt.show()
+
+    # fig, ax = plt.subplots(nrows=1, ncols=1, sharex=True, sharey=True,
+    #                        figsize=(5, 3.75))
+    xpoints = [i + 1 for i in range(len(df))]
+    la_scat = ax1.scatter(xpoints, beta_lacosmic, label='LAcosmic',marker='x', s=7, lw=0.75,c='tab:red')
+    # la_color = la_scat.get_facecolors().tolist()
+    # print(la_color)
+    ax1.axhline(beta_lacosmic.mean(),ls='--', c='tab:red')
+    thresh_scat = ax1.scatter(xpoints, beta_thresh, c='tab:blue',
+                             label='Threshold Labeling', s=7)
+    ax1.axhline(beta_thresh.mean(), ls=':', c='tab:blue')
+    ax_leg = ax1.legend(
+        edgecolor='k',
+        bbox_to_anchor=(-0.75, 1.02, 1., .102),
+        loc='lower left',
+        ncol=2,
+        # mode="expand",
+        borderaxespad=0.2
+    )
+    ax1.tick_params(axis='both', which='minor', width=1, length=2.5)
+    ax1.tick_params(axis='both', which='major', width=1.5, length=5)
+
+    for i in range(len(ax_leg.legendHandles)):
+        ax_leg.legendHandles[i]._sizes = [15]
+
+    ax1.yaxis.set_minor_locator(MultipleLocator(0.05))
+    ax1.yaxis.set_major_locator(MultipleLocator(0.2))
+    ax1.xaxis.set_minor_locator(MultipleLocator(5))
+    ax1.xaxis.set_major_locator(MultipleLocator(20))
+    ax1.set_ylim((0, 1))
+    ax1.set_xlim((0, 110))
+    ax1.set_ylabel('$\\beta$', fontsize=12)
+    ax1.set_xlabel('Image Number')
+    fout = os.path.join(
+        APJ_PLOT_DIR,
+        'lacosmic_vs_threshold_labeling.png'
+    )
+    fig.savefig(fout, format='png', dpi=200, bbox_inches='tight')
+    plt.show()
+    return df
+
+
+def label_comp_crs(
+        denom_la='total_num_cr_dq',
+        denom_thresh='total_num_cr_dq'
+):
+    df = pd.read_csv('/Users/nmiles/hst_cosmic_rays/data/ACS/'
+                     'lacosmic_testset/2003/acs_wfc_img_stats_2003_MAD.txt',
+                     header=0)
+    fig, ax = plt.subplots(nrows=1, ncols=1, sharex=True, sharey=True)
+
+    alpha_lacosmic = df['total_num_cr_lacosmic'] / df[denom_la]
+    # beta_lacosmic = df['num_incorrect_crpix_lacosmic'] / df[denom_la]
+
+    alpha_thresh = df['total_num_cr_thresh'] / df[denom_thresh]
+    # beta_thresh = df['num_incorrect_crpix_thresh'] / df[denom_thresh]
+
+    xpoints = [i + 1 for i in range(len(df))]
+    la_scat = ax.scatter(xpoints, alpha_lacosmic, label='LAcosmic',s=4)
+    thresh_scat = ax.scatter(xpoints, alpha_thresh, label='Threshold Labeling',s=4)
+    # ax[1].scatter(xpoints, beta_lacosmic, label='LAcosmic',s=4)
+    # ax[1].scatter(xpoints, beta_thresh, label='Threshold Labeling',s=4)
+    ax_leg = ax.legend(loc='best')
+
+    for i in range(len(ax_leg.legendHandles)):
+        ax_leg.legendHandles[i]._sizes = [15]
+
+    ax.set_ylim((0,1))
+    ax.set_xlim((0,110))
+    plt.show()
+
+
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()

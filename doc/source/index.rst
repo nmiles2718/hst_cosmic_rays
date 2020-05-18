@@ -1,11 +1,12 @@
 .. _hst_cosmic_rays:
 
+===============
 HSTcosmicrays
 ===============
 
 **Author**: Nathan Miles
 
-HSTcosmicrays is a package designed to extract morphological properties of cosmic rays identified in calibration dark frames. The package is broken down into a series of modules which are then combined via the :py:class:`~pipeline.CosmicRayPipeline` object contained in the :py:mod:`~pipeline` module. At the present moment, the pipeline will analyze all of the following CCD and IR imagers listed below:
+HSTcosmicrays is a package designed to extract morphological properties of cosmic rays identified in calibration dark frames. The package is broken down into a series of modules which are then combined via the :py:class:`~pipeline.CosmicRayPipeline` object contained in the :py:mod:`~pipeline` module. At the present moment, the pipeline will analyze all of the following CCDs imagers:
 
     * `Advanced Camera for Surveys (ACS) <https://hst-docs.stsci.edu/display/ACSIHB/>`_
       
@@ -19,19 +20,30 @@ HSTcosmicrays is a package designed to extract morphological properties of cosmi
     * `Wide Field Camera 3 (WFC3) <https://hst-docs.stsci.edu/display/WFC3IHB/WFC3+Instrument+Handbook>`_
       
       * UVIS channel [active]
-      * IR channel [active]
 
     * `Wide Field and Planetary Camera 2 (WFPC2) <http://documents.stsci.edu/hst/wfpc2/documents/handbooks/cycle17/wfpc2_ihb.pdf>`_
       
       * Wide Field Detector 1, 2, and 3 (WF1, WF2, WF3) [inactive]
       * Planetary Camera (PC) [inactive]
 
+In the future, we will extend the pipeline to handle the following IR imagers
+as well:
+
     * `Near Infrared Camera and Multi-Object Spectrometer (NICMOS) <http://www.stsci.edu/hst/nicmos/documents/handbooks/current_NEW/nicmos_ihb.pdf>`_
-      
+
       * Near Infrared Camera 1, 2, and 3 (NIC1, NIC2, NIC3) [inactive]
 
 
-The pipeline uses a configuration file to obtain variety of instrument specific configuration items, as well as, some global configuration items that are subsequently used throughout the pipeline. A summary of the steps taken by the pipeline are as follows:
+    * `Wide Field Camera 3 (WFC3) <https://hst-docs.stsci.edu/display/WFC3IHB/WFC3+Instrument+Handbook>`_
+
+      * IR channel [active]
+
+
+Overview
+--------
+
+
+The pipeline uses a configuration file to obtain variety of instrument specific configuration items, as well as some global configuration items that are subsequently used throughout the pipeline.  The pipeline is designed to be lightweight with respect to storage requirements of the *downloaded* data. A summary of the steps taken by the pipeline are as follows:
 
     #. Initialization (:py:mod:`~utils.initialize`)
 
@@ -74,24 +86,17 @@ The pipeline uses a configuration file to obtain variety of instrument specific 
          write out the computed statistics and delete the downloaded data.
 
 
-
-
- The pipeline is designed to be lightweight with respect to storage requirements of the *downloaded* data. A the end of processing the resulting data files contain various properties describing every single cosmic ray identfied. The information extracted by the pipeline is as follows:
-
-
-
-
-
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
    examples
+   pipeline
+   pipeline_config
    download
    label
    process
-   pipeline
    stat_utils
    utils
 

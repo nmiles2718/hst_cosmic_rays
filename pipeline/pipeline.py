@@ -54,28 +54,34 @@ parser.add_argument('-process',
                     default=False)
 
 parser.add_argument('-ccd',
-                    help='Switch for process CCD data',
+                    help='Switch for processing CCD data',
                     action='store_true',
                     default=False)
 
 parser.add_argument('-ir',
-                    help='Switch for process IR data',
+                    help='Switch for processing IR data',
                     action='store_true',
                     default=False)
 
 parser.add_argument('-chunks',
-                    help='Number of chunks to break the entire dataset into',
+                    help='Number of chunks to break the generated results into. '
+                         '\nFor example, if `-chunks 2` is passed, then two HDF5 '
+                         'files for each statistic will be generated. The first '
+                         'half of the dataset will be written to file 1 and the '
+                         'second half will be written to file 2. This is to '
+                         'offset the degradation in write time as the number of '
+                         'datasets stored in the HDF5 increases.',
                     type=int,
                     default=4)
 
 
 parser.add_argument('-analyze',
-                    help='Run the analysis and extract cosmic ray statistics',
+                    help='Switch for analyzing and extract cosmic ray statistics',
                     action='store_true',
                     default=False)
 
 parser.add_argument('-use_dq',
-                    help='Use the DQ arrays to perform labeling',
+                    help='Switch for using the DQ arrays to perform labeling',
                     action='store_true',
                     default=False)
 
@@ -88,15 +94,10 @@ parser.add_argument('-initialize',
                     action='store_true',
                     default=False,
                     help='Initialize the HDF5 files for the instrument. \n'
-                         '**Warning**: Should only be included the first time'
+                         '\n**Warning**: Should only be included the first time'
                          ' the pipeline is run becuase it will overwrite any '
                          'pre-existing HDF5 files.')
 
-parser.add_argument('-store_downloads',
-                    action='store_true',
-                    default=False,
-                    help='Switch for toggling on the storage of downloaded data'
-                    )
 
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
@@ -110,7 +111,8 @@ class CosmicRayPipeline(object):
     def __init__(self, aws=None, analyze=None, download=None, ccd=None,
                  chunks=None, ir=None, instr=None, initialize=None,
                  process=None, store_downloads=None, use_dq=None, test=None):
-
+        """ Class for combining the individual tasks into a single pipeline.
+        """
         # Initialize Args
         self._aws = aws
         self._analyze = analyze
@@ -195,10 +197,12 @@ class CosmicRayPipeline(object):
 
     @property
     def chunks(self):
+
         return self._chunks
 
     @chunks.getter
     def chunks(self):
+        """Number of chunks to break the entire dataset into"""
         return self._chunks
 
     @chunks.setter
@@ -236,6 +240,7 @@ class CosmicRayPipeline(object):
 
     @property
     def failed_observation(self):
+        """List of any observations that failed to be processed for given month"""
         return self._failed_observations
 
     @failed_observation.setter
@@ -345,7 +350,20 @@ class CosmicRayPipeline(object):
         return self._use_dq
 
     def run_downloader(self, range, downloader):
-        """Download the data"""
+        """Download the data
+
+        Parameters
+        ----------
+        range : Tuple
+         Tuple of `astropy.time.Time` objects defining the one month interval
+
+        downloader : :py:class:`~download.download.Downloader`
+
+        Returns
+        -------
+        runtime : float
+            Time required to process in minutes
+        """
         start_time = time.time()
         downloader.query(range=range, aws=self.aws)
         downloader.download(range[0].datetime.date().isoformat())
@@ -353,7 +371,24 @@ class CosmicRayPipeline(object):
         return (end_time - start_time)/60
 
     def run_labeling_single(self, fname):
-        """Convenience method to facilitate parallelization"""
+        """Run the labeling analysis on a single image
+
+        Convenience method designed to facilitate the parallelization of the
+        labeling analysis
+
+        Parameters
+        ----------
+        fname : str
+            Full path to file to be analyzed
+
+        Returns
+        -------
+        file_metadata : :py:class:`~utils.metadata.GenerateMetadata`
+            Object containing relevant metadata for input file
+
+        cr_stats_dict : `dict`
+            Dictionary containing the computed statistics
+        """
 
         file_metadata = metadata.GenerateMetadata(fname,
                                                   instr=self.instr,
@@ -409,7 +444,25 @@ class CosmicRayPipeline(object):
         return cr_stats_dict, file_metadata
 
     def run_labeling_all(self, chunk_num):
-        """Run the labeling analysis and compute the statistics"""
+        """Run the labeling analysis and compute the statistics
+
+        Run the labeling process to extract data for every CR in each image and
+        save the results.
+
+        Parameters
+        ----------
+        chunk_num : int
+            Current chunk number we are analyzing. Used to write the results to
+            the proper file
+
+        Returns
+        -------
+        runtime : float
+            Time required to process in minutes
+
+        results : tuple
+            Results from analyzing all files in `flist`.
+        """
         start_time = time.time()
 
         delayed_objects = [
@@ -435,7 +488,23 @@ class CosmicRayPipeline(object):
         return (end_time - start_time)/60., results
 
     def run_processing(self, start, stop):
-        """Process the data"""
+        """ Process the data in the given time interval
+
+
+        Parameters
+        ----------
+        start : `astropy.time.Time`
+            Start date of the one month interval
+
+        stop : `astropy.time.Time`
+            Stop date of the one month interval
+
+        Returns
+        -------
+        runtime : float
+            Time required to process in minutes
+
+        """
         start_time = time.time()
 
         # Process only if there are files to process
@@ -471,7 +540,18 @@ class CosmicRayPipeline(object):
         return (end_time - start_time) / 60
 
     def send_email(self, start, stop, results):
-        """
+        """Send email notifying user that a one-month chunk has completed
+
+        Parameters
+        ----------
+        start : `astropy.time.Time`
+            Start date of the one month interval
+
+        stop : `astropy.time.Time`
+            Stop date of the one month interval
+
+        results : `list`
+            The results from the CR analysis
 
         Returns
         -------
@@ -512,8 +592,11 @@ class CosmicRayPipeline(object):
                                                start.datetime.date(),
                                                stop.datetime.date()))
         e.subject = subj
-        e.sender = ['nmiles','stsci.edu']
-        e.recipient = ['nmiles', 'stsci.edu']
+        e.sender = [
+            self.config['email']['username'],
+            self.config['email']['domain']
+            ]
+        e.recipient = e.sender
 
         if self.aws:
             e.SendEmailAWS()
@@ -609,7 +692,9 @@ class CosmicRayPipeline(object):
                     process_time = self.run_processing(start, stop)
                     self.processing_times['cr_rejection'] = process_time
 
-
+                # Analyze the images and extract the results iff files
+                # were successfully processed through CR rejection AND
+                # the analyze flag is True.
                 if self.analyze and self.flist:
                     analysis_time, results = self.run_labeling_all(
                         chunk_num=i + 1

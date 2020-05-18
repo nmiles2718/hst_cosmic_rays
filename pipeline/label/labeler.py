@@ -289,7 +289,7 @@ class Label(object):
     def get_ir_label(self, samptime=None):
         """"""
 
-    def mk_fig(self, show_axis_labels=True, show_grid=False):
+    def mk_fig(self, figsize=(6,6), show_axis_labels=True, show_grid=False):
         """Generate a figure with two axes for plotting the label
 
         Parameters
@@ -314,7 +314,7 @@ class Label(object):
 
         """
         grid = plt.GridSpec(1, 2, wspace=0.05, hspace=0.)
-        fig = plt.figure(figsize=(6, 4))
+        fig = plt.figure(figsize=figsize)
         ax1 = fig.add_subplot(grid[0, 0])
         ax2 = fig.add_subplot(grid[0, 1], sharex=ax1, sharey=ax1)
         for ax in [ax1, ax2]:
@@ -334,6 +334,7 @@ class Label(object):
             xlim=None,
             ylim=None,
             fout=None,
+            figsize=(6,6),
             save=False,
             stretch='log',
             vmin=0,
@@ -366,7 +367,7 @@ class Label(object):
 
         """
 
-        fig, ax1, ax2 = self.mk_fig()
+        fig, ax1, ax2 = self.mk_fig(figsize=figsize)
         ncolors = np.max(self.label) + 1
         prng = np.random.RandomState(1234)
         h = prng.uniform(low=0.0, high=1.0, size=ncolors)
@@ -427,10 +428,10 @@ class Label(object):
         fig.suptitle('{}'.format(instr), y=0.96,)
         if save:
             fig.savefig(fout,
-                        format='eps',
+                        format='png',
                         dpi=250,
                         bbox_inches='tight',
-                        transparent=True)
+                        transparent=False)
         self.ax1 = ax1
         self.ax2 = ax2
         plt.show()

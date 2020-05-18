@@ -13,7 +13,7 @@ from astropy.stats import sigma_clipped_stats, LombScargle
 import astropy.units as u
 from astropy.visualization import ImageNormalize, SqrtStretch, LinearStretch, \
     ZScaleInterval, LogStretch, ManualInterval
-import costools
+# import costools
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER

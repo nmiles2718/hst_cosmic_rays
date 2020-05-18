@@ -313,7 +313,7 @@ class Initializer(object):
                 lines = fobj.readlines()
                 dates = [line.strip('\n') for line in lines]
         except FileNotFoundError as e:
-            LOG.error(e)
+            LOG.warning("Found 0 previously processed date ranges")
             self.previously_analyzed = []
         else:
             self.previously_analyzed = dates

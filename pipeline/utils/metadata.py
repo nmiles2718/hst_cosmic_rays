@@ -9,8 +9,9 @@ that is used to extract the following information from each observation:
   * The total integration time of the observation (i.e. total exposure time plus additional factor to account for readout)
 
 """
-
+from collections.abc import Iterable
 import logging
+import os
 
 from astropy.io import fits
 from astropy.time import Time
@@ -19,7 +20,6 @@ from astropy.constants import R_earth
 from calcos import orbit
 from calcos.timeline import gmst, DEGtoRAD, rectToSph
 import numpy as np
-import os
 import yaml
 
 
@@ -69,12 +69,22 @@ class GenerateMetadata(object):
         self._telemetry_file = None
         self._date = None
         self._metadata = {}
+        self._instr = instr
 
 
     @property
     def fname(self):
         """Name of FITS file"""
         return self._fname
+
+    @property
+    def instr(self):
+        """Instrument name"""
+        return self._instr
+
+    @instr.setter
+    def instr(self, value):
+        self._instr = value
 
     @property
     def instr_cfg(self):
@@ -183,15 +193,19 @@ class GenerateMetadata(object):
             '{} {}'.format(header_data['date-obs'], header_data['time-obs']),
             format='iso'
         )
+        readout_time = self.instr_cfg['instr_params']['readout_time']
+        # Check to see if there are multiple readout times (WFPC2 only)
+        if isinstance(readout_time, Iterable):
+            if header_data['exptime'] <= 180:
+                 readout_time = readout_time[0]
+            else:
+                readout_time = readout_time[1]
 
         self.metadata['date'] = date.iso
         self.metadata['expstart'] = Time(header_data['expstart'], format='mjd')
         self.metadata['expend'] = Time(header_data['expend'], format='mjd')
         self.metadata['integration_time'] = \
-            header_data['exptime'] + \
-            header_data['flashdur'] + \
-            self.instr_cfg['instr_params']['readout_time']
-
+            header_data['exptime'] + header_data['flashdur'] + readout_time
 
     def get_observatory_info(self, time_delta=None):
         """Compute the lat/lon and altitude of HST.

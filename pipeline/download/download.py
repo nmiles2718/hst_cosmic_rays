@@ -82,7 +82,7 @@ class Downloader(object):
         self._filtered_table = None
         self._instr = instr.replace('_', '/') # put into format for astroquery
         self._msg_div = '-' * 79
-        self._obstype = 'all'
+        self._obstype = 'calibration'
         self._product_type = ['image', 'spectrum'] # SPECTRUM is for STIS
         self._products = {}
         self._project = 'HST'
@@ -108,18 +108,6 @@ class Downloader(object):
          """
         return self._instr_cfg
 
-    @property
-    def dates(self):
-        return self._dates
-
-    @dates.getter
-    def dates(self):
-        """A list of one month date intervals"""
-        return self._dates
-
-    @dates.setter
-    def dates(self, value):
-        self._dates = value
 
     @property
     def download_dir(self):
@@ -198,32 +186,6 @@ class Downloader(object):
         return self._project
 
     @property
-    def start_date(self):
-        return self._start_date
-
-    @start_date.getter
-    def start_date(self):
-        """Earliest possible date for any observations taken by instrument"""
-        return self._start_date
-
-    @start_date.setter
-    def start_date(self, value):
-        self._start_date = value
-
-    @property
-    def stop_date(self):
-        return self._stop_date
-
-    @stop_date.getter
-    def stop_date(self):
-        """Latest possible date for any observations taken by instrument"""
-        return self._stop_date
-
-    @stop_date.setter
-    def stop_date(self, value):
-        self._stop_date = value
-
-    @property
     def SubGroupDescription(self):
         return self._SubGroupDescription
 
@@ -250,14 +212,15 @@ class Downloader(object):
         """Name of target to download"""
         return self._target_name
 
-    def query(self, range, aws=False):
+    def query(self, date_range, aws=False):
         """ Submit a query to MAST for observations in the date range
 
         Parameters
         ----------
-        range : tuple
+        date_range : tuple
             Tuple of `astropy.time.Time` objects correspond to the beginning
             and end of a one month interval
+
         aws : bool
             If True, query returns references to data hosted in S3.
 
@@ -265,7 +228,7 @@ class Downloader(object):
         LOG.info('Submitting query to MAST')
         if aws:
             Observations.enable_s3_hst_dataset()
-        start, stop = range
+        start, stop = date_range
         # there shouldn't be any data taken after the most recent file
         query_params = {
             'project': self.project,

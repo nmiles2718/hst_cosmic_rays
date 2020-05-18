@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-The `pipeline.process.process` module contains two classes that are used to
+The :py:mod:`~process.process` module contains two classes that are used to
 process the data. The first class :py:class:`~process.process.ProcessCCD` is
 used for active CCD imagers (ACS, STIS, and WFC3). Each of the
 active CCD imagers has a pythonic interface to their calibration pipelines,
@@ -591,7 +591,7 @@ class ProcessCCD(object):
 
         LOG.info('Done!')
         end_time = time.time()
-        LOG.info('Duration: {}'.format((end_time - start_time)/60))
+        LOG.info('Duration: {:.2f} min'.format((end_time - start_time)/60))
 
 
 class ProcessIR(object):

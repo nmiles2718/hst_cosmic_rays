@@ -6,7 +6,7 @@ ACS_WFC:
     sizes: '/results/ACS/acs_wfc_cr_sizes.hdf5'
     shapes: '/results/ACS/acs_wfc_cr_shapes.hdf5'
     energy_deposited: '/results/ACS/acs_wfc_cr_energy_deposited.hdf5'
-  failed: '/results/acs_wfc_failed_observations.txt'
+  failed: '/results/ACS/acs_wfc_failed_observations.txt'
   astroquery:
     date_range: '2002-03-01'
     SubGroupDescription:
@@ -28,7 +28,7 @@ ACS_HRC:
     sizes: '/results/ACS/acs_hrc_cr_sizes.hdf5'
     shapes: '/results/ACS/acs_hrc_cr_shapes.hdf5'
     energy_deposited: '/results/ACS/acs_hrc_cr_energy_deposited.hdf5'
-  failed: '/results/acs_hrc_failed_observations.txt'
+  failed: '/results/ACS/acs_hrc_failed_observations.txt'
   astroquery:
     date_range:
       - '2002-03-01'
@@ -52,7 +52,7 @@ NICMOS_NIC1:
     sizes: '/results/NICMOS/nicmos_nic1_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic1_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic1_cr_energy_deposited.hdf5'
-  failed: '/results/nicmos_nic1_failed_observations.txt'
+  failed: '/results/NICMOS/nicmos_nic1_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -69,7 +69,7 @@ NICMOS_NIC2:
     sizes: '/results/NICMOS/nicmos_nic2_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic2_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic2_cr_energy_deposited.hdf5'
-  failed: '/results/nicmos_nic2_failed_observations.txt'
+  failed: '/results/NICMOS/nicmos_nic2_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -87,7 +87,7 @@ NICMOS_NIC3:
     sizes: '/results/NICMOS/nicmos_nic3_cr_sizes.hdf5'
     shapes: '/results/NICMOS/nicmos_nic3_cr_shapes.hdf5'
     energy_deposited: '/results/NICMOS/nicmos_nic3_cr_energy_deposited.hdf5'
-  failed: '/results/nicmos_nic3_failed_observations.txt'
+  failed: '/results/NICMOS/nicmos_nic3_failed_observations.txt'
   astroquery:
     date_range:
       - '1997-02-01'
@@ -105,7 +105,7 @@ STIS_CCD:
     sizes: '/results/STIS/stis_ccd_cr_sizes.hdf5'
     shapes: '/results/STIS/stis_ccd_cr_shapes.hdf5'
     energy_deposited: '/results/STIS/stis_ccd_cr_energy_deposited.hdf5'
-  failed: '/results/stis_ccd_failed_observations.txt'
+  failed: '/results/STIS/stis_ccd_failed_observations.txt'
   astroquery:
     date_range: '1997-02-01'
     SubGroupDescription:
@@ -182,7 +182,7 @@ WFPC2:
     download_dir: '/data/WFPC2/'
   instr_params:
     extnums: [1,2,3,4]
-    readout_time: 30
+    readout_time: [30,60]
     gain_keyword: 'ATODGAIN'
     detector_size: 5.76
     pixel_size: 15
@@ -193,3 +193,7 @@ grp_names:
   sizes: sizes
   shapes: shapes
   energy_deposited: energy_deposited
+
+email:
+  username: ""
+  domain: ""
