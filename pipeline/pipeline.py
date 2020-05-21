@@ -349,12 +349,12 @@ class CosmicRayPipeline(object):
         """Switch for specifying what to use in the labeling analysis"""
         return self._use_dq
 
-    def run_downloader(self, range, downloader):
+    def run_downloader(self, date_range, downloader):
         """Download the data
 
         Parameters
         ----------
-        range : Tuple
+        date_range : Tuple
          Tuple of `astropy.time.Time` objects defining the one month interval
 
         downloader : :py:class:`~download.download.Downloader`
@@ -365,8 +365,8 @@ class CosmicRayPipeline(object):
             Time required to process in minutes
         """
         start_time = time.time()
-        downloader.query(range=range, aws=self.aws)
-        downloader.download(range[0].datetime.date().isoformat())
+        downloader.query(date_range=date_range, aws=self.aws)
+        downloader.download(date_range[0].datetime.date().isoformat())
         end_time = time.time()
         return (end_time - start_time)/60
 
@@ -421,8 +421,9 @@ class CosmicRayPipeline(object):
             cr_label.run_ccd_label(**label_params)
 
         # Compute the integration time
-        integration_time = cr_label.exptime + \
-                           self.instr_cfg['instr_params']['readout_time']
+        #integration_time = cr_label.exptime + \
+        #                   self.instr_cfg['instr_params']['readout_time']
+        integration_time = file_metadata.metadata['integration_time']
         detector_size = self.instr_cfg['instr_params']['detector_size']
 
         cr_stats = statshandler.Stats(
@@ -593,8 +594,8 @@ class CosmicRayPipeline(object):
                                                stop.datetime.date()))
         e.subject = subj
         e.sender = [
-            self.config['email']['username'],
-            self.config['email']['domain']
+            self.cfg['email']['username'],
+            self.cfg['email']['domain']
             ]
         e.recipient = e.sender
 
@@ -682,7 +683,7 @@ class CosmicRayPipeline(object):
                 LOG.info('Analyzing data from {} to {}'.format(start.iso,
                                                                stop.iso))
                 if self.download:
-                    download_time = self.run_downloader(range=(start, stop),
+                    download_time = self.run_downloader(date_range=(start, stop),
                                                         downloader=downloader)
                     self.processing_times['download'] = download_time
 

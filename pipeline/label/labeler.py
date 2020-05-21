@@ -240,6 +240,15 @@ class Label(object):
             LOG.info('Mean: {:.3f}, Median: {:.3f}, Median Absolute Deivation: {:.3f}'.format(
                 mean, median, std_mad)
             )
+            # For short exposures the median absolute deivation can be very close
+            # to zero. If it is less than 1/5, set its value to the regular std
+            if std_mad < 0.2:
+                LOG.info(
+                    'Median abs. deviation is less than the threshold\n'
+                    'Replacing it with the standard devation...'
+                )
+                
+                std_mad = std
 
 
             # Create an array of 1's and 0's using the SCI data
@@ -278,16 +287,23 @@ class Label(object):
 
     # TODO: add functionality for deblending over-lapping cosmic rays
     def deblend_objects(self):
-        """
+        """ Not implemented
+
+        Will raise `NotImplementedError`
 
         Returns
         -------
 
         """
+        raise NotImplementedError("Method not implemented")
 
     #TODO: Come up with a good scheme for labeling CRs in IR data
-    def get_ir_label(self, samptime=None):
-        """"""
+    def ir_labeling(self, samptime=None):
+        """Not  implemented
+
+        Will raise `NotImplementedError`.
+        """
+        raise NotImplementedError('Method not implemented')
 
     def mk_fig(self, figsize=(6,6), show_axis_labels=True, show_grid=False):
         """Generate a figure with two axes for plotting the label
@@ -509,11 +525,3 @@ class CosmicRayLabel(Label):
         if plot:
             self.plot()
 
-    def run_ir_label(self):
-        """ Run labeling algorithm on IR data
-
-        Returns
-        -------
-
-        """
-        pass

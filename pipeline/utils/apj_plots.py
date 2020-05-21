@@ -21,7 +21,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import datahandler as dh
 import sys
-sys.path.append('/Users/nmiles/hst_cosmic_rays/pipeline/')
+sys.path.append('/ifs/missions/projects/plcosmic/hst_cosmic_rays/pipeline/')
 import dask.array as da
 from process import process
 from label import labeler
@@ -64,7 +64,7 @@ import metadata
 
 
 COSMICRAY_ML = '/Users/nmiles/hst_cosmic_rays/cosmicrayml/'
-APJ_PLOT_DIR = '/Users/nmiles/hst_cosmic_rays/APJ_plots/'
+APJ_PLOT_DIR = '/ifs/missions/projects/plcosmic/hst_cosmic_rays/APJ_plots/'
 
 
 def plot_cosmicrayml_pointins(data_dict, vmins=[0,0], vmaxes=[1000, 1000]):
@@ -223,7 +223,12 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis,cartopy=False, orbital_path1=None, 
     for key in combined_data.keys():
         print(key, len(combined_data[key]))
     df_combined = pd.DataFrame(combined_data)
+<<<<<<< Updated upstream
     df_combined_cut = df_combined[df_combined.incident_cr_rate.gt(0.4)]
+=======
+    df_combined_cut = df_combined[df_combined.integration_time.gt(800)]
+    print(f"{len(df_combined_cut):,} observations with integration times longer than 800 seconds") 
+>>>>>>> Stashed changes
     df_combined.to_csv('combined_hst_cr_vs_loc_data.txt', header=True, index=False)
     if cartopy:
         fig = v.plot_hst_loc_cartopy(df=df_combined, key='start', orbital_path1=orbital_path1,
@@ -302,7 +307,7 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
                           '#f781bf', '#a65628', '#984ea3',
                           '#999999', '#e41a1c', '#dede00']
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,5))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6,3.75))
     # Only show plots for flashdurs that have more than 30 observations
     cut = counts.iloc[:N]
     cut_norm =  counts_norm.iloc[:N]
@@ -311,6 +316,7 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
     total = match_cut.sum().sum()
     percentages=100*instr_sum/total
     new_labels = [f'{instr} ({val:.3f}%)' for instr, val in zip(percentages.index.values, percentages)]
+
     print(new_labels)
     match_cut.sort_index(inplace=True)
     barh = match_cut.plot.barh(ax=ax, logy=logy, logx=logx,color=CB_color_cycle,rot=0,stacked=True)
@@ -326,6 +332,7 @@ def plot_exptime_counts(integration_df, combined_df, N=20, logy=True, logx=True,
                             loc=2,
                             ncol=1, edgecolor='k')
     ax.set_ylabel('Integration Time [s]')
+    ax.set_xlabel('Number of Exposures')
     if add_title:
         ax.set_title(f'Top {N:.0f} Integration Times')
     fout = os.path.join(APJ_PLOT_DIR, 'exptime_comp_plot.png')
@@ -490,7 +497,7 @@ def rate_hist(hrc, stis, wfc, wfpc2, uvis):
         masked_array = results[0]
         bounds = results[1]
         mean = masked_array.mean()
-        mean_std = masked_array.std()/masked_array.count()
+        mean_std = masked_array.std()/np.sqrt(masked_array.count())
         median = cr_rate.quantile(0.5)
         lower_20 = cr_rate.quantile(0.25)
         upper_80 = cr_rate.quantile(0.75)

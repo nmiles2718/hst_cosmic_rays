@@ -197,8 +197,14 @@ class GenerateMetadata(object):
         # Check to see if there are multiple readout times (WFPC2 only)
         if isinstance(readout_time, Iterable):
             if header_data['exptime'] <= 180:
-                 readout_time = readout_time[0]
+                LOG.info('WFPC2 observation with EXPTIME <= 180\n'
+                        f"Using readtime time of {readout_time[0]:0.0f}s"
+                        ) 
+                readout_time = readout_time[0]
             else:
+                LOG.info('WFPC2 observation with EXPTIME > 180\n'
+                        f"Using readout time of {readout_time[1]:0.0f}"
+                        )
                 readout_time = readout_time[1]
 
         self.metadata['date'] = date.iso
