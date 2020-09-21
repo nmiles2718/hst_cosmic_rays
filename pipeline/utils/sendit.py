@@ -357,11 +357,11 @@ class Emailer(object):
              )
         html_tb = s.render(index=False)
         # This address must be verified with Amazon SES.
-        SENDER = "natemiles92@gmail.com"
+        SENDER = ""
 
         # Replace recipient@example.com with a "To" address. If your account
         # is still in the sandbox, this address must be verified.
-        RECIPIENT = "nmiles@stsci.edu"
+        RECIPIENT = ""
 
         # Specify a configuration set. If you do not want to use a configuration
         # set, comment the following variable, and the

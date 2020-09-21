@@ -42,7 +42,6 @@ dependencies:
   - jmespath=0.9.3
   - jpeg=9c
   - kiwisolver=1.0.1
-  - libcxx=7.0.0
   - libedit=3.1.20170329
   - libffi=3.2.1
   - libgcc=4.8.5
