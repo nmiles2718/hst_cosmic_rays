@@ -59,15 +59,11 @@ def mk_catalog(instr):
 
     for r in [rates, size, energy]:
         r.find_hdf5()
-    # if 'STIS' in instr.upper():
-    #     for r in [rates, size, energy]:
-    #         for i,f in enumerate(r.hdf5_files):
-    #             r.hdf5_files[i] = f.replace('STIS','STIS/stis_saa_results/')
-    
+
     print(rates.hdf5_files)
     print(size.hdf5_files)
     print(energy.hdf5_files)
-    #sys.exit()
+
     area = rates.instr_cfg['instr_params']['detector_size']
 
     flist_tuple = zip(rates.hdf5_files, size.hdf5_files, energy.hdf5_files)
