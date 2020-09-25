@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>utils &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="DataReader" href="api/utils.datahandler.DataReader.html" />
+    <link rel="prev" title="Stats" href="api/stat_utils.statshandler.Stats.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-utils.datahandler">utils.datahandler Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.datahandler.DataReader.html">DataReader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.datahandler.DataWriter.html">DataWriter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-utils.initialize">utils.initialize Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.initialize.Initializer.html">Initializer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-utils.metadata">utils.metadata Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.metadata.GenerateMetadata.html">GenerateMetadata</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-utils.sendit">utils.sendit Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.sendit.Emailer.html">Emailer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-utils.visualize">utils.visualize Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/utils.visualize.Visualizer.html">Visualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="utils">
+<h1>utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-utils.datahandler">
+<span id="utils-datahandler-module"></span><h2>utils.datahandler Module<a class="headerlink" href="#module-utils.datahandler" title="Permalink to this headline">¶</a></h2>
+<p>A module to facilitate the reading and writing of data generated by the pipeline.</p>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/utils.datahandler.DataReader.html#utils.datahandler.DataReader" title="utils.datahandler.DataReader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataReader</span></code></a>(instr, statistic[, cfg])</p></td>
+<td><p>A class for reading the results stored in the generated HDF5 files.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/utils.datahandler.DataWriter.html#utils.datahandler.DataWriter" title="utils.datahandler.DataWriter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataWriter</span></code></a>([cfg, chunk_num, cr_stats, …])</p></td>
+<td><p>A class for writing out the results computed for each dataset.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="module-utils.initialize">
+<span id="utils-initialize-module"></span><h2>utils.initialize Module<a class="headerlink" href="#module-utils.initialize" title="Permalink to this headline">¶</a></h2>
+<p>This module contains a class <code class="xref py py-class docutils literal notranslate"><span class="pre">Initializer</span></code>
+that contains a series of methods for performing basic initialization of the
+pipeline. In short it will perform the following:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Generate a series of empty HDF5 files for each statistic recorded.</p></li>
+<li><p>Generate a list of the previously processed date ranges.</p></li>
+<li><p>Generate a list of date intervals spanning one month periods to be used
+in the downloading process.</p></li>
+</ul>
+</div></blockquote>
+<div class="section" id="id1">
+<h3>Classes<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/utils.initialize.Initializer.html#utils.initialize.Initializer" title="utils.initialize.Initializer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Initializer</span></code></a>(instr[, cfg, instr_cfg])</p></td>
+<td><p>Class for initializing common things used by the entire pipeline</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="module-utils.metadata">
+<span id="utils-metadata-module"></span><h2>utils.metadata Module<a class="headerlink" href="#module-utils.metadata" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the <a class="reference internal" href="api/utils.metadata.GenerateMetadata.html#utils.metadata.GenerateMetadata" title="utils.metadata.GenerateMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateMetadata</span></code></a>
+that is used to extract the following information from each observation:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Date of the observation (YYYY-MM-DD HH:MM:SS)</p></li>
+<li><p>Latitude, longitude, and altitude of HST through the course of the observation</p></li>
+<li><p>WCS information for determining the pointing of HST during the observation</p></li>
+<li><p>The total integration time of the observation (i.e. total exposure time plus additional factor to account for readout)</p></li>
+</ul>
+</div></blockquote>
+<div class="section" id="id2">
+<h3>Classes<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/utils.metadata.GenerateMetadata.html#utils.metadata.GenerateMetadata" title="utils.metadata.GenerateMetadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenerateMetadata</span></code></a>(fname, instr[, instr_cfg])</p></td>
+<td><p>Class for generating and storing relevant metadata for each file</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="module-utils.sendit">
+<span id="utils-sendit-module"></span><h2>utils.sendit Module<a class="headerlink" href="#module-utils.sendit" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the functionality for setting up an email notification
+system. Once the pipeline has completed analyzing a month of darks, it will
+generate average statistics and send them via email to the user specified by
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">receipient</span></code>.</p>
+<div class="section" id="id3">
+<h3>Classes<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/utils.sendit.Emailer.html#utils.sendit.Emailer" title="utils.sendit.Emailer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Emailer</span></code></a>([df, instr, processing_times])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="module-utils.visualize">
+<span id="utils-visualize-module"></span><h2>utils.visualize Module<a class="headerlink" href="#module-utils.visualize" title="Permalink to this headline">¶</a></h2>
+<p>A module to facilitate the visualization of data generated by the pipeline.</p>
+<div class="section" id="id4">
+<h3>Classes<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/utils.visualize.Visualizer.html#utils.visualize.Visualizer" title="utils.visualize.Visualizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Visualizer</span></code></a>()</p></td>
+<td><p>A class for visualizing data generated by the pipeline</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api/utils.datahandler.DataReader.html" class="btn btn-neutral float-right" title="DataReader" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="api/stat_utils.statshandler.Stats.html" class="btn btn-neutral float-left" title="Stats" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

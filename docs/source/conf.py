@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'hst_cosmic_rays'
-copyright = u'2019, STScI'
+copyright = u'2020, Miles & Deustua'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

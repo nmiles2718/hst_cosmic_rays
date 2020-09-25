@@ -223,12 +223,8 @@ def hst_loc_plot(hrc, stis, wfc, wfpc2, uvis,cartopy=False, orbital_path1=None, 
     for key in combined_data.keys():
         print(key, len(combined_data[key]))
     df_combined = pd.DataFrame(combined_data)
-<<<<<<< Updated upstream
-    df_combined_cut = df_combined[df_combined.incident_cr_rate.gt(0.4)]
-=======
     df_combined_cut = df_combined[df_combined.integration_time.gt(800)]
     print(f"{len(df_combined_cut):,} observations with integration times longer than 800 seconds") 
->>>>>>> Stashed changes
     df_combined.to_csv('combined_hst_cr_vs_loc_data.txt', header=True, index=False)
     if cartopy:
         fig = v.plot_hst_loc_cartopy(df=df_combined, key='start', orbital_path1=orbital_path1,
