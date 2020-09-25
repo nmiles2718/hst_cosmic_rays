@@ -1,0 +1,542 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CosmicRayPipeline &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pipeline configuration file" href="../pipeline_config.html" />
+    <link rel="prev" title="pipeline" href="../pipeline.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pipeline.html">pipeline</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pipeline.html#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pipeline.html#module-pipeline">pipeline Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../pipeline.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">CosmicRayPipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../pipeline.html">pipeline</a> &raquo;</li>
+        
+      <li>CosmicRayPipeline</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/pipeline.CosmicRayPipeline.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cosmicraypipeline">
+<h1>CosmicRayPipeline<a class="headerlink" href="#cosmicraypipeline" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="pipeline.CosmicRayPipeline">
+<em class="property">class </em><code class="sig-prename descclassname">pipeline.</code><code class="sig-name descname">CosmicRayPipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aws</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">analyze</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">download</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ccd</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunks</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ir</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">instr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">initialize</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">process</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">store_downloads</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_dq</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">test</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.analyze" title="pipeline.CosmicRayPipeline.analyze"><code class="xref py py-obj docutils literal notranslate"><span class="pre">analyze</span></code></a></p></td>
+<td><p>Switch for toggling on the analysis step of the pipeline</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.aws" title="pipeline.CosmicRayPipeline.aws"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aws</span></code></a></p></td>
+<td><p>Switch for toggling on AWS functionality for downloads</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.base" title="pipeline.CosmicRayPipeline.base"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base</span></code></a></p></td>
+<td><p>Base path of the pipleine repository <code class="xref py py-obj docutils literal notranslate"><span class="pre">/hst_cosmic_rays/</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.ccd" title="pipeline.CosmicRayPipeline.ccd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ccd</span></code></a></p></td>
+<td><p>Switch for toggling on the CCD analysis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.cfg" title="pipeline.CosmicRayPipeline.cfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cfg</span></code></a></p></td>
+<td><p>Configuration object returned by parsing the <code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_file</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.cfg_file" title="pipeline.CosmicRayPipeline.cfg_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cfg_file</span></code></a></p></td>
+<td><p>Path to the pipeline configuration file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.chunks" title="pipeline.CosmicRayPipeline.chunks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">chunks</span></code></a></p></td>
+<td><p>Number of chunks to break the entire dataset into</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.download" title="pipeline.CosmicRayPipeline.download"><code class="xref py py-obj docutils literal notranslate"><span class="pre">download</span></code></a></p></td>
+<td><p>Switch for toggling on the download step of the pipeline</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.failed_observation" title="pipeline.CosmicRayPipeline.failed_observation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">failed_observation</span></code></a></p></td>
+<td><p>List of any observations that failed to be processed for given month</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.flist" title="pipeline.CosmicRayPipeline.flist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flist</span></code></a></p></td>
+<td><p>List of files to process</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.initialize" title="pipeline.CosmicRayPipeline.initialize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize</span></code></a></p></td>
+<td><p>Switch for toggling on the initialization of HDF5 data files</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.instr" title="pipeline.CosmicRayPipeline.instr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr</span></code></a></p></td>
+<td><p>Name of the instrument that is going to be analyzed</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.instr_cfg" title="pipeline.CosmicRayPipeline.instr_cfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr_cfg</span></code></a></p></td>
+<td><p>Instrument specific configuration</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.ir" title="pipeline.CosmicRayPipeline.ir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ir</span></code></a></p></td>
+<td><p>Switch for toggling on the IR analysis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.process" title="pipeline.CosmicRayPipeline.process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process</span></code></a></p></td>
+<td><p>Switch for toggling on the processing step of the pipeline</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.processing_times" title="pipeline.CosmicRayPipeline.processing_times"><code class="xref py py-obj docutils literal notranslate"><span class="pre">processing_times</span></code></a></p></td>
+<td><p>Container for holding the processing time required by each step</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.search_pattern" title="pipeline.CosmicRayPipeline.search_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_pattern</span></code></a></p></td>
+<td><p>Search pattern used to find files to process</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.store_downloads" title="pipeline.CosmicRayPipeline.store_downloads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">store_downloads</span></code></a></p></td>
+<td><p>Switch for saving the downloaded files</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.use_dq" title="pipeline.CosmicRayPipeline.use_dq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_dq</span></code></a></p></td>
+<td><p>Switch for specifying what to use in the labeling analysis</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.run" title="pipeline.CosmicRayPipeline.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>()</p></td>
+<td><p>Run the pipeline according to the passed command line args</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.run_downloader" title="pipeline.CosmicRayPipeline.run_downloader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_downloader</span></code></a>(date_range, downloader)</p></td>
+<td><p>Download the data</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.run_labeling_all" title="pipeline.CosmicRayPipeline.run_labeling_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_labeling_all</span></code></a>(chunk_num)</p></td>
+<td><p>Run the labeling analysis and compute the statistics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.run_labeling_single" title="pipeline.CosmicRayPipeline.run_labeling_single"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_labeling_single</span></code></a>(fname)</p></td>
+<td><p>Run the labeling analysis on a single image</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.run_processing" title="pipeline.CosmicRayPipeline.run_processing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_processing</span></code></a>(start, stop)</p></td>
+<td><p>Process the data in the given time interval</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pipeline.CosmicRayPipeline.send_email" title="pipeline.CosmicRayPipeline.send_email"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_email</span></code></a>(start, stop, results)</p></td>
+<td><p>Send email notifying user that a one-month chunk has completed</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.analyze">
+<code class="sig-name descname">analyze</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the analysis step of the pipeline</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.aws">
+<code class="sig-name descname">aws</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.aws" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on AWS functionality for downloads</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.base">
+<code class="sig-name descname">base</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base path of the pipleine repository <code class="xref py py-obj docutils literal notranslate"><span class="pre">/hst_cosmic_rays/</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.ccd">
+<code class="sig-name descname">ccd</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.ccd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the CCD analysis</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.cfg">
+<code class="sig-name descname">cfg</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration object returned by parsing the
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_file</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.cfg_file">
+<code class="sig-name descname">cfg_file</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.cfg_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to the pipeline configuration file</p>
+<p>The config file is stored in <code class="xref py py-obj docutils literal notranslate"><span class="pre">/hst_cosmic_rays/CONFIG/</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.chunks">
+<code class="sig-name descname">chunks</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.chunks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of chunks to break the entire dataset into</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.download">
+<code class="sig-name descname">download</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.download" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the download step of the pipeline</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.failed_observation">
+<code class="sig-name descname">failed_observation</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.failed_observation" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of any observations that failed to be processed for given month</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.flist">
+<code class="sig-name descname">flist</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.flist" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of files to process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.initialize">
+<code class="sig-name descname">initialize</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the initialization of HDF5 data files</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.instr">
+<code class="sig-name descname">instr</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.instr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the instrument that is going to be analyzed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.instr_cfg">
+<code class="sig-name descname">instr_cfg</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.instr_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instrument specific configuration</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.ir">
+<code class="sig-name descname">ir</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.ir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the IR analysis</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.process">
+<code class="sig-name descname">process</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for toggling on the processing step of the pipeline</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.processing_times">
+<code class="sig-name descname">processing_times</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.processing_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for holding the processing time required by each step</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.search_pattern">
+<code class="sig-name descname">search_pattern</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.search_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search pattern used to find files to process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.store_downloads">
+<code class="sig-name descname">store_downloads</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.store_downloads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for saving the downloaded files</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pipeline.CosmicRayPipeline.use_dq">
+<code class="sig-name descname">use_dq</code><a class="headerlink" href="#pipeline.CosmicRayPipeline.use_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Switch for specifying what to use in the labeling analysis</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the pipeline according to the passed command line args</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.run_downloader">
+<code class="sig-name descname">run_downloader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">date_range</span></em>, <em class="sig-param"><span class="n">downloader</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.run_downloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download the data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date_range</strong> (<em>Tuple</em>) – Tuple of <a class="reference external" href="https://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time" title="(in Astropy v4.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.time.Time</span></code></a> objects defining the one month interval</p></li>
+<li><p><strong>downloader</strong> (<a class="reference internal" href="download.download.Downloader.html#download.download.Downloader" title="download.download.Downloader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Downloader</span></code></a>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>runtime</strong> – Time required to process in minutes</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.run_labeling_all">
+<code class="sig-name descname">run_labeling_all</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk_num</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.run_labeling_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the labeling analysis and compute the statistics</p>
+<p>Run the labeling process to extract data for every CR in each image and
+save the results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>chunk_num</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Current chunk number we are analyzing. Used to write the results to
+the proper file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>runtime</strong> (<em>float</em>) – Time required to process in minutes</p></li>
+<li><p><strong>results</strong> (<em>tuple</em>) – Results from analyzing all files in <a class="reference internal" href="#pipeline.CosmicRayPipeline.flist" title="pipeline.CosmicRayPipeline.flist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flist</span></code></a>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.run_labeling_single">
+<code class="sig-name descname">run_labeling_single</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.run_labeling_single" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the labeling analysis on a single image</p>
+<p>Convenience method designed to facilitate the parallelization of the
+labeling analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Full path to file to be analyzed</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>file_metadata</strong> (<a class="reference internal" href="utils.metadata.GenerateMetadata.html#utils.metadata.GenerateMetadata" title="utils.metadata.GenerateMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateMetadata</span></code></a>) – Object containing relevant metadata for input file</p></li>
+<li><p><strong>cr_stats_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code></a>) – Dictionary containing the computed statistics</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.run_processing">
+<code class="sig-name descname">run_processing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start</span></em>, <em class="sig-param"><span class="n">stop</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.run_processing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the data in the given time interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time" title="(in Astropy v4.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.time.Time</span></code></a>) – Start date of the one month interval</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time" title="(in Astropy v4.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.time.Time</span></code></a>) – Stop date of the one month interval</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>runtime</strong> – Time required to process in minutes</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pipeline.CosmicRayPipeline.send_email">
+<code class="sig-name descname">send_email</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">start</span></em>, <em class="sig-param"><span class="n">stop</span></em>, <em class="sig-param"><span class="n">results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.CosmicRayPipeline.send_email" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send email notifying user that a one-month chunk has completed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time" title="(in Astropy v4.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.time.Time</span></code></a>) – Start date of the one month interval</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time" title="(in Astropy v4.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.time.Time</span></code></a>) – Stop date of the one month interval</p></li>
+<li><p><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code></a>) – The results from the CR analysis</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../pipeline_config.html" class="btn btn-neutral float-right" title="pipeline configuration file" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../pipeline.html" class="btn btn-neutral float-left" title="pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

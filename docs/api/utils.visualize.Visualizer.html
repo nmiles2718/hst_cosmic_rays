@@ -1,0 +1,442 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Visualizer &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Emailer" href="utils.sendit.Emailer.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.datahandler">utils.datahandler Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.initialize">utils.initialize Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.metadata">utils.metadata Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.sendit">utils.sendit Module</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../utils.html#module-utils.visualize">utils.visualize Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../utils.html#id4">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Visualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../utils.html">utils</a> &raquo;</li>
+        
+      <li>Visualizer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/utils.visualize.Visualizer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="visualizer">
+<h1>Visualizer<a class="headerlink" href="#visualizer" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="utils.visualize.Visualizer">
+<em class="property">class </em><code class="sig-prename descclassname">utils.visualize.</code><code class="sig-name descname">Visualizer</code><a class="headerlink" href="#utils.visualize.Visualizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A class for visualizing data generated by the pipeline</p>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.kde2D_plot" title="utils.visualize.Visualizer.kde2D_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kde2D_plot</span></code></a>(parameter1, parameter2[, …])</p></td>
+<td><p>Generate a 2D KDE for the given parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.mk_fig" title="utils.visualize.Visualizer.mk_fig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mk_fig</span></code></a>([nrows, ncols, figsize, sharex, …])</p></td>
+<td><p>Convenience method for creating a matplotlib figure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_cr_rate_vs_time" title="utils.visualize.Visualizer.plot_cr_rate_vs_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_cr_rate_vs_time</span></code></a>(df, legend_label[, ax, …])</p></td>
+<td><p>Plot the observed cosmic ray rate as a function of time.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_hist" title="utils.visualize.Visualizer.plot_hist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hist</span></code></a>(data, bins, label[, ax, lw, ls, …])</p></td>
+<td><p>Generate a histogram for a given dataset</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_hst_loc" title="utils.visualize.Visualizer.plot_hst_loc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hst_loc</span></code></a>([i, df, title, thresh, fout, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_hst_loc_cartopy" title="utils.visualize.Visualizer.plot_hst_loc_cartopy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hst_loc_cartopy</span></code></a>([i, df, title, thresh, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_periodogram" title="utils.visualize.Visualizer.plot_periodogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_periodogram</span></code></a>(df, legend_label[, …])</p></td>
+<td><p>Generate a periodogram of the incident CR rate</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.visualize.Visualizer.plot_solar_cycle" title="utils.visualize.Visualizer.plot_solar_cycle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_solar_cycle</span></code></a>([variable, ax, smoothed])</p></td>
+<td><p>Retrieve solar cycle information</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.kde2D_plot">
+<code class="sig-name descname">kde2D_plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parameter1</span></em>, <em class="sig-param"><span class="n">parameter2</span></em>, <em class="sig-param"><span class="n">normtype</span><span class="o">=</span><span class="default_value">'log'</span></em>, <em class="sig-param"><span class="n">interval</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xlim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ylim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">gridsize</span><span class="o">=</span><span class="default_value">100</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.kde2D_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a 2D KDE for the given parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parameter1</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="(in NumPy v1.19)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.array</span></code></a>) – X-axis variable</p></li>
+<li><p><strong>parameter2</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="(in NumPy v1.19)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.array</span></code></a>) – Y-axis variable</p></li>
+<li><p><strong>normtype</strong> (<em>{'log'</em><em>, </em><em>'linear'</em><em>, </em><em>'sqrt'}</em>) – Normalization type to apply to the data</p></li>
+<li><p><strong>interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Limits of the interval to use when computing the image scaling</p></li>
+<li><p><strong>xlim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – X-limits to use for the plot and the KDE grid</p></li>
+<li><p><strong>ylim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Y-limits to use for the plot and the KDE grid</p></li>
+<li><p><strong>gridsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Step-size for the grid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<a class="reference external" href="https://matplotlib.org/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a>)</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>)</p></li>
+<li><p><strong>surface</strong> (<em>numpy.array</em>) – The KDE surface plot</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.mk_fig">
+<code class="sig-name descname">mk_fig</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nrows</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">ncols</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">6, 6</span></em>, <em class="sig-param"><span class="n">sharex</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sharey</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">showgrid</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.mk_fig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for creating a matplotlib figure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nrows</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Number of row-subplots to make</p></li>
+<li><p><strong>ncols</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Number of column-subplots to make</p></li>
+<li><p><strong>figsize</strong> (<em>tupple of ints</em>) – Size of the figure</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.Figure</span></code>)</p></li>
+<li><p><strong>axes</strong> (tuple of <a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_cr_rate_vs_time">
+<code class="sig-name descname">plot_cr_rate_vs_time</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">legend_label</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">i</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">min_exptime</span><span class="o">=</span><span class="default_value">200</span></em>, <em class="sig-param"><span class="n">yoffset</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">smooth_type</span><span class="o">=</span><span class="default_value">'rolling'</span></em>, <em class="sig-param"><span class="n">ms</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">window</span><span class="o">=</span><span class="default_value">'20D'</span></em>, <em class="sig-param"><span class="n">normalize</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">min_periods</span><span class="o">=</span><span class="default_value">20</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_cr_rate_vs_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the observed cosmic ray rate as a function of time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a>) – DataFrame containing the incident cosmic ray rate information</p></li>
+<li><p><strong>legend_label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Label to use for the dataset in the plot legend</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>) – An instance of a plot to add the current dataset too</p></li>
+<li><p><strong>i</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Integer used to determine the color of the points used in the
+scatter plot</p></li>
+<li><p><strong>smooth_type</strong> (<em>{'rolling'</em><em>, </em><em>'resample'}</em>) – <p>Type of smoothing to apply to the cosmic ray rate dataset.</p>
+<ul>
+<li><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html#pandas.DataFrame.rolling" title="(in pandas v1.1.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.rolling()</span></code></a></p></li>
+<li><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.resample.html#pandas.DataFrame.resample" title="(in pandas v1.1.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.resample()</span></code></a></p></li>
+</ul>
+</p></li>
+<li><p><strong>window</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – <p>String alias for the time period representing the size of the
+moving window. Some common ones are listed below:</p>
+<ul>
+<li><p>’W’, one week window</p></li>
+<li><p>’15D’, 15 day window</p></li>
+<li><p>’M’, one month window</p></li>
+</ul>
+<p>A complete list may be found <a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">here</a></p>
+</p></li>
+<li><p><strong>min_periods</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Minimum number of datapoints that must be in a given window</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<a class="reference external" href="https://matplotlib.org/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.3.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a>)</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_hist">
+<code class="sig-name descname">plot_hist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">bins</span></em>, <em class="sig-param"><span class="n">label</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">lw</span><span class="o">=</span><span class="default_value">1.75</span></em>, <em class="sig-param"><span class="n">ls</span><span class="o">=</span><span class="default_value">'-'</span></em>, <em class="sig-param"><span class="n">logy</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">logx</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">c</span><span class="o">=</span><span class="default_value">'k'</span></em>, <em class="sig-param"><span class="n">range</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">normalize</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_hist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a histogram for a given dataset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dask.array</span></code>) – THe dask array to use to generate a histogram</p></li>
+<li><p><strong>bins</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The number of bins to use</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>) – If passed, the histogram will be added to the plot contained by
+this <code class="xref py py-obj docutils literal notranslate"><span class="pre">Axes</span></code> instance. Otherwise, one will be created.</p></li>
+<li><p><strong>logy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, the y-axis will be plotted on log-scale</p></li>
+<li><p><strong>logx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, the logarithm of the <code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code> input will be taken prior to
+creating the histogram</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<a class="reference external" href="https://matplotlib.org/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a>)</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>)</p></li>
+<li><p><em>hist</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_hst_loc">
+<code class="sig-name descname">plot_hst_loc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">df</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">thresh</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">fout</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">min_exptime</span><span class="o">=</span><span class="default_value">800</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'start'</span></em>, <em class="sig-param"><span class="n">save</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">orbital_path1</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">orbital_path2</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_hst_loc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_hst_loc_cartopy">
+<code class="sig-name descname">plot_hst_loc_cartopy</code><span class="sig-paren">(</span><em class="sig-param">i=5</em>, <em class="sig-param">df=None</em>, <em class="sig-param">title=''</em>, <em class="sig-param">thresh=5</em>, <em class="sig-param">fout=''</em>, <em class="sig-param">min_exptime=800</em>, <em class="sig-param">key='start'</em>, <em class="sig-param">save=False</em>, <em class="sig-param">orbital_path1=None</em>, <em class="sig-param">orbital_path2=None</em>, <em class="sig-param">projection=&lt;cartopy.crs.PlateCarree object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_hst_loc_cartopy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_periodogram">
+<code class="sig-name descname">plot_periodogram</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">legend_label</span></em>, <em class="sig-param"><span class="n">exptime_cut</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">window</span><span class="o">=</span><span class="default_value">'20D'</span></em>, <em class="sig-param"><span class="n">min_periods</span><span class="o">=</span><span class="default_value">10</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_periodogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a periodogram of the incident CR rate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a>) – Dataframe containing all of the statistics for the incident CR rate</p></li>
+<li><p><strong>legend_label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Label name for the data to display in the plot’s legend</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>) – <dl>
+<dt>If passed, the histogram will be added to the plot contained by</dt><dd><p>this <code class="xref py py-obj docutils literal notranslate"><span class="pre">Axes</span></code> instance. Otherwise, one will be created.</p>
+</dd>
+<dt>window<span class="classifier">str</span></dt><dd><p>String alias for the time period representing the size of the
+moving window. Some common ones are listed below:</p>
+<ul>
+<li><p>’W’, one week window</p></li>
+<li><p>’15D’, 15 day window</p></li>
+<li><p>’M’, one month window</p></li>
+</ul>
+<p>A complete list may be found <a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">here</a></p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>min_periods</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Minimum number of datapoints that must be in a given window</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>frequency</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.array</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">astropy.Quantity</span></code>) – An array of all the frequencies consider in the periodogram</p></li>
+<li><p><strong>power</strong> (:py:class: <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="(in NumPy v1.19)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.array</span></code></a>) – An array of the spectral power density associated with frequency</p></li>
+<li><p><strong>ax</strong> (<a class="reference external" href="https://matplotlib.org/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.3.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a>) – The <code class="xref py py-obj docutils literal notranslate"><span class="pre">Axes</span></code> for the corresponding plot</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.visualize.Visualizer.plot_solar_cycle">
+<code class="sig-name descname">plot_solar_cycle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">variable</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">smoothed</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.visualize.Visualizer.plot_solar_cycle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve solar cycle information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>variable</strong> – </p></li>
+<li><p><strong>ax</strong> – </p></li>
+<li><p><strong>smoothed</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="utils.sendit.Emailer.html" class="btn btn-neutral float-left" title="Emailer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DataReader &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="DataWriter" href="utils.datahandler.DataWriter.html" />
+    <link rel="prev" title="utils" href="../utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../utils.html">utils</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../utils.html#module-utils.datahandler">utils.datahandler Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../utils.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">DataReader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.datahandler.DataWriter.html">DataWriter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.initialize">utils.initialize Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.metadata">utils.metadata Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.sendit">utils.sendit Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils.html#module-utils.visualize">utils.visualize Module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../utils.html">utils</a> &raquo;</li>
+        
+      <li>DataReader</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/utils.datahandler.DataReader.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="datareader">
+<h1>DataReader<a class="headerlink" href="#datareader" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="utils.datahandler.DataReader">
+<em class="property">class </em><code class="sig-prename descclassname">utils.datahandler.</code><code class="sig-name descname">DataReader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instr</span></em>, <em class="sig-param"><span class="n">statistic</span></em>, <em class="sig-param"><span class="n">cfg</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.datahandler.DataReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A class for reading the results stored in the generated HDF5 files.</p>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.base" title="utils.datahandler.DataReader.base"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base</span></code></a></p></td>
+<td><p>Base path of the pipleine repository <code class="xref py py-obj docutils literal notranslate"><span class="pre">/hst_cosmic_rays/</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.cfg" title="utils.datahandler.DataReader.cfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cfg</span></code></a></p></td>
+<td><p>Configuration object returned by parsing the <code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_file</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.dataset_keys" title="utils.datahandler.DataReader.dataset_keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dataset_keys</span></code></a></p></td>
+<td><p>A list of the dataset keys from the HDF5 file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.hdf5_files" title="utils.datahandler.DataReader.hdf5_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hdf5_files</span></code></a></p></td>
+<td><p>A list of HDF5 files containing results for <a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">statistic</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.instr" title="utils.datahandler.DataReader.instr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr</span></code></a></p></td>
+<td><p>One of the valid instrument names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.instr_cfg" title="utils.datahandler.DataReader.instr_cfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr_cfg</span></code></a></p></td>
+<td><p>Instrument specific configuration</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistic</span></code></a></p></td>
+<td><p>Statistic to be read in</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.find_hdf5" title="utils.datahandler.DataReader.find_hdf5"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_hdf5</span></code></a>()</p></td>
+<td><p>Find the HDF5 files for the given py:attr:<a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistic</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.read_cr_rate" title="utils.datahandler.DataReader.read_cr_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_cr_rate</span></code></a>()</p></td>
+<td><p>Method for reading in the incident cosmic ray rate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.read_cr_stat" title="utils.datahandler.DataReader.read_cr_stat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_cr_stat</span></code></a>([fill_value, units, min_exptime])</p></td>
+<td><p>Read in all the data for the specified <a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">statistic</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#utils.datahandler.DataReader.read_single_dst" title="utils.datahandler.DataReader.read_single_dst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_single_dst</span></code></a>(fname, dset)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.base">
+<code class="sig-name descname">base</code><a class="headerlink" href="#utils.datahandler.DataReader.base" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base path of the pipleine repository <code class="xref py py-obj docutils literal notranslate"><span class="pre">/hst_cosmic_rays/</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.cfg">
+<code class="sig-name descname">cfg</code><a class="headerlink" href="#utils.datahandler.DataReader.cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration object returned by parsing the
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_file</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.dataset_keys">
+<code class="sig-name descname">dataset_keys</code><a class="headerlink" href="#utils.datahandler.DataReader.dataset_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of the dataset keys from the HDF5 file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.hdf5_files">
+<code class="sig-name descname">hdf5_files</code><a class="headerlink" href="#utils.datahandler.DataReader.hdf5_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of HDF5 files containing results for <a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">statistic</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.instr">
+<code class="sig-name descname">instr</code><a class="headerlink" href="#utils.datahandler.DataReader.instr" title="Permalink to this definition">¶</a></dt>
+<dd><p>One of the valid instrument names</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.instr_cfg">
+<code class="sig-name descname">instr_cfg</code><a class="headerlink" href="#utils.datahandler.DataReader.instr_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instrument specific configuration</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="utils.datahandler.DataReader.statistic">
+<code class="sig-name descname">statistic</code><a class="headerlink" href="#utils.datahandler.DataReader.statistic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Statistic to be read in</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="utils.datahandler.DataReader.find_hdf5">
+<code class="sig-name descname">find_hdf5</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.datahandler.DataReader.find_hdf5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the HDF5 files for the given py:attr:<a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistic</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.datahandler.DataReader.read_cr_rate">
+<code class="sig-name descname">read_cr_rate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.datahandler.DataReader.read_cr_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for reading in the incident cosmic ray rate.</p>
+<p>This method will generate a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> containing
+the incident cosmic ray rate for each observations, as well as all the
+associated metadata generated by
+<a class="reference internal" href="utils.metadata.GenerateMetadata.html#utils.metadata.GenerateMetadata" title="utils.metadata.GenerateMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">utils.metadata.GenerateMetadata</span></code></a>.</p>
+<p>For metadatum containing an array of values (i.e. latitude, longitude
+, and altitude) the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> will have two columns.
+One column will represent the value at the start of the observation,
+while the other will represent the value at the <em>end</em> of the observation
+(e.g. <code class="xref py py-obj docutils literal notranslate"><span class="pre">altitude_start</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">altitude_end</span></code>).</p>
+<p>Finally, the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> generated is indexed using
+a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex" title="(in pandas v1.1.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code></a> to facilitate time-series anaylses.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.datahandler.DataReader.read_cr_stat">
+<code class="sig-name descname">read_cr_stat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fill_value</span><span class="o">=</span><span class="default_value">- 999</span></em>, <em class="sig-param"><span class="n">units</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">min_exptime</span><span class="o">=</span><span class="default_value">200</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.datahandler.DataReader.read_cr_stat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in all the data for the specified <a class="reference internal" href="#utils.datahandler.DataReader.statistic" title="utils.datahandler.DataReader.statistic"><code class="xref py py-attr docutils literal notranslate"><span class="pre">statistic</span></code></a></p>
+<p>This method should only be used to read in the following statistics:</p>
+<ul class="simple">
+<li><p>Electron deposition [electrons]</p></li>
+<li><p>Size [pixels]</p></li>
+<li><p>Size [sigmas]</p></li>
+<li><p>Shape [dimensionless]</p></li>
+</ul>
+<p>To read in the incident cosmic ray rate, see <a class="reference internal" href="#utils.datahandler.DataReader.read_cr_rate" title="utils.datahandler.DataReader.read_cr_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_cr_rate()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – If there are any NaNs, replace them with this value.
+The default is -999</p></li>
+<li><p><strong>units</strong> (<em>{'pixels'</em><em>, </em><em>'sigmas'}</em>) – Specifies the units for the sizes statistics.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Populate the given statistics corresponding attribute with a
+masked <code class="xref py py-obj docutils literal notranslate"><span class="pre">dask.array</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="utils.datahandler.DataReader.read_single_dst">
+<code class="sig-name descname">read_single_dst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">dset</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.datahandler.DataReader.read_single_dst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.datahandler.DataWriter.html" class="btn btn-neutral float-right" title="DataWriter" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../utils.html" class="btn btn-neutral float-left" title="utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

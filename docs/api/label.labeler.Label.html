@@ -1,0 +1,428 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Label &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="process" href="../process.html" />
+    <link rel="prev" title="CosmicRayLabel" href="label.labeler.CosmicRayLabel.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../label.html">label</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../label.html#module-label.labeler">label.labeler Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../label.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="label.labeler.CosmicRayLabel.html">CosmicRayLabel</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Label</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../label.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../label.html">label</a> &raquo;</li>
+        
+      <li>Label</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/label.labeler.Label.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="label">
+<h1>Label<a class="headerlink" href="#label" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="label.labeler.Label">
+<em class="property">class </em><code class="sig-prename descclassname">label.labeler.</code><code class="sig-name descname">Label</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">gain_keyword</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for cosmic ray labelers to be used in both IR and CCD analyses</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Name of FITS file</p>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.dq" title="label.labeler.Label.dq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dq</span></code></a></p></td>
+<td><p>A concatenated version of all DQ extensions in <a class="reference internal" href="#label.labeler.Label.fname" title="label.labeler.Label.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.exptime" title="label.labeler.Label.exptime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exptime</span></code></a></p></td>
+<td><p>Total integration time of the observation</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.fname" title="label.labeler.Label.fname"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fname</span></code></a></p></td>
+<td><p>Name of FITS file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.gain_keyword" title="label.labeler.Label.gain_keyword"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gain_keyword</span></code></a></p></td>
+<td><p>Header keyword for obtaining CCD gain information</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.label" title="label.labeler.Label.label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label</span></code></a></p></td>
+<td><p>Generated label</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.sci" title="label.labeler.Label.sci"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sci</span></code></a></p></td>
+<td><p>A concatenated version of all SCI extensions in <a class="reference internal" href="#label.labeler.Label.fname" title="label.labeler.Label.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.ccd_labeling" title="label.labeler.Label.ccd_labeling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ccd_labeling</span></code></a>([use_dq, dq_flag, …])</p></td>
+<td><p>Run a label analysis on the DQ or SCI arrays of CCD dark frames</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.deblend_objects" title="label.labeler.Label.deblend_objects"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deblend_objects</span></code></a>()</p></td>
+<td><p>Not implemented</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.get_data" title="label.labeler.Label.get_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data</span></code></a>([extname, extnums])</p></td>
+<td><p>Grab the data from extensions named EXT from FITS file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.ir_labeling" title="label.labeler.Label.ir_labeling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ir_labeling</span></code></a>([samptime])</p></td>
+<td><p>Not  implemented</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#label.labeler.Label.mk_fig" title="label.labeler.Label.mk_fig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mk_fig</span></code></a>([figsize, show_axis_labels, show_grid])</p></td>
+<td><p>Generate a figure with two axes for plotting the label</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#label.labeler.Label.plot" title="label.labeler.Label.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([instr, xlim, ylim, fout, figsize, …])</p></td>
+<td><p>Plot the label</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="label.labeler.Label.dq">
+<code class="sig-name descname">dq</code><a class="headerlink" href="#label.labeler.Label.dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>A concatenated version of all DQ extensions in <a class="reference internal" href="#label.labeler.Label.fname" title="label.labeler.Label.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="label.labeler.Label.exptime">
+<code class="sig-name descname">exptime</code><a class="headerlink" href="#label.labeler.Label.exptime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total integration time of the observation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="label.labeler.Label.fname">
+<code class="sig-name descname">fname</code><a class="headerlink" href="#label.labeler.Label.fname" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of FITS file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="label.labeler.Label.gain_keyword">
+<code class="sig-name descname">gain_keyword</code><a class="headerlink" href="#label.labeler.Label.gain_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Header keyword for obtaining CCD gain information</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="label.labeler.Label.label">
+<code class="sig-name descname">label</code><a class="headerlink" href="#label.labeler.Label.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generated label</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="label.labeler.Label.sci">
+<code class="sig-name descname">sci</code><a class="headerlink" href="#label.labeler.Label.sci" title="Permalink to this definition">¶</a></dt>
+<dd><p>A concatenated version of all SCI extensions in <a class="reference internal" href="#label.labeler.Label.fname" title="label.labeler.Label.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="label.labeler.Label.ccd_labeling">
+<code class="sig-name descname">ccd_labeling</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">use_dq</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dq_flag</span><span class="o">=</span><span class="default_value">8192</span></em>, <em class="sig-param"><span class="n">do_bitwise_comp</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">deblend</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">threshold_l</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">threshold_u</span><span class="o">=</span><span class="default_value">5000</span></em>, <em class="sig-param"><span class="n">pix_thresh</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">structure_element</span><span class="o">=</span><span class="default_value">array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.ccd_labeling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a label analysis on the DQ or SCI arrays of CCD dark frames</p>
+<p>If performed on the DQ arrays, there will be a bitwise comparison to
+find all pixels affected by cosmic rays and anything else. For example,
+if a hot pixel is hit by a cosmic ray, then it will have a DQ flag of
+8208 (8192 + 16). The bitwise comparison will ensure these pixels are
+included in the analysis.</p>
+<p>If performed on the SCI arrays, a binary image is generated by looking
+for all pixels that are strictly 5 <span class="math notranslate nohighlight">\(\sigma\)</span> above the
+sigma-clipped median of the image. The labeling analysis will then
+be performed this binary image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_dq</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, label the DQ array. If false, label the science array</p></li>
+<li><p><strong>dq_flag</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Flag to use for identifying objects in the DQ array</p></li>
+<li><p><strong>do_bitwise_comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, do a bitwise comparison prior to labeling analysiss</p></li>
+<li><p><strong>debled</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Deblend found sources to separate overlapping cosmic rays</p></li>
+<li><p><strong>threshold_l</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Objects found that affect fewer pixels than this limit are removed</p></li>
+<li><p><strong>threshold_u</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Objects found affect more pixels than this limit are removed</p></li>
+<li><p><strong>structure_element</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)"><em>numpy.ndarray</em></a>) – <p>2-D array used to identified “connected” pixels. The default
+structure element used is the 8-connectivity matrix:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{bmatrix} 1 &amp; 1 &amp;1 \\ 1 &amp; 1&amp; 1 \\ 1 &amp; 1 &amp; 1 \end{bmatrix}\end{split}\]</div>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="label.labeler.Label.deblend_objects">
+<code class="sig-name descname">deblend_objects</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.deblend_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented</p>
+<p>Will raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.8)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="label.labeler.Label.get_data">
+<code class="sig-name descname">get_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">extname</span><span class="o">=</span><span class="default_value">'dq'</span></em>, <em class="sig-param"><span class="n">extnums</span><span class="o">=</span><span class="default_value">[1, 2]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Grab the data from extensions named EXT from FITS file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>extname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Name of extension to extract data from (e.g. ‘SCI’ or ‘DQ’)</p></li>
+<li><p><strong>extnums</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – List of the extension numbers. This should always be a list, even
+if it just contains one element</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="label.labeler.Label.ir_labeling">
+<code class="sig-name descname">ir_labeling</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">samptime</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.ir_labeling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not  implemented</p>
+<p>Will raise <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.8)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="label.labeler.Label.mk_fig">
+<code class="sig-name descname">mk_fig</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">6, 6</span></em>, <em class="sig-param"><span class="n">show_axis_labels</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">show_grid</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.mk_fig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a figure with two axes for plotting the label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>show_axis_labels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show major tick labels on both axes</p></li>
+<li><p><strong>show_grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show a grid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<em>matplotlib.figure.Figure</em>) – Instance of a matplotlib Figure object</p></li>
+<li><p><strong>ax1</strong> (<em>matplotlib.axes.Axes</em>) – Instance of a maplotlib Axes object</p></li>
+<li><p><strong>ax2</strong> (<em>matplotlib.axes.Axes</em>) – Instance of a matplotlib Axes object</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="label.labeler.Label.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xlim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ylim</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fout</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">6, 6</span></em>, <em class="sig-param"><span class="n">save</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stretch</span><span class="o">=</span><span class="default_value">'log'</span></em>, <em class="sig-param"><span class="n">vmin</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">vmax</span><span class="o">=</span><span class="default_value">150</span></em>, <em class="sig-param"><span class="n">centroids</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#label.labeler.Label.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xlim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Limits for the x-axis</p></li>
+<li><p><strong>ylim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Limits for the y-axis</p></li>
+<li><p><strong>fout</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Filename to save the image to (e.g. example_mask.png)</p></li>
+<li><p><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, save the generated plot to the plots directory</p></li>
+<li><p><strong>instr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Instrument name to use in the title of the plot</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../process.html" class="btn btn-neutral float-right" title="process" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="label.labeler.CosmicRayLabel.html" class="btn btn-neutral float-left" title="CosmicRayLabel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>HSTcosmicrays &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>HSTcosmicrays</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="hstcosmicrays">
+<span id="hst-cosmic-rays"></span><h1>HSTcosmicrays<a class="headerlink" href="#hstcosmicrays" title="Permalink to this headline">¶</a></h1>
+<p><strong>Author</strong>: Nathan Miles</p>
+<p>HSTcosmicrays is a package designed to extract morphological properties of cosmic rays identified in calibration dark frames. The package is broken down into a series of modules which are then combined via the <a class="reference internal" href="api/pipeline.CosmicRayPipeline.html#pipeline.CosmicRayPipeline" title="pipeline.CosmicRayPipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">CosmicRayPipeline</span></code></a> object contained in the <a class="reference internal" href="pipeline.html#module-pipeline" title="pipeline"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pipeline</span></code></a> module. At the present moment, the pipeline will analyze all of the following CCDs imagers:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hst-docs.stsci.edu/display/ACSIHB/">Advanced Camera for Surveys (ACS)</a></p>
+<ul>
+<li><p>High Resolution Channel (HRC) [inactive]</p></li>
+<li><p>Wide Field Channel (WFC) [active]</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://hst-docs.stsci.edu/display/STISIHB/STIS+Instrument+Handbook">Space Telescope Imaging Spectrograph (STIS)</a></p>
+<ul>
+<li><p>CCD channel [active]</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://hst-docs.stsci.edu/display/WFC3IHB/WFC3+Instrument+Handbook">Wide Field Camera 3 (WFC3)</a></p>
+<ul>
+<li><p>UVIS channel [active]</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="http://documents.stsci.edu/hst/wfpc2/documents/handbooks/cycle17/wfpc2_ihb.pdf">Wide Field and Planetary Camera 2 (WFPC2)</a></p>
+<ul>
+<li><p>Wide Field Detector 1, 2, and 3 (WF1, WF2, WF3) [inactive]</p></li>
+<li><p>Planetary Camera (PC) [inactive]</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<p>In the future, we will extend the pipeline to handle the following IR imagers
+as well:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="http://www.stsci.edu/hst/nicmos/documents/handbooks/current_NEW/nicmos_ihb.pdf">Near Infrared Camera and Multi-Object Spectrometer (NICMOS)</a></p>
+<ul>
+<li><p>Near Infrared Camera 1, 2, and 3 (NIC1, NIC2, NIC3) [inactive]</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://hst-docs.stsci.edu/display/WFC3IHB/WFC3+Instrument+Handbook">Wide Field Camera 3 (WFC3)</a></p>
+<ul>
+<li><p>IR channel [active]</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline uses a configuration file to obtain variety of instrument specific configuration items, as well as some global configuration items that are subsequently used throughout the pipeline.  The pipeline is designed to be lightweight with respect to storage requirements of the <em>downloaded</em> data. A summary of the steps taken by the pipeline are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Initialization (<a class="reference internal" href="utils.html#module-utils.initialize" title="utils.initialize"><code class="xref py py-mod docutils literal notranslate"><span class="pre">initialize</span></code></a>)</p>
+<ul class="simple">
+<li><p>Determine the proper date range based off information stored in configuration file</p>
+<ul>
+<li><p>Generate a list of one month intervals and exclude any periods of prolonged inactivity (e.g. instrument failures)</p></li>
+</ul>
+</li>
+<li><p>Determine the date ranges, if any, that have already been analyzed. These will automatically be skipped by the pipeline</p></li>
+<li><p>If specified, initialize a series of HDF5 files used to store all of the extracted data.</p></li>
+</ul>
+</li>
+<li><p>Download (<a class="reference internal" href="download.html#module-download.download" title="download.download"><code class="xref py py-mod docutils literal notranslate"><span class="pre">download</span></code></a>)</p>
+<ul class="simple">
+<li><p>Submit a query to MAST searching for all files in a one month interval that match the filetypes specified in the configuration file.</p></li>
+<li><p>Download all found files to the directory specified in the configuration file.</p></li>
+</ul>
+</li>
+<li><p>Process (<a class="reference internal" href="process.html#module-process.process" title="process.process"><code class="xref py py-mod docutils literal notranslate"><span class="pre">process</span></code></a>)</p>
+<ul class="simple">
+<li><p>For CCD imagers on active instruments, the dark frames will be processed through the respective instruments cosmic ray rejection routine.</p></li>
+<li><p>For IR imagers, the FITS file containing all of the N inividual reads and there corresponding extensions will be decomposed into a N different
+FITS file, one for each read.</p></li>
+</ul>
+</li>
+<li><p>Label (<a class="reference internal" href="label.html#module-label.labeler" title="label.labeler"><code class="xref py py-mod docutils literal notranslate"><span class="pre">labeler</span></code></a>)</p>
+<ul class="simple">
+<li><p>Perform a connected-component labeling analysis to identify groups of cosmic ray affected pixels as a single distinct object.</p></li>
+</ul>
+</li>
+<li><p>Analyze</p>
+<ul class="simple">
+<li><p>Analyze all of the identified cosmic rays and compute a variety of
+statistics (<a class="reference internal" href="stat_utils.html#module-stat_utils.statshandler" title="stat_utils.statshandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">statshandler</span></code></a>)</p></li>
+<li><p>For each observation extract relevant metadata (<a class="reference internal" href="utils.html#module-utils.metadata" title="utils.metadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">metadata</span></code></a>)</p></li>
+</ul>
+</li>
+<li><p>Clean Up</p>
+<ul class="simple">
+<li><p>After processing all dark frames found in the one month interval,
+write out the computed statistics and delete the downloaded data.</p></li>
+</ul>
+</li>
+</ol>
+</div></blockquote>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#example-1-running-components-of-the-pipeline">Example 1: Running Components of the Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#example-2-running-the-entire-pipeline">Example 2: Running the Entire Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#module-pipeline">pipeline Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">download</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="download.html#module-download.download">download.download Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="label.html">label</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="label.html#module-label.labeler">label.labeler Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="process.html#module-process.process">process.process Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stat_utils.html">stat_utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stat_utils.html#module-stat_utils.statshandler">stat_utils.statshandler Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-utils.datahandler">utils.datahandler Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-utils.initialize">utils.initialize Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-utils.metadata">utils.metadata Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-utils.sendit">utils.sendit Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-utils.visualize">utils.visualize Module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

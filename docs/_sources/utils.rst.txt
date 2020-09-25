@@ -12,7 +12,7 @@ utils
 
 .. automodapi:: utils.metadata
    :no-inheritance-diagram:
-   :skip: Time, WCS, R_earth, gmst, DEGtoRAD, rectToSph
+   :skip: Time, WCS, R_earth, gmst, DEGtoRAD, rectToSph, Iterable
 
 .. automodapi:: utils.sendit
    :no-inheritance-diagram:

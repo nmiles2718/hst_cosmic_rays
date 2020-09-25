@@ -1,0 +1,515 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Stats &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="utils" href="../utils.html" />
+    <link rel="prev" title="stat_utils" href="../stat_utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../process.html">process</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../stat_utils.html">stat_utils</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../stat_utils.html#module-stat_utils.statshandler">stat_utils.statshandler Module</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../stat_utils.html#functions">Functions</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../stat_utils.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Stats</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../stat_utils.html">stat_utils</a> &raquo;</li>
+        
+      <li>Stats</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/stat_utils.statshandler.Stats.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="stats">
+<h1>Stats<a class="headerlink" href="#stats" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="stat_utils.statshandler.Stats">
+<em class="property">class </em><code class="sig-prename descclassname">stat_utils.statshandler.</code><code class="sig-name descname">Stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cr_label</span></em>, <em class="sig-param"><span class="n">integration_time</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">detector_size</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class for computing statistics about each cosmic ray</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cr_label</strong> (<a class="reference internal" href="label.labeler.Label.html#label.labeler.Label" title="label.labeler.Label"><code class="xref py py-class docutils literal notranslate"><span class="pre">Label</span></code></a>) – The resulting <a class="reference internal" href="label.labeler.Label.html#label.labeler.Label" title="label.labeler.Label"><code class="xref py py-class docutils literal notranslate"><span class="pre">Label</span></code></a>
+object after executing the
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">run_ccd_label()</span></code> method.</p>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.centroids" title="stat_utils.statshandler.Stats.centroids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">centroids</span></code></a></p></td>
+<td><p>Centroids of each cosmic ray</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.cr_affected_pixels" title="stat_utils.statshandler.Stats.cr_affected_pixels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cr_affected_pixels</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.detector_size" title="stat_utils.statshandler.Stats.detector_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detector_size</span></code></a></p></td>
+<td><p>Size of the detector in cm^2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.energy_deposited" title="stat_utils.statshandler.Stats.energy_deposited"><code class="xref py py-obj docutils literal notranslate"><span class="pre">energy_deposited</span></code></a></p></td>
+<td><p>Total energy deposited by cosmic rays</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.fname" title="stat_utils.statshandler.Stats.fname"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fname</span></code></a></p></td>
+<td><p>Name of FITS file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.incident_cr_rate" title="stat_utils.statshandler.Stats.incident_cr_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">incident_cr_rate</span></code></a></p></td>
+<td><p>Computed cosmic ray incidence rate (CR/s/cm^2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.integration_time" title="stat_utils.statshandler.Stats.integration_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integration_time</span></code></a></p></td>
+<td><p>Total integration time of the observation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.label" title="stat_utils.statshandler.Stats.label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label</span></code></a></p></td>
+<td><p>Generated label</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.label_ids" title="stat_utils.statshandler.Stats.label_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_ids</span></code></a></p></td>
+<td><p>List of integer IDs used in the label</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.sci" title="stat_utils.statshandler.Stats.sci"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sci</span></code></a></p></td>
+<td><p>A concatenated version of all SCI extensions in <a class="reference internal" href="#stat_utils.statshandler.Stats.fname" title="stat_utils.statshandler.Stats.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.shapes" title="stat_utils.statshandler.Stats.shapes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shapes</span></code></a></p></td>
+<td><p>Shapes of cosmic ray energy distribution</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.size_in_pixels" title="stat_utils.statshandler.Stats.size_in_pixels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">size_in_pixels</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.size_in_sigmas" title="stat_utils.statshandler.Stats.size_in_sigmas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">size_in_sigmas</span></code></a></p></td>
+<td><p>Width of cosmic rays energy distribution in units of sigmas</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_cr_energy_deposited" title="stat_utils.statshandler.Stats.compute_cr_energy_deposited"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_cr_energy_deposited</span></code></a>()</p></td>
+<td><p>Compute the total number of electrons deposited at each label.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_cr_statistics" title="stat_utils.statshandler.Stats.compute_cr_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_cr_statistics</span></code></a>()</p></td>
+<td><p>Compute the cosmic ray statistics</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_first_moment" title="stat_utils.statshandler.Stats.compute_first_moment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_first_moment</span></code></a>([sci])</p></td>
+<td><p>Compute the first moment of energy deposited by a given cosmic ray.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_higher_moments" title="stat_utils.statshandler.Stats.compute_higher_moments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_higher_moments</span></code></a>(energy_deposited, …)</p></td>
+<td><p>Compute all second moments of the distribution</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_shape" title="stat_utils.statshandler.Stats.compute_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_shape</span></code></a>(I_rr, I_xy)</p></td>
+<td><p>Compute the “shape” of the distribution of the energy deposited</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stat_utils.statshandler.Stats.compute_size" title="stat_utils.statshandler.Stats.compute_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_size</span></code></a>(I_rr, label_coords)</p></td>
+<td><p>Compute the size of the cosmic ray in two ways</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.centroids">
+<code class="sig-name descname">centroids</code><a class="headerlink" href="#stat_utils.statshandler.Stats.centroids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Centroids of each cosmic ray</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.cr_affected_pixels">
+<code class="sig-name descname">cr_affected_pixels</code><a class="headerlink" href="#stat_utils.statshandler.Stats.cr_affected_pixels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.detector_size">
+<code class="sig-name descname">detector_size</code><a class="headerlink" href="#stat_utils.statshandler.Stats.detector_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of the detector in cm^2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.energy_deposited">
+<code class="sig-name descname">energy_deposited</code><a class="headerlink" href="#stat_utils.statshandler.Stats.energy_deposited" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total energy deposited by cosmic rays</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.fname">
+<code class="sig-name descname">fname</code><a class="headerlink" href="#stat_utils.statshandler.Stats.fname" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of FITS file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.incident_cr_rate">
+<code class="sig-name descname">incident_cr_rate</code><a class="headerlink" href="#stat_utils.statshandler.Stats.incident_cr_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed cosmic ray incidence rate (CR/s/cm^2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.integration_time">
+<code class="sig-name descname">integration_time</code><a class="headerlink" href="#stat_utils.statshandler.Stats.integration_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total integration time of the observation</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.label">
+<code class="sig-name descname">label</code><a class="headerlink" href="#stat_utils.statshandler.Stats.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generated label</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.label_ids">
+<code class="sig-name descname">label_ids</code><a class="headerlink" href="#stat_utils.statshandler.Stats.label_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of integer IDs used in the label</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.sci">
+<code class="sig-name descname">sci</code><a class="headerlink" href="#stat_utils.statshandler.Stats.sci" title="Permalink to this definition">¶</a></dt>
+<dd><p>A concatenated version of all SCI extensions in <a class="reference internal" href="#stat_utils.statshandler.Stats.fname" title="stat_utils.statshandler.Stats.fname"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fname</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.shapes">
+<code class="sig-name descname">shapes</code><a class="headerlink" href="#stat_utils.statshandler.Stats.shapes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shapes of cosmic ray energy distribution</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.size_in_pixels">
+<code class="sig-name descname">size_in_pixels</code><a class="headerlink" href="#stat_utils.statshandler.Stats.size_in_pixels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="stat_utils.statshandler.Stats.size_in_sigmas">
+<code class="sig-name descname">size_in_sigmas</code><a class="headerlink" href="#stat_utils.statshandler.Stats.size_in_sigmas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Width of cosmic rays energy distribution in units of sigmas</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_cr_energy_deposited">
+<code class="sig-name descname">compute_cr_energy_deposited</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_cr_energy_deposited" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the total number of electrons deposited at each label.</p>
+<p>This is simply a sum of all pixel values identified as belonging to a
+given cosmic ray.</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(I_0 = \sum_{i} p_i\)</span></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>cr_sum</strong> – Sum of all pixels at each label in <a class="reference internal" href="#stat_utils.statshandler.Stats.label_ids" title="stat_utils.statshandler.Stats.label_ids"><code class="xref py py-attr docutils literal notranslate"><span class="pre">label_ids</span></code></a></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_cr_statistics">
+<code class="sig-name descname">compute_cr_statistics</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_cr_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the cosmic ray statistics</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_first_moment">
+<code class="sig-name descname">compute_first_moment</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sci</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_first_moment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the first moment of energy deposited by a given cosmic ray.</p>
+<p>This corresponds to the flux-weighted centroid of the cosmic ray denoted
+by <span class="math notranslate nohighlight">\((I_x, I_y).\)</span></p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(I_x = \frac{1}{I_0} \sum_{i}p_i * x_i\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(I_y = \frac{1}{I_0} \sum_{i}p_i * y_i\)</span></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>sci</strong> (numpy.ndarray [<code class="xref py py-attr docutils literal notranslate"><span class="pre">sci</span></code>]) – The <code class="xref py py-attr docutils literal notranslate"><span class="pre">sci</span></code> attribute of the
+<a class="reference internal" href="label.labeler.CosmicRayLabel.html#label.labeler.CosmicRayLabel" title="label.labeler.CosmicRayLabel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CosmicRayLabel</span></code></a> object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_higher_moments">
+<code class="sig-name descname">compute_higher_moments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">energy_deposited</span></em>, <em class="sig-param"><span class="n">centroid</span></em>, <em class="sig-param"><span class="n">grid_coords</span></em>, <em class="sig-param"><span class="n">idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_higher_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute all second moments of the distribution</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(I_{xx} = \frac{1}{I_0} \sum_{i}p_i(x_i - I_x)^2\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(I_{yy} = \frac{1}{I_0} \sum_{i}p_i(y_i - I_y)^2\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(I_{xy} = \frac{1}{I_0} \sum_{i}p_i(x_i - I_x)*(y_i - I_y)\)</span></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>energy_deposited</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Total energy deposited by a single cosmic ray</p></li>
+<li><p><strong>centroid</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – (x,y) position of the centroid of the cosmic ray</p></li>
+<li><p><strong>label_coords</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – tuple of cosmic ray x coordinates and y coordinates</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>I_rr</strong> (<em>tuple</em>) – The second moments of the energy distribution in x and y, (<span class="math notranslate nohighlight">\(I_{xx}\)</span>, <span class="math notranslate nohighlight">\(I_{yy}\)</span>)</p></li>
+<li><p><strong>I_xy</strong> (<em>int</em>) – The cross moment of the energy distribution, <span class="math notranslate nohighlight">\(I_{xy}\)</span></p></li>
+<li><p><strong>label_coords</strong> (<em>list</em>) – List of tuple’s containing the positions of each pixel hit by the
+cosmic ray</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_shape">
+<code class="sig-name descname">compute_shape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">I_rr</span></em>, <em class="sig-param"><span class="n">I_xy</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the “shape” of the distribution of the energy deposited</p>
+<p>This is effectively a measure of symmetry of the distribution that is
+defined as follows:</p>
+<blockquote>
+<div><p><span class="math notranslate nohighlight">\(shape = \sqrt{\frac{(I_{xx} - I_{yy})^2 + 4I^2_{xy}}{(I_{xx} + I_{yy})^2}}\)</span></p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>I_rr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Second moment of energy distribution <span class="math notranslate nohighlight">\((I_{xx}, I_{yy})\)</span></p></li>
+<li><p><strong>I_xy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – Cross moment of energy distribution</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>shape</strong> – The computed shape</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="stat_utils.statshandler.Stats.compute_size">
+<code class="sig-name descname">compute_size</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">I_rr</span></em>, <em class="sig-param"><span class="n">label_coords</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stat_utils.statshandler.Stats.compute_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the size of the cosmic ray in two ways</p>
+<ol class="arabic">
+<li><p>Compute the width or size of the cosmic energy distribution
+using the previously computed second moments.</p>
+<blockquote>
+<div><p><span class="math notranslate nohighlight">\(size = \sqrt{\frac{I_{xx} + I_{yy}}{2}}\)</span></p>
+</div></blockquote>
+</li>
+<li><p>Compute the size of the cosmic ray in terms of the number of
+pixels that it affects.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>I_rr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><em>tuple</em></a>) – Second moment of energy distribution <span class="math notranslate nohighlight">\((I_{xx}, I_{yy})\)</span></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>size_sigmas</strong> (<em>float</em>) – Width of the cosmic ray energy distribution</p></li>
+<li><p><strong>size_pixels</strong> (<em>float</em>) – Total number of pixels affected by the given cosmic ray</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../utils.html" class="btn btn-neutral float-right" title="utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../stat_utils.html" class="btn btn-neutral float-left" title="stat_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pipeline &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CosmicRayPipeline" href="api/pipeline.CosmicRayPipeline.html" />
+    <link rel="prev" title="Examples" href="examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pipeline">pipeline Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/pipeline.CosmicRayPipeline.html">CosmicRayPipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="label.html">label</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process.html">process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>pipeline</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/pipeline.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pipeline">
+<h1>pipeline<a class="headerlink" href="#pipeline" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">python</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">aws</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">download</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">process</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">ccd</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">ir</span><span class="p">]</span>
+                          <span class="p">[</span><span class="o">-</span><span class="n">chunks</span> <span class="n">CHUNKS</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">analyze</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">use_dq</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">instr</span> <span class="n">INSTR</span><span class="p">]</span>
+                          <span class="p">[</span><span class="o">-</span><span class="n">initialize</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="Named Arguments">
+<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h2>
+<dl class="option-list">
+<dt><kbd>-aws</kbd></dt>
+<dd><p>Flag for using AWS for downloads. Only to be used when the pipeline is run on EC2</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-download</kbd></dt>
+<dd><p>Download the data</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-process</kbd></dt>
+<dd><p>Process the raw data</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-ccd</kbd></dt>
+<dd><p>Switch for processing CCD data</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-ir</kbd></dt>
+<dd><p>Switch for processing IR data</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-chunks</kbd></dt>
+<dd><p>Number of chunks to break the generated results into.
+For example, if <cite>-chunks 2</cite> is passed, then two HDF5 files for each statistic will be generated. The first half of the dataset will be written to file 1 and the second half will be written to file 2. This is to offset the degradation in write time as the number of datasets stored in the HDF5 increases.</p>
+<p>Default: 4</p>
+</dd>
+<dt><kbd>-analyze</kbd></dt>
+<dd><p>Switch for analyzing and extract cosmic ray statistics</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-use_dq</kbd></dt>
+<dd><p>Switch for using the DQ arrays to perform labeling</p>
+<p>Default: False</p>
+</dd>
+<dt><kbd>-instr</kbd></dt>
+<dd><p>HST instrument to process (acs_wfc, wfc3_uvis, stis_ccd, acs_hrc)</p>
+<p>Default: “stis_ccd”</p>
+</dd>
+<dt><kbd>-initialize</kbd></dt>
+<dd><p>Initialize the HDF5 files for the instrument.</p>
+<p><strong>Warning</strong>: Should only be included the first time the pipeline is run becuase it will overwrite any pre-existing HDF5 files.</p>
+<p>Default: False</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="module-pipeline">
+<span id="pipeline-module"></span><h2>pipeline Module<a class="headerlink" href="#module-pipeline" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/pipeline.CosmicRayPipeline.html#pipeline.CosmicRayPipeline" title="pipeline.CosmicRayPipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CosmicRayPipeline</span></code></a>([aws, analyze, download, …])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api/pipeline.CosmicRayPipeline.html" class="btn btn-neutral float-right" title="CosmicRayPipeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="examples.html" class="btn btn-neutral float-left" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

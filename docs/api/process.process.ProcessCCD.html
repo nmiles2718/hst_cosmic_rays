@@ -1,0 +1,451 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ProcessCCD &mdash; hst_cosmic_rays  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ProcessIR" href="process.process.ProcessIR.html" />
+    <link rel="prev" title="process" href="../process.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> hst_cosmic_rays
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline.html">pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pipeline_config.html">pipeline configuration file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../download.html">download</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../label.html">label</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../process.html">process</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../process.html#module-process.process">process.process Module</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../process.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ProcessCCD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="process.process.ProcessIR.html">ProcessIR</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../stat_utils.html">stat_utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">hst_cosmic_rays</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../process.html">process</a> &raquo;</li>
+        
+      <li>ProcessCCD</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/process.process.ProcessCCD.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="processccd">
+<h1>ProcessCCD<a class="headerlink" href="#processccd" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="process.process.ProcessCCD">
+<em class="property">class </em><code class="sig-prename descclassname">process.process.</code><code class="sig-name descname">ProcessCCD</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instr</span></em>, <em class="sig-param"><span class="n">flist</span></em>, <em class="sig-param"><span class="n">instr_cfg</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class for processing CCD data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Instrument to process</p></li>
+<li><p><strong>flist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – List of files to process</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.base" title="process.process.ProcessCCD.base"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.crrejtab" title="process.process.ProcessCCD.crrejtab"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crrejtab</span></code></a></p></td>
+<td><p>Cosmic ray rejection parameter table</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.flist" title="process.process.ProcessCCD.flist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flist</span></code></a></p></td>
+<td><p>List of filenames to process</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.input" title="process.process.ProcessCCD.input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input</span></code></a></p></td>
+<td><p>Container for storing sorted inputs</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.instr" title="process.process.ProcessCCD.instr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr</span></code></a></p></td>
+<td><p>Instrument to analyze</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.instr_cfg" title="process.process.ProcessCCD.instr_cfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">instr_cfg</span></code></a></p></td>
+<td><p>Configuration object</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.num" title="process.process.ProcessCCD.num"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num</span></code></a></p></td>
+<td><p>Number of files to process</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.output" title="process.process.ProcessCCD.output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output</span></code></a></p></td>
+<td><p>Container for storing which files failed or passed processing</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.ACS" title="process.process.ProcessCCD.ACS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ACS</span></code></a>(input, i)</p></td>
+<td><p>Run ACS cosmic ray rejection</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.STIS" title="process.process.ProcessCCD.STIS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">STIS</span></code></a>(input, i)</p></td>
+<td><p>Run STIS cosmic ray rejection</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.WFC3" title="process.process.ProcessCCD.WFC3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WFC3</span></code></a>(input, i)</p></td>
+<td><p>Run WFC3 cosmic ray rejection</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.check_for_artifact" title="process.process.ProcessCCD.check_for_artifact"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_for_artifact</span></code></a>(f[, extname, extnums])</p></td>
+<td><p>Scan the DQ extension for compression artifacts</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.cr_reject" title="process.process.ProcessCCD.cr_reject"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cr_reject</span></code></a>()</p></td>
+<td><p>Run cosmic ray rejection in a parallelized manner.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#process.process.ProcessCCD.format_inputs" title="process.process.ProcessCCD.format_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_inputs</span></code></a>()</p></td>
+<td><p>Convenience method for preparing input lists for different pipelines</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#process.process.ProcessCCD.sort" title="process.process.ProcessCCD.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>()</p></td>
+<td><p>Sort the input files by exposure time and aperture</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.base">
+<code class="sig-name descname">base</code><a class="headerlink" href="#process.process.ProcessCCD.base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.crrejtab">
+<code class="sig-name descname">crrejtab</code><a class="headerlink" href="#process.process.ProcessCCD.crrejtab" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cosmic ray rejection parameter table</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.flist">
+<code class="sig-name descname">flist</code><a class="headerlink" href="#process.process.ProcessCCD.flist" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of filenames to process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.input">
+<code class="sig-name descname">input</code><a class="headerlink" href="#process.process.ProcessCCD.input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for storing sorted inputs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.instr">
+<code class="sig-name descname">instr</code><a class="headerlink" href="#process.process.ProcessCCD.instr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instrument to analyze</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.instr_cfg">
+<code class="sig-name descname">instr_cfg</code><a class="headerlink" href="#process.process.ProcessCCD.instr_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration object</p>
+<dl class="simple">
+<dt>Corresponds to the configuration object stored in the</dt><dd><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg</span></code> attribute</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.num">
+<code class="sig-name descname">num</code><a class="headerlink" href="#process.process.ProcessCCD.num" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of files to process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="process.process.ProcessCCD.output">
+<code class="sig-name descname">output</code><a class="headerlink" href="#process.process.ProcessCCD.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for storing which files failed or passed processing</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="process.process.ProcessCCD.ACS">
+<code class="sig-name descname">ACS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input</span></em>, <em class="sig-param"><span class="n">i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.ACS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run ACS cosmic ray rejection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – List of files to process with <code class="xref py py-obj docutils literal notranslate"><span class="pre">acsrej</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>tuple</strong> – The tuple contains the input list and a boolean flag. The flag will
+be True if the processing was successful and False if not.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.STIS">
+<code class="sig-name descname">STIS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input</span></em>, <em class="sig-param"><span class="n">i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.STIS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run STIS cosmic ray rejection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – List of files to process with <code class="xref py py-obj docutils literal notranslate"><span class="pre">ocrreject</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The tuple contains the input list and a boolean flag. The flag will
+be True if the processing was successful and False if not.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)">tuple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.WFC3">
+<code class="sig-name descname">WFC3</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input</span></em>, <em class="sig-param"><span class="n">i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.WFC3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run WFC3 cosmic ray rejection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>input</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of files to process with <code class="xref py py-obj docutils literal notranslate"><span class="pre">wf3rej</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>tuple</strong> – The tuple contains the input list and a boolean flag. The flag will
+be True if the processing was successful and False if not.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.check_for_artifact">
+<code class="sig-name descname">check_for_artifact</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="n">extname</span><span class="o">=</span><span class="default_value">'dq'</span></em>, <em class="sig-param"><span class="n">extnums</span><span class="o">=</span><span class="default_value">[1, 2]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.check_for_artifact" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scan the DQ extension for compression artifacts</p>
+<p>In early ACS images when the option for compressing data was available,
+there is a possibility of Reed-Solomon decoding errors being incorrectly
+classified as cosmic rays during the cosmic ray rejection step.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.cr_reject">
+<code class="sig-name descname">cr_reject</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.cr_reject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run cosmic ray rejection in a parallelized manner.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.format_inputs">
+<code class="sig-name descname">format_inputs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.format_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience method for preparing input lists for different pipelines</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>data</strong> – A list of lists where each sub-list is a set of files to CR reject</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="process.process.ProcessCCD.sort">
+<code class="sig-name descname">sort</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#process.process.ProcessCCD.sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the input files by exposure time and aperture</p>
+<p>The original input list could potentially contain a mix of subarray
+formats and exposure times. Attempting to combine images of with
+different exposure times or subarray formats will raise an error in
+the calibration pipelines.</p>
+<p>To combat this, all of the files are sorted
+by their exposure time and <code class="xref py py-obj docutils literal notranslate"><span class="pre">CCDAMP</span></code> header value. The <code class="xref py py-obj docutils literal notranslate"><span class="pre">CCDAMP</span></code> keyword
+describes the CCD amplifier readout configuration which can be used to
+match images taken with similar formats for CR rejection.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="process.process.ProcessIR.html" class="btn btn-neutral float-right" title="ProcessIR" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../process.html" class="btn btn-neutral float-left" title="process" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Miles &amp; Deustua
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
