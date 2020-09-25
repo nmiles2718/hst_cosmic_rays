@@ -1,5 +1,5 @@
 # HST Cosmic Rays
-[API Documentation](http://hst-cosmic-rays.s3-website-us-east-1.amazonaws.com/)
+[API Documentation](https://nmiles2718.github.io/hst_cosmic_rays/)
 
 This repository contains the HSTcosmicrays package that is used in the analysis
 of every identifiable cosmic ray in any of the calibration darks taken by the 
