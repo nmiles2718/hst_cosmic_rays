@@ -14,3 +14,8 @@ following imagers on HST:
 
 The package has been designed to work locally and in the cloud on an AWS EC2 
 instance.
+
+#### Citing this Software
+To cite the current version of the software, please use the DOI listed below:
+
+[![DOI](https://zenodo.org/badge/138894262.svg)](https://zenodo.org/badge/latestdoi/138894262)
