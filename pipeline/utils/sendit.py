@@ -3,8 +3,9 @@
 """
 This module contains the functionality for setting up an email notification
 system. Once the pipeline has completed analyzing a month of darks, it will
-generate average statistics and send them via email to the user specified by
+generate average statistics from all the images analyzed and send the stats via email to the user specified by
 :py:attr:`~utils.sendit.Emailer.receipient`.
+
 """
 
 from collections import defaultdict
@@ -246,8 +247,8 @@ class Emailer(object):
         html_tb = s.render(index=False)
         msg = EmailMessage()
         msg['Subject'] = self.subject
-        msg['From'] = Address('', self.sender[0], self.sender[1])
-        msg['To'] = Address('', self.recipient[0], self.recipient[1])
+        msg['From'] = Address('', '@'.join(self.sender))
+        msg['To'] = Address('', '@'.join(self.recipient))
         gif_cid = make_msgid()
         if gif:
             body_str = """
@@ -308,7 +309,10 @@ class Emailer(object):
 
         msg.add_alternative(body_str, subtype='html')
 
-        with smtplib.SMTP('smtp.stsci.edu') as s:
+        # Send an email using GMAIL's Simple Message Transfer Protocol (SMTP)
+        with smtplib.SMTP_SSL('smtp.gmail.com') as s:
+            # TODO: Implement OATH via the GMAIL developer API
+            s.login('@'.join(self.sender), '')
             s.send_message(msg)
 
     def SendEmailAWS(self):
@@ -357,11 +361,11 @@ class Emailer(object):
              )
         html_tb = s.render(index=False)
         # This address must be verified with Amazon SES.
-        SENDER = "natemiles92@gmail.com"
+        SENDER = ""
 
         # Replace recipient@example.com with a "To" address. If your account
         # is still in the sandbox, this address must be verified.
-        RECIPIENT = "nmiles@stsci.edu"
+        RECIPIENT = ""
 
         # Specify a configuration set. If you do not want to use a configuration
         # set, comment the following variable, and the

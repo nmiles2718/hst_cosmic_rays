@@ -12,9 +12,5 @@ following imagers on HST:
 - WFPC2 (all four detectors PC, WF1, WF2, and WF3)
 - WFC3/UVIS
 
-**IR Imagers (Work in progress)**
-- NICMOS (all three detectors NIC1, NIC2, and NIC3)
-- WFC3/IR
-
 The package has been designed to work locally and in the cloud on an AWS EC2 
 instance.

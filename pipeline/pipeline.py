@@ -26,7 +26,6 @@ import utils.initialize as initialize
 import utils.metadata as metadata
 import utils.sendit as sendit
 
-
 __taskname__ = "pipeline"
 __author__ = "Nathan Miles"
 __version__ = "1.0"
@@ -74,7 +73,6 @@ parser.add_argument('-chunks',
                     type=int,
                     default=4)
 
-
 parser.add_argument('-analyze',
                     help='Switch for analyzing and extract cosmic ray statistics',
                     action='store_true',
@@ -98,7 +96,6 @@ parser.add_argument('-initialize',
                          ' the pipeline is run becuase it will overwrite any '
                          'pre-existing HDF5 files.')
 
-
 logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
@@ -110,7 +107,7 @@ LOG.setLevel(logging.INFO)
 class CosmicRayPipeline(object):
     def __init__(self, aws=None, analyze=None, download=None, ccd=None,
                  chunks=None, ir=None, instr=None, initialize=None,
-                 process=None, store_downloads=None, use_dq=None, test=None):
+                 process=None, store_downloads=None, use_dq=None):
         """ Class for combining the individual tasks into a single pipeline.
         """
         # Initialize Args
@@ -136,14 +133,9 @@ class CosmicRayPipeline(object):
             'analysis': 0
         }
 
-        if test:
-            self._cfg_file = os.path.join(self._base,
-                                        'CONFIG',
-                                        'testing_pipeline_config.yaml')
-        else:
-            self._cfg_file = os.path.join(self._base,
-                                        'CONFIG',
-                                        'pipeline_config.yaml')
+        self._cfg_file = os.path.join(self._base,
+                                      'CONFIG',
+                                      'pipeline_config.yaml')
 
         # Load the CONFIG file
         with open(self._cfg_file, 'r') as fobj:
@@ -368,7 +360,7 @@ class CosmicRayPipeline(object):
         downloader.query(date_range=date_range, aws=self.aws)
         downloader.download(date_range[0].datetime.date().isoformat())
         end_time = time.time()
-        return (end_time - start_time)/60
+        return (end_time - start_time) / 60
 
     def run_labeling_single(self, fname):
         """Run the labeling analysis on a single image
@@ -421,7 +413,7 @@ class CosmicRayPipeline(object):
             cr_label.run_ccd_label(**label_params)
 
         # Compute the integration time
-        #integration_time = cr_label.exptime + \
+        # integration_time = cr_label.exptime + \
         #                   self.instr_cfg['instr_params']['readout_time']
         integration_time = file_metadata.metadata['integration_time']
         detector_size = self.instr_cfg['instr_params']['detector_size']
@@ -437,7 +429,7 @@ class CosmicRayPipeline(object):
             'incident_cr_rate': cr_stats.incident_cr_rate,
             # Note that we save BOTH versions of CR sizes measurements
             'sizes': np.asarray([cr_stats.size_in_sigmas,
-                                cr_stats.size_in_pixels]),
+                                 cr_stats.size_in_pixels]),
             'shapes': cr_stats.shapes,
             'energy_deposited': cr_stats.energy_deposited
         }
@@ -486,7 +478,7 @@ class CosmicRayPipeline(object):
         datawriter.write_results()
         end_time = time.time()
 
-        return (end_time - start_time)/60., results
+        return (end_time - start_time) / 60., results
 
     def run_processing(self, start, stop):
         """ Process the data in the given time interval
@@ -589,21 +581,20 @@ class CosmicRayPipeline(object):
         e = sendit.Emailer(df=df,
                            processing_times=self.processing_times)
         subj = ('Finished analyzing '
-               '{} darks from {} to {}'.format(self.instr,
-                                               start.datetime.date(),
-                                               stop.datetime.date()))
+                '{} darks from {} to {}'.format(self.instr,
+                                                start.datetime.date(),
+                                                stop.datetime.date()))
         e.subject = subj
         e.sender = [
             self.cfg['email']['username'],
             self.cfg['email']['domain']
-            ]
+        ]
         e.recipient = e.sender
 
         if self.aws:
             e.SendEmailAWS()
         else:
             e.SendEmail(gif=False)
-
 
     def _pipeline_cleanup(self, start, stop, failed):
         """Handle necessary cleanup steps required at the end of the pipeline
@@ -617,19 +608,19 @@ class CosmicRayPipeline(object):
         processed_fname = os.path.join(
             self.base, 'CONFIG', 'processed_dates_{}.txt'.format(self.instr)
         )
-        with open(processed_fname,'a+') as fobj:
+        with open(processed_fname, 'a+') as fobj:
             fobj.write('{} {}\n'.format(start.iso, stop.iso))
 
         if failed:
             failed_fname = os.path.join(
-                self.base, 'CONFIG','failed_dates_{}.txt'.format(self.instr)
+                self.base, 'CONFIG', 'failed_dates_{}.txt'.format(self.instr)
             )
             with open(failed_fname, 'a+') as fobj:
                 fobj.write('{} {}\n'.format(start.iso, stop.iso))
 
         # Remove any files that were generated as a result of CR processing
         # for the CCD imagers
-        generated_data = os.path.join(self.base,'data',self.instr.split('_')[0],'tmp*')
+        generated_data = os.path.join(self.base, 'data', self.instr.split('_')[0], 'tmp*')
         crjs = glob.glob(generated_data)
 
         if crjs is not None:
@@ -702,14 +693,13 @@ class CosmicRayPipeline(object):
                     )
                     self.processing_times['analysis'] = analysis_time
                 else:
-                    failed=True
-
+                    failed = True
 
                 self.processing_times['total'] = sum(
                     list(self.processing_times.values())
                 )
 
-                # Clean up the files and write out the range just processed
+                # Clean up downloaded files and write out the range we just processed
                 self._pipeline_cleanup(start, stop, failed)
 
                 # Send the final email iff there were results computed
